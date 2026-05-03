@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Namaste",
+    "slug": "namaste",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "namaste",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#faf6f0",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.namaste.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Namaste needs camera for live yoga sessions",
+        "NSMicrophoneUsageDescription": "Namaste needs microphone for live sessions"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#faf6f0"
+      },
+      "package": "com.namaste.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-asset"
+    ]
+  }
+}

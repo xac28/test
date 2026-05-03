@@ -1,0 +1,416 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(STUDENT)
+  
+  // Extended profile fields
+  firstName     String?
+  lastName      String?
+  dateOfBirth   DateTime?
+  phone         String?
+  address       String?   @db.Text
+  country       String?
+  passportId    String?
+  interests     String?   @db.Text  // JSON array of yoga styles
+  profileCompleted Boolean @default(false)
+  
+  // Ban system (soft-ban instead of deletion)
+  banned        Boolean   @default(false)
+  banReason     String?   @db.Text
+  bannedAt      DateTime?
+  
+  stripeCustomerId String?
+  expoPushToken    String?
+  
+  // Subscriptions
+  subscriptionPlan String @default("FREE") // FREE, PREMIUM, UNLIMITED
+  subscriptionEnds DateTime?
+  
+  // Gamification
+  points           Int      @default(0)
+  currentStreak    Int      @default(0)
+  longestStreak    Int      @default(0)
+  lastSessionDate  DateTime?
+  badges           String?  @db.Text // JSON array of unlocked badges
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  
+  teacher       Teacher?
+  applications  TeacherApplication[] @relation("Applicant")
+  reviewsGiven  TeacherApplication[] @relation("Reviewer")
+  bookings      Booking[]            @relation("StudentBookings")
+
+  reportsMade   Report[]             @relation("Reporter")
+  reportsAgainst Report[]            @relation("Reported")
+  auditLogs     AuditLog[]           @relation("Actor")
+  posts         Post[]
+  likes         Like[]
+
+  // Messaging
+  conversationsStarted Conversation[] @relation("UserOne")
+  conversationsReceived Conversation[] @relation("UserTwo")
+  messagesSent         Message[]
+  comments             Comment[]
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userOneId String
+  userTwoId String
+  
+  userOne   User     @relation("UserOne", fields: [userOneId], references: [id], onDelete: Cascade)
+  userTwo   User     @relation("UserTwo", fields: [userTwoId], references: [id], onDelete: Cascade)
+  
+  messages  Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userOneId, userTwoId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  content        String       @db.Text
+  senderId       String
+  conversationId String
+  
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  title     String?   @db.VarChar(255)
+  content   String    @db.Text
+  image     String?   @db.Text
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes     Like[]
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  postId    String
+  authorId  String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Teacher {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  bio             String?  @db.Text
+  hourlyRate      Float    @default(0.0)
+  specialties     String?  @db.Text  // JSON array: Face Yoga, Yin Yoga, etc.
+  
+  stripeConnectId String?  @unique
+  commissionRate  Float    @default(0.15)
+  isTrialMode     Boolean  @default(true) // Trial phase before taking real students
+  
+  availability    Availability[]
+  bookings        Booking[]
+  liveRooms       LiveRoom[]
+  videos          TeacherVideo[]
+}
+
+model TeacherVideo {
+  id          String   @id @default(cuid())
+  teacherId   String
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?  @db.Text
+  videoUrl    String   // URL to YouTube, Vimeo, or S3
+  thumbnailUrl String?
+  
+  isPublic    Boolean  @default(true) // If false, only past students can view
+  
+  createdAt   DateTime @default(now())
+}
+
+model TeacherApplication {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("Applicant", fields: [userId], references: [id], onDelete: Cascade)
+  
+  status      ApplicationStatus @default(PENDING)
+  submittedAt DateTime @default(now())
+  reviewedAt  DateTime?
+  
+  reviewerId  String?
+  reviewer    User?    @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  
+  // Teacher application details
+  firstName   String?
+  lastName    String?
+  dateOfBirth DateTime?
+  phone       String?
+  address     String?  @db.Text
+  country     String?
+  passportId  String?
+  specialties String?  @db.Text  // JSON array of yoga styles
+  certificateUrl String?         // Path to uploaded PDF
+  certificateStartDate DateTime? // When they got certified (for seniority)
+  
+  resumeUrl   String?
+  experience  String?  @db.Text
+}
+
+model Booking {
+  id            String   @id @default(cuid())
+  
+  studentId     String
+  student       User     @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  teacherId     String
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  startTime     DateTime
+  endTime       DateTime
+  
+  status        BookingStatus @default(PENDING)
+  
+  dailyRoomUrl  String?
+  dailyRoomName String?
+  stripePaymentIntentId String? @unique
+  
+  price         Float
+  
+  review        Review?
+  chatMessages  ChatMessage[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  senderId  String
+  senderName String
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+  
+  @@index([bookingId, createdAt])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  bookingId   String   @unique
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  rating      Int
+  comment     String?  @db.Text
+  createdAt   DateTime @default(now())
+}
+
+model Availability {
+  id          String   @id @default(cuid())
+  teacherId   String
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek   Int      // 0 = Sunday, 6 = Saturday
+  startTime   String   // e.g., "09:00"
+  endTime     String   // e.g., "17:00"
+}
+
+// Instant live rooms — teachers can go live anytime without a booking
+model LiveRoom {
+  id          String   @id @default(cuid())
+  teacherId   String
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  roomName    String   @unique
+  title       String   @default("Live Yoga Session")
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  endedAt     DateTime?
+}
+
+// Reports submitted by users against other users or bookings
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String
+  reporter    User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  
+  reportedId  String?
+  reported    User?    @relation("Reported", fields: [reportedId], references: [id], onDelete: SetNull)
+  
+  bookingId   String?  // Optional relation to a specific booking/room
+  
+  reason      String   @db.Text
+  status      ReportStatus @default(PENDING) // PENDING, REVIEWED, RESOLVED
+  
+  createdAt   DateTime @default(now())
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+}
+
+// System logs (e.g. timeout events, bans)
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+  actor       User     @relation("Actor", fields: [actorId], references: [id], onDelete: Cascade)
+  
+  action      String   // e.g. "TIMEOUT", "BAN", "CLOSE_ROOM"
+  targetId    String?  // ID of the affected user/room
+  reason      String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+}
+
+// ── IP Ban & Evasion Detection System ──────────────────────────────────────
+
+// Banned IP addresses — checked on every auth attempt
+model IpBan {
+  id          String   @id @default(cuid())
+  ipAddress   String   // The banned IP address
+  reason      String?  @db.Text
+  
+  // Who/what caused this ban
+  bannedUserId String? // The original user whose ban triggered this IP ban
+  bannedByAdminId String? // Admin who performed the ban
+  
+  isActive    Boolean  @default(true) // Allows disabling without deletion
+  expiresAt   DateTime? // null = permanent ban
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([ipAddress])
+  @@index([isActive, ipAddress])
+}
+
+// IP address history per user — tracks every IP a user has used
+model UserIpLog {
+  id          String   @id @default(cuid())
+  userId      String
+  ipAddress   String
+  userAgent   String?  @db.Text // Browser/device fingerprint
+  
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  hitCount    Int      @default(1) // How many times this IP was used
+  
+  @@unique([userId, ipAddress])
+  @@index([ipAddress])
+  @@index([userId])
+}
+
+// Log of ban evasion attempts — helps admin see patterns
+model BanEvasionLog {
+  id            String   @id @default(cuid())
+  
+  ipAddress     String
+  attemptedEmail String?
+  attemptedName  String?
+  attemptedPhone String?
+  
+  matchType     String   // "IP_BAN", "EMAIL_DOMAIN", "PHONE_MATCH", "FINGERPRINT"
+  matchedUserId String?  // The original banned user this matched against
+  
+  blocked       Boolean  @default(true) // Whether the attempt was actually blocked
+  userAgent     String?  @db.Text
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([ipAddress])
+  @@index([createdAt])
+}
+

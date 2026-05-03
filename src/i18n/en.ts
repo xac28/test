@@ -1,0 +1,122 @@
+export const en = {
+  // Language picker
+  langPicker: {
+    title: 'Welcome to Namaste',
+    subtitle: 'Choose your language to begin',
+    continueBtn: 'Continue',
+  },
+  // Nav
+  nav: {
+    findTeacher: 'Find a Teacher',
+    becomeTeacher: 'Become a Teacher',
+    howItWorks: 'How it works',
+    signIn: 'Sign in',
+    signUp: 'Get started',
+  },
+  // Hero
+  hero: {
+    eyebrow: 'Yoga & Meditation, on your time',
+    title: 'Your practice,',
+    titleAccent: 'anywhere you breathe.',
+    subtitle:
+      'Connect 1-on-1 with certified yoga and meditation teachers from around the world. Live online classes, your schedule, your pace.',
+    cta: 'Find your teacher',
+    ctaSecondary: 'Watch how it works',
+    stat1Label: 'Certified teachers',
+    stat2Label: 'Class styles',
+    stat3Label: 'Countries',
+  },
+  // How it works
+  how: {
+    title: 'Three breaths to begin',
+    step1Title: 'Choose your style',
+    step1Body: 'Filter by yoga style, level, and teacher experience to find your match.',
+    step2Title: 'Book a trial',
+    step2Body: 'Try any teacher with a 50% off trial class. We take zero commission on trials.',
+    step3Title: 'Practice live',
+    step3Body: 'Connect via video for a private session, in your time zone, on your schedule.',
+  },
+  // Filters
+  filters: {
+    title: 'Find your teacher',
+    style: 'Yoga style',
+    level: 'Level',
+    experience: 'Teacher experience',
+    all: 'All',
+    clear: 'Clear filters',
+    results: 'teachers found',
+    levels: { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' },
+    experiences: {
+      lt2: 'Less than 2 years',
+      '2to5': '2–5 years',
+      '5to10': '5–10 years',
+      '10plus': '10+ years',
+    },
+  },
+  // Teacher card
+  card: {
+    trialFrom: 'Trial from',
+    perClass: 'per class',
+    yearsExp: 'years',
+    viewProfile: 'View profile',
+    bookTrial: 'Book trial',
+  },
+  // Profile
+  profile: {
+    intro: 'Introduction',
+    about: 'About',
+    schedule: 'Schedule',
+    reviews: 'Reviews',
+    pricing: 'Pricing',
+    trialClass: 'Trial class',
+    regularClass: 'Regular class',
+    fiftyOff: '50% off your first class',
+    bookNow: 'Book a class',
+    selectDate: 'Select a date',
+    selectTime: 'Select a time',
+    timezone: 'Times shown in your timezone',
+    proceedPayment: 'Proceed to payment',
+    teaches: 'Teaches',
+    speaks: 'Speaks',
+    certifications: 'Certifications',
+  },
+  // Checkout
+  checkout: {
+    title: 'Confirm your booking',
+    teacher: 'Teacher',
+    classType: 'Class type',
+    date: 'Date',
+    time: 'Time',
+    duration: 'Duration',
+    price: 'Price',
+    trial: 'Trial class',
+    yourPrice: 'Your price (in your currency)',
+    chargedAs: 'Charged as',
+    pay: 'Confirm and pay',
+    secure: 'Secure payment via Stripe',
+    minutes: 'minutes',
+  },
+  // Common
+  common: {
+    back: 'Back',
+    confirm: 'Confirm',
+    cancel: 'Cancel',
+  },
+  // Footer
+  footer: {
+    tagline: 'Your practice, anywhere you breathe.',
+    students: 'For students',
+    teachers: 'For teachers',
+    company: 'Company',
+    legal: 'Legal',
+    findTeacher: 'Find a teacher',
+    pricing: 'Pricing',
+    becomeTeacher: 'Become a teacher',
+    teacherFaq: 'Teacher FAQ',
+    about: 'About',
+    contact: 'Contact',
+    terms: 'Terms',
+    privacy: 'Privacy',
+    rights: 'All rights reserved.',
+  },
+};

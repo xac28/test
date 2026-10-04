@@ -2,6 +2,8 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 
+export const dynamic = "force-dynamic"
+
 // GET /api/teacher/videos — the signed-in teacher's own videos (web + mobile)
 export async function GET(req: Request) {
   try {

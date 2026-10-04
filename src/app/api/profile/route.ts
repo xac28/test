@@ -2,6 +2,8 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 
+export const dynamic = "force-dynamic"
+
 // ── FIX #12: Hassas alanlar (email, role, password, banned) profile update ile değiştirilemez ──
 // Güncellenmesine izin verilen alanların whitelist'i
 const ALLOWED_PROFILE_FIELDS = new Set([

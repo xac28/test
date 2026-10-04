@@ -129,6 +129,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     }
   },
-  // FIX #10: Production'da secure cookies aktif, development'ta kapalı
-  useSecureCookies: process.env.NODE_ENV === "production",
+  // Secure cookies are only valid over HTTPS: a Secure/__Secure- cookie set from a plain-HTTP origin
+  // is dropped by the browser and nobody could sign in (e.g. `next start` on an HTTP test server).
+  useSecureCookies: (process.env.NEXTAUTH_URL || "").startsWith("https://"),
 })

@@ -4,6 +4,8 @@ import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
 import { pickRecordingMimeType, retentionExpiry, isExpired } from "@/lib/recordings"
 
+export const dynamic = "force-dynamic"
+
 // POST /api/recordings — the TEACHER starts recording a lesson (booking or instant live room)
 export async function POST(req: Request) {
   try {

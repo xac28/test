@@ -6,6 +6,8 @@ import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { computeAvailable, computeClaimed, computeEarned, validatePayoutRequest } from "@/lib/payouts"
 
+export const dynamic = "force-dynamic"
+
 async function loadBalance(teacherId: string, commissionRate: number) {
   const [bookings, requests] = await Promise.all([
     db.booking.findMany({ where: { teacherId, status: "COMPLETED" }, select: { price: true, status: true } }),

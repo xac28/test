@@ -199,7 +199,7 @@ test.describe("payout requests (teacher → admin)", () => {
     a.page.once("dialog", (d) => d.accept())
     await approved.getByTestId("payout-mark-paid").click()
     await a.page.getByRole("button", { name: "Ödenen" }).click()
-    await expect(a.page.getByTestId("payout-row").filter({ hasText: "120.00" })).toContainText("Ödendi", { timeout: 15_000 })
+    await expect(a.page.getByTestId("payout-row").filter({ hasText: tname }).filter({ hasText: "120.00" })).toContainText("Ödendi", { timeout: 15_000 })
 
     // reject the 40 request with a reason
     await a.page.getByRole("button", { name: "Beklemede" }).click()

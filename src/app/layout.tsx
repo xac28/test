@@ -21,6 +21,7 @@ const newsreader = Newsreader({
   variable: '--font-display',
   display: 'swap',
   preload: true,
+  adjustFontFallback: false, // no override metrics are published for Newsreader; avoids a build warning
 });
 
 export const metadata: Metadata = {

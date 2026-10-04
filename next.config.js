@@ -19,6 +19,11 @@ const nextConfig = {
     serverComponentsExternalPackages: ['iyzipay'],
   },
 
+  async redirects() {
+    // legacy links used `/room/trial-<teacherId>`
+    return [{ source: '/room/trial-:id', destination: '/room/trial/:id', permanent: false }]
+  },
+
   async headers() {
     return [
       // ── CORS for Mobile API ──────────────────────────────────────────

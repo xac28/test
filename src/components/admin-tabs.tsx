@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { AdminApplicationsTable } from "./admin-applications"
 import { AdminPayouts } from "./admin-payouts"
 import { AdminArticles } from "./admin-articles"
+import { AdminTrials } from "./admin-trials"
 import { 
   Users, 
   FileText, 
@@ -34,6 +35,7 @@ export function AdminTabs({
   reports,
   logs,
   trialTeachers,
+  approvedTeachers,
   pendingPayoutCount
 }: any) {
   const router = useRouter()
@@ -99,22 +101,6 @@ export function AdminTabs({
       }
     } catch {
       alert("Ağ hatası")
-    }
-  }
-
-  const handleApproveTrial = async (teacherId: string) => {
-    if (!confirm("Bu öğretmenin deneme oturumunu onaylayıp profilini herkese açmak istiyor musunuz?")) return
-    
-    try {
-      const res = await fetch(`/api/admin/teachers/${teacherId}/approve-trial`, { method: "POST" })
-      if (res.ok) {
-        alert("Öğretmen onaylandı!")
-        router.refresh()
-      } else {
-        alert("Onay işlemi başarısız oldu.")
-      }
-    } catch {
-      alert("Ağ hatası.")
     }
   }
 
@@ -233,70 +219,14 @@ export function AdminTabs({
 
         {/* TRIAL TEACHERS TAB */}
         {activeTab === "trials" && (
-          <div className="space-y-6 animate-fade-up">
-            <div>
-              <h2 className="text-2xl font-display text-amber-900 flex items-center gap-3">
-                <PlaySquare className="text-amber-500" /> Bekleyen Deneme Oturumları
-              </h2>
-              <p className="text-sm text-amber-700/70 mt-1">Canlı değerlendirme bekleyen deneme modundaki öğretmenler.</p>
-            </div>
-
-            <div className="bg-amber-50/80 backdrop-blur-sm border border-amber-200/60 p-4 rounded-2xl flex gap-3 text-sm text-amber-800 shadow-sm">
-              <AlertTriangle className="flex-shrink-0 text-amber-600 mt-0.5" size={18} />
-              <p>Bu öğretmenler evrak olarak onaylandı ancak ders yayınlamadan önce 5 dakikalık canlı bir deneme oturumu tamamlamalıdır. Değerlendirmek için odalarına katılın.</p>
-            </div>
-
-            {trialTeachers?.length === 0 ? (
-              <div className="glass-card p-12 rounded-3xl border border-dashed border-sage-300 text-center">
-                <PlaySquare size={48} className="mx-auto text-sage-300 mb-4 opacity-50" />
-                <p className="text-sage-600 text-lg font-medium">Bekleyen deneme oturumu yok.</p>
-              </div>
-            ) : (
-              <div className="glass-card rounded-3xl shadow-sm border border-sage-200/60 overflow-hidden">
-                <table className="w-full text-left">
-                  <thead className="bg-sage-50/80 border-b border-sage-200/60 text-xs uppercase tracking-wider text-sage-500 font-semibold">
-                    <tr>
-                      <th className="px-6 py-4">Öğretmen</th>
-                      <th className="px-6 py-4">Uzmanlıklar</th>
-                      <th className="px-6 py-4">Kayıt Tarihi</th>
-                      <th className="px-6 py-4 text-right">İşlemler</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-sage-100/50">
-                    {trialTeachers.map((teacher: any) => (
-                      <tr key={teacher.id} className="hover:bg-sage-50/30 transition-colors">
-                        <td className="px-6 py-4 flex items-center gap-3">
-                          <img src={teacher.user.image || `https://i.pravatar.cc/150?u=${teacher.userId}`} alt="" className="w-10 h-10 rounded-full object-cover ring-2 ring-sage-100" />
-                          <div>
-                            <p className="text-sm font-semibold text-sage-900">{teacher.user.name}</p>
-                            <p className="text-xs text-sage-500">{teacher.user.email}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-sage-600 max-w-xs truncate">
-                          {teacher.specialties || "Genel Yoga"}
-                        </td>
-                        <td className="px-6 py-4 text-xs text-sage-500 font-medium">{new Date(teacher.user.createdAt).toLocaleDateString("tr-TR")}</td>
-                        <td className="px-6 py-4 flex items-center justify-end gap-2">
-                          <a 
-                            href={`/room/trial-${teacher.id}`} 
-                            target="_blank"
-                            className="px-4 py-2 bg-sage-100 hover:bg-sage-200 text-sage-800 text-sm font-medium rounded-xl transition-all btn-press shadow-sm flex items-center gap-2"
-                          >
-                            <Video size={14} /> Odaya Katıl
-                          </a>
-                          <button 
-                            onClick={() => handleApproveTrial(teacher.id)}
-                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-all btn-press shadow-md shadow-amber-500/20 flex items-center gap-2"
-                          >
-                            <BadgeCheck size={14} /> Onayla
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          <div className="animate-fade-up">
+            <AdminTrials
+              initialTrials={(trialTeachers || []).map((t: any) => ({
+                id: t.id, name: t.user.name, email: t.user.email, specialties: t.specialties,
+                trialNote: t.trialNote, createdAt: t.user.createdAt, inRoom: false,
+              }))}
+              approved={approvedTeachers || []}
+            />
           </div>
         )}
 

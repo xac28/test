@@ -127,9 +127,14 @@ export default async function TeachDashboardPage() {
               <p className="text-amber-800/80 text-sm max-w-2xl leading-relaxed">
                 Tebrikler, eğitmenlik başvurunuz onaylandı! Ancak platformda öğrencilere ders açmaya başlamadan önce AYA yetkilileriyle <strong>5 dakikalık bir deneme canlı yayını</strong> yapmanız gerekmektedir. Bu yayın sonrası profiliniz tamamen aktif olacaktır.
               </p>
+              {teacher.trialNote && (
+                <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 max-w-2xl" data-testid="trial-note">
+                  Son değerlendirme notu: {teacher.trialNote}
+                </p>
+              )}
             </div>
             <Link 
-              href={`/room/trial-${teacher.id}`}
+              href={`/room/trial/${teacher.id}`}
               className="whitespace-nowrap bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-full font-medium transition shadow-lg shadow-amber-500/20 flex items-center gap-2"
             >
               Deneme Yayınını Başlat

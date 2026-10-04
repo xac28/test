@@ -71,6 +71,10 @@ export async function POST(req: Request) {
     }
 
     // Server-side price calculation
+    if (teacher.isTrialMode) {
+      return NextResponse.json({ error: "Bu öğretmen henüz onaylanmadı.", code: "TEACHER_NOT_APPROVED" }, { status: 403 })
+    }
+
     let price = type === "trial" ? Math.round(teacher.hourlyRate * 0.5 * 100) / 100 : teacher.hourlyRate
     if (price < 0) price = 0
 

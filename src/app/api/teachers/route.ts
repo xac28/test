@@ -1,6 +1,9 @@
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 
+// Must be dynamic: a statically cached list would hide newly approved teachers until the next build
+export const dynamic = "force-dynamic"
+
 // GET /api/teachers — Get all approved teachers (DB + static demo)
 export async function GET() {
   try {

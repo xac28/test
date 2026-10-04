@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { termsGate } from "@/lib/terms"
 import { resolveUser } from "@/lib/auth-utils"
 import { createLiveKitRoom, endLiveRoom } from "@/lib/live-rooms"
+import { canTeachPublicly } from "@/lib/trial"
 
 async function teacherFor(user: { id: string; role: string }) {
   let teacher = await db.teacher.findUnique({ where: { userId: user.id } })
@@ -40,6 +41,13 @@ export async function POST(req: Request) {
     const teacher = await teacherFor(user)
     if (!teacher) {
       return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 })
+    }
+
+    if (!canTeachPublicly(teacher, user)) {
+      return NextResponse.json(
+        { error: "Herkese açık yayın için önce yetkililerle deneme yayınını tamamlamalısınız.", code: "TRIAL_REQUIRED" },
+        { status: 403 }
+      )
     }
 
     const body = await req.json().catch(() => ({}))

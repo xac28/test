@@ -96,6 +96,15 @@ export default async function AdminDashboardPage() {
     orderBy: { id: "desc" }
   })
 
+  const approvedTeachers = (
+    await db.teacher.findMany({
+      where: { isTrialMode: false },
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: { id: "desc" },
+      take: 100,
+    })
+  ).map((t) => ({ id: t.id, name: t.user.name, email: t.user.email, trialReviewedAt: t.trialReviewedAt }))
+
   return (
     <div className="space-y-8 animate-fade-in stagger-children relative">
       {/* Premium Header */}
@@ -145,6 +154,7 @@ export default async function AdminDashboardPage() {
           reports={JSON.parse(JSON.stringify(reports))}
           logs={JSON.parse(JSON.stringify(logs))}
           trialTeachers={JSON.parse(JSON.stringify(trialTeachers))}
+          approvedTeachers={JSON.parse(JSON.stringify(approvedTeachers))}
           pendingPayoutCount={pendingPayoutCount}
         />
       </div>

@@ -204,6 +204,8 @@ model Teacher {
   stripeConnectId String?  @unique
   commissionRate  Float    @default(0.15)
   isTrialMode     Boolean  @default(true) // Trial phase before taking real students
+  trialNote       String?  @db.Text       // admin's last note (rejection reason / approval remark)
+  trialReviewedAt DateTime?
   
   availability    Availability[]
   bookings        Booking[]

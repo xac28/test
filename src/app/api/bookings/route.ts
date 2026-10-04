@@ -39,6 +39,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Teacher not found for the given slug" }, { status: 404 })
     }
 
+    // Teachers who have not passed the admin trial broadcast cannot take students
+    if (teacher.isTrialMode) {
+      return NextResponse.json({ error: "Bu öğretmen henüz onaylanmadı.", code: "TEACHER_NOT_APPROVED" }, { status: 403 })
+    }
+
     // ── FIX #2: Price sunucu tarafında hesaplanıyor, client'tan gelen price kabul edilmiyor ──
     let serverPrice: number
     if (type === "trial") {

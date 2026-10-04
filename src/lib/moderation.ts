@@ -1,10 +1,12 @@
+import { scanPoaching } from "@/lib/poaching"
+import { recordViolation, violationMessage, PolicyOutcome } from "@/lib/policy"
 import { db } from "@/lib/db"
 import { CONTACT_LABEL_TR, ContactKind, KIND_LABEL_TR, ProfanityKind, findContact, findSpamShape, maskText, scanText } from "@/lib/profanity"
 import { notify, notifyAdminsInApp } from "@/lib/notifications"
 import { notifyAdmins } from "@/lib/report-server"
 import { sanitizeReportText } from "@/lib/reports"
 
-export type Surface = "POST" | "COMMENT" | "MESSAGE" | "LIVE_CHAT" | "REVIEW"
+export type Surface = "POST" | "COMMENT" | "MESSAGE" | "LIVE_CHAT" | "REVIEW" | "PROFILE" | "WORKSHOP" | "VIDEO"
 
 /** Violations in the last hour that earn a short mute, and in the last day that earn a long one + an official warning. */
 export const HOURLY_STRIKES_FOR_MUTE = 3
@@ -27,10 +29,12 @@ export const clearWordCache = () => { wordCache = null }
 export interface Blocked {
   ok: false
   status: number
-  code: "PROFANITY" | "CONTACT" | "SPAM" | "FLOOD" | "DUPLICATE" | "MUTED" | "EMPTY" | "TOO_LONG"
+  code: "PROFANITY" | "CONTACT" | "SPAM" | "FLOOD" | "DUPLICATE" | "MUTED" | "EMPTY" | "TOO_LONG" | "POLICY"
   error: string
   /** human hint about the consequence, if any */
   strikes?: { hour: number; muted?: boolean }
+  /** set for teachers who tried to take students off the platform */
+  policy?: PolicyOutcome
 }
 export type Allowed = { ok: true; text: string }
 
@@ -111,9 +115,25 @@ export async function moderateText(
     }
   }
 
+  // Teachers: anything that takes students off the platform climbs the warning → suspension → ban ladder
+  if (user.role === "TEACHER") {
+    const poach = scanPoaching(text, { teacher: true })
+    if (!poach.clean) {
+      const policy = await recordViolation({ userId: user.id, surface, poach, text })
+      return { ok: false, status: policy.action === "BANNED" || policy.action === "SUSPENDED" ? 403 : 422, code: "POLICY", error: violationMessage(policy), policy }
+    }
+  } else if (user.role !== "ADMIN") {
+    const social = scanPoaching(text)
+    if (!social.clean && !findContact(text)) {
+      await record(user.id, "CONTACT_INFO", surface, text, extra)
+      const st = await applyStrikes(user.id)
+      return { ok: false, status: 422, code: "CONTACT", error: "Güvenliğin için sosyal medya hesabı ya da kullanıcı adı paylaşılamaz; iletişim ve ödemeler AYA üzerinden yapılır.", strikes: st }
+    }
+  }
+
   if (user.role !== "ADMIN") {
     const contact: ContactKind | null = findContact(text)
-    if (contact && !(surface === "MESSAGE" && contact === "PHONE")) {
+    if (contact) {
       await record(user.id, contact === "LINK" ? "LINK" : "CONTACT_INFO", surface, text, extra)
       const st = await applyStrikes(user.id)
       return { ok: false, status: 422, code: "CONTACT", error: `Güvenliğin için ${CONTACT_LABEL_TR[contact]} paylaşılamaz; iletişim ve ödemeler AYA üzerinden yapılır.`, strikes: st }

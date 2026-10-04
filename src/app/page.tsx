@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { notSuspended } from "@/lib/policy"
 import HomeView, { HomeData } from "@/components/home-view"
 import { listActiveBroadcasts } from "@/lib/live-rooms"
 import { seatsLeft, workshopState } from "@/lib/workshops"
@@ -25,7 +26,7 @@ async function loadHome(): Promise<HomeData> {
         take: 3,
       }),
       db.teacher.findMany({
-        where: { isTrialMode: false, user: { banned: false } },
+        where: { isTrialMode: false, user: { banned: false, ...notSuspended() } },
         include: { user: { select: { name: true, image: true } } },
         orderBy: { id: "desc" },
         take: 4,

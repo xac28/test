@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { enforceTeacherText, suspensionGate } from "@/lib/policy"
 import { createLiveKitToken } from "@/lib/livekit"
 import { NextResponse } from "next/server"
 import { termsGate } from "@/lib/terms"
@@ -38,6 +39,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only teachers can start live sessions" }, { status: 403 })
     }
 
+    const susp = await suspensionGate(user.id)
+    if (susp) return susp
+
     const teacher = await teacherFor(user)
     if (!teacher) {
       return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 })
@@ -63,6 +67,8 @@ export async function POST(req: Request) {
     }
 
     const title = String(body.title || "").trim().slice(0, 120) || workshop?.title || "Canlı Yoga Dersi"
+    const policy = await enforceTeacherText(user, [title], "LIVE_TITLE")
+    if (policy) return NextResponse.json({ error: policy.error, code: policy.code, policy: { strike: policy.policy.strike, action: policy.policy.action } }, { status: policy.status })
     const roomName = `live-${teacher.id}-${Date.now()}`
     const livekitUrl = process.env.LIVEKIT_URL || "ws://localhost:7880"
 

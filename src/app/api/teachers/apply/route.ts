@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
+import { scanPoaching, poachKindsLabel } from "@/lib/poaching"
 
 export async function POST(req: Request) {
   try {
@@ -26,6 +27,12 @@ export async function POST(req: Request) {
       certificateStartDate,
       experience,
     } = body
+
+    // The text students will read must not take them off the platform (no social media, phone, "my own course", …)
+    const poach = scanPoaching(String(experience ?? ""), { teacher: true })
+    if (!poach.clean) {
+      return new NextResponse(`Tanıtım metni platform dışına yönlendirme (${poachKindsLabel(poach.kinds)}) içeriyor. AYA'da iletişim ve ödemeler yalnızca platform üzerinden yapılır; lütfen bu bilgileri çıkarıp tekrar gönderin.`, { status: 422 })
+    }
 
     // Validate required fields
     if (!firstName || !lastName || !phone || !country || !specialties?.length) {

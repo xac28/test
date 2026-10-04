@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { notSuspended } from "@/lib/policy"
 import { NextResponse } from "next/server"
 
 // Must be dynamic: a statically cached list would hide newly approved teachers until the next build
@@ -9,7 +10,8 @@ export async function GET() {
   try {
     const dbTeachers = await db.teacher.findMany({
       where: {
-        isTrialMode: false
+        isTrialMode: false,
+        user: notSuspended(),
       },
       include: {
         user: {

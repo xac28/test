@@ -1,5 +1,6 @@
 "use client"
 
+import { scanPoaching } from "@/lib/poaching"
 import { findContact, scanText } from "@/lib/profanity"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
@@ -207,7 +208,17 @@ export function useLiveRoom(opts: { hostIdentity?: string; isHost: boolean }) {
       const text = sanitizeChatText(raw)
       if (!text) return null
       // the same filter the community uses: insults and contact details never reach the room
-      if (!isHost && (!scanText(text).clean || findContact(text))) return "Mesajın topluluk kurallarına aykırı bir ifade ya da iletişim bilgisi içeriyor."
+      if (!isHost && (!scanText(text).clean || findContact(text) || !scanPoaching(text).clean)) return "Mesajın topluluk kurallarına aykırı bir ifade ya da iletişim bilgisi içeriyor."
+      // the host's own lines go through the "taking students off the platform" check on the server (and are recorded)
+      if (isHost && !scanPoaching(text, { teacher: true }).clean) {
+        try {
+          const res = await fetch("/api/policy/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, surface: "LIVE_CHAT" }) })
+          const d = await res.json().catch(() => ({}))
+          if (!res.ok) return d.error || "Bu mesaj platform dışına yönlendirme içerdiği için gönderilmedi."
+        } catch {
+          return "Bu mesaj platform dışına yönlendirme içerdiği için gönderilmedi."
+        }
+      }
       if (!settings.chatEnabled && !isHost) return "Sohbet yayıncı tarafından kapatıldı"
       const gate = canSendNow(lastSent.current, Date.now(), settings.slowModeSec, isHost)
       if (!gate.ok) return `Yavaş mod: ${gate.waitSec} sn bekleyin`

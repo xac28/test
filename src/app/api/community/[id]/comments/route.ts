@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { suspensionGate } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
@@ -17,12 +18,14 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return NextResponse.json({ error: "Yorum yapmak için giriş yapın." }, { status: 401 })
     const gate = termsGate(user)
     if (gate) return gate
+    const susp = await suspensionGate(user.id)
+    if (susp) return susp
     const post = await db.post.findUnique({ where: { id: params.id }, select: { id: true, status: true, authorId: true } })
     if (!post || post.status !== "VISIBLE") return NextResponse.json({ error: "Gönderi bulunamadı." }, { status: 404 })
 
     const body = await req.json().catch(() => ({}))
     const text = await moderateText(user, body.content, "COMMENT", { max: COMMENT_MAX, min: 1 })
-    if (!text.ok) return NextResponse.json({ error: text.error, code: text.code, hint: strikeHint(text) }, { status: text.status })
+    if (!text.ok) return NextResponse.json({ error: text.error, code: text.code, hint: strikeHint(text), policy: text.policy ? { strike: text.policy.strike, action: text.policy.action } : undefined }, { status: text.status })
 
     const [comment] = await db.$transaction([
       db.comment.create({ data: { postId: post.id, authorId: user.id, content: text.text }, include: { author: { select: { id: true, name: true, image: true, role: true } } } }),

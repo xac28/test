@@ -10,6 +10,7 @@ import { AdminTrials } from "./admin-trials"
 import { ADMIN_TABS, ADMIN_TAB_IDS, BADGE_TONE, refreshAdminBadges, useAdminBadges } from "./admin/tab-defs"
 import { OverviewTab } from "./admin/overview-tab"
 import { ReportsTab } from "./admin/reports-tab"
+import { PolicyTab } from "./admin/policy-tab"
 import { SupportTab } from "./admin/support-tab"
 import { AiTab } from "./admin/ai-tab"
 import { ReviewsTab } from "./admin/reviews-tab"
@@ -68,6 +69,7 @@ export function AdminTabs({ pendingApplications, recentActions, financials, tria
         {tab === "overview" && <OverviewTab goTo={goTo} />}
         {tab === "reports" && <ReportsTab onChanged={changed} onOpenUser={setUserId} />}
         {tab === "community" && <CommunityTab onChanged={changed} onOpenUser={setUserId} />}
+        {tab === "policy" && <PolicyTab onChanged={changed} onOpenUser={setUserId} />}
         {tab === "support" && <SupportTab onChanged={changed} onOpenUser={setUserId} />}
         {tab === "ai" && <AiTab onChanged={changed} />}
         {tab === "reviews" && <ReviewsTab onChanged={changed} onOpenUser={setUserId} />}

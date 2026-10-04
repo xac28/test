@@ -15,5 +15,7 @@ export async function GET(req: Request) {
     take: 50,
     select: { id: true, message: true, createdAt: true, acknowledgedAt: true },
   })
-  return NextResponse.json({ warnings })
+  const u = await db.user.findUnique({ where: { id: user.id }, select: { suspendedUntil: true, suspensionReason: true } })
+  const suspension = u?.suspendedUntil && u.suspendedUntil.getTime() > Date.now() ? { until: u.suspendedUntil, reason: u.suspensionReason } : null
+  return NextResponse.json({ warnings, suspension })
 }

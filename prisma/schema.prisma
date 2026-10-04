@@ -97,6 +97,9 @@ model User {
   notifications        Notification[]       @relation("Notified")
   moderationEvents     ModerationEvent[]    @relation("Moderated")
   supportTickets       SupportTicket[]      @relation("SupportUser")
+  // temporary exclusion from teaching (policy ladder: warning → 10 days → permanent ban)
+  suspendedUntil       DateTime?
+  suspensionReason     String?              @db.VarChar(300)
 }
 
 model Conversation {
@@ -814,4 +817,24 @@ model EventLog {
   @@index([type, createdAt])
   @@index([level, createdAt])
   @@index([userId])
+}
+
+
+// A blocked attempt to take students off the platform (social handles, phone, "my own course", …).
+// `counted` violations drive the ladder; repeated attempts inside 30 minutes are logged but not counted.
+model PolicyViolation {
+  id           String   @id @default(cuid())
+  userId       String
+  surface      String   @db.VarChar(24)
+  kinds        String   @db.VarChar(120)
+  excerpt      String   @db.VarChar(240)
+  counted      Boolean  @default(true)
+  forgiven     Boolean  @default(false)
+  forgivenById String?
+  strike       Int?
+  action       String   @default("NONE") @db.VarChar(12) // NONE | WARNED | SUSPENDED | BANNED
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { suspensionGate } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { validateVideoUrl } from "@/lib/teacher-video"
@@ -44,13 +45,15 @@ export async function POST(req: Request) {
 
     const gate = termsGate(user)
     if (gate) return gate
+    const susp = await suspensionGate(user.id)
+    if (susp) return susp
     const body = await req.json().catch(() => ({}))
-    const checkedTitle = await moderateText(user, body.title, "POST", { max: 120, min: 3 })
-    if (!checkedTitle.ok) return NextResponse.json({ error: checkedTitle.error, code: checkedTitle.code }, { status: checkedTitle.status })
+    const checkedTitle = await moderateText(user, body.title, "VIDEO", { max: 120, min: 3 })
+    if (!checkedTitle.ok) return NextResponse.json({ error: checkedTitle.error, code: checkedTitle.code, policy: checkedTitle.policy ? { strike: checkedTitle.policy.strike, action: checkedTitle.policy.action } : undefined }, { status: checkedTitle.status })
     let description: string | null = null
     if (typeof body.description === "string" && body.description.trim()) {
-      const d = await moderateText(user, body.description, "POST", { max: 500, min: 1 })
-      if (!d.ok) return NextResponse.json({ error: d.error, code: d.code }, { status: d.status })
+      const d = await moderateText(user, body.description, "VIDEO", { max: 500, min: 1 })
+      if (!d.ok) return NextResponse.json({ error: d.error, code: d.code, policy: d.policy ? { strike: d.policy.strike, action: d.policy.action } : undefined }, { status: d.status })
       description = d.text
     }
     const link = await validateVideoUrl(body.videoUrl, user.id)

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { suspensionGate } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_API, RATE_LIMIT_WRITE } from "@/lib/rate-limit"
@@ -77,11 +78,13 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const termsBlock = termsGate(user)
     if (termsBlock) return termsBlock
+    const susp = await suspensionGate(user.id)
+    if (susp) return susp
 
     const { targetUserId, teacherId, content } = await req.json()
     if ((!targetUserId && !teacherId) || !content) return NextResponse.json({ error: "Missing fields" }, { status: 400 })
     const checked = await moderateText(user, content, "MESSAGE", { max: 2000 })
-    if (!checked.ok) return NextResponse.json({ error: checked.error, code: checked.code }, { status: checked.status })
+    if (!checked.ok) return NextResponse.json({ error: checked.error, code: checked.code, policy: checked.policy ? { strike: checked.policy.strike, action: checked.policy.action } : undefined }, { status: checked.status })
 
     let finalTargetUserId = targetUserId;
     if (teacherId) {

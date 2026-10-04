@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { enforceTeacherText, suspensionGate, notSuspended } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
@@ -21,6 +22,7 @@ export async function GET(req: Request) {
     const rows = await db.workshop.findMany({
       where: {
         status: "PUBLISHED",
+        teacher: { user: notSuspended() },
         ...(mode === "LIVE" || mode === "RECORDED" ? { mode } : {}),
         ...(category ? { category } : {}),
       },
@@ -78,9 +80,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Deneme aşamasındaki eğitmenler atölye açamaz." }, { status: 403 })
     }
 
+    const susp = await suspensionGate(user.id)
+    if (susp) return susp
     const body = await req.json().catch(() => ({}))
     const v = validateWorkshopInput(body)
     if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+    const policy = await enforceTeacherText(user, [v.data.title, v.data.subtitle, v.data.description], "WORKSHOP")
+    if (policy) return NextResponse.json({ error: policy.error, code: policy.code, policy: { strike: policy.policy.strike, action: policy.policy.action } }, { status: policy.status })
 
     const workshop = await db.workshop.create({
       data: {

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { suspensionOf } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { termsGate } from "@/lib/terms"
 import { applyRateLimit } from "@/lib/api-protection"
@@ -43,6 +44,10 @@ export async function POST(req: Request) {
     // Teachers who have not passed the admin trial broadcast cannot take students
     if (teacher.isTrialMode) {
       return NextResponse.json({ error: "Bu öğretmen henüz onaylanmadı.", code: "TEACHER_NOT_APPROVED" }, { status: 403 })
+    }
+
+    if (await suspensionOf(teacher.userId)) {
+      return NextResponse.json({ error: "Bu eğitmen şu an ders alamıyor.", code: "TEACHER_UNAVAILABLE" }, { status: 409 })
     }
 
     // ── FIX #2: Price sunucu tarafında hesaplanıyor, client'tan gelen price kabul edilmiyor ──

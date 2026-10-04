@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import {
-  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images, LifeBuoy, Bot, Star,
+  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images, LifeBuoy, Bot, Star, ShieldBan,
 } from "lucide-react"
 
-export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number; pendingPosts: number; openSupport: number; aiUnknown: number; reviewReports: number }
+export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number; pendingPosts: number; openSupport: number; aiUnknown: number; reviewReports: number; policyToday: number }
 
 export interface TabDef {
   id: string
@@ -22,6 +22,7 @@ export const ADMIN_TABS: TabDef[] = [
   { id: "support", label: "Canlı Destek", icon: LifeBuoy, group: "Moderasyon", badge: (b) => (b.openSupport ? { value: b.openSupport, tone: "red" } : null) },
   { id: "ai", label: "Yapay Zeka", icon: Bot, group: "Moderasyon", badge: (b) => (b.aiUnknown ? { value: b.aiUnknown, tone: "amber" } : null) },
   { id: "reviews", label: "Değerlendirmeler", icon: Star, group: "Moderasyon", badge: (b) => (b.reviewReports ? { value: b.reviewReports, tone: "amber" } : null) },
+  { id: "policy", label: "Politika İhlalleri", icon: ShieldBan, group: "Moderasyon", badge: (b) => (b.policyToday ? { value: b.policyToday, tone: "red" } : null) },
   { id: "users", label: "Kullanıcılar", icon: Users, group: "Moderasyon" },
   { id: "security", label: "Güvenlik", icon: ShieldAlert, group: "Moderasyon" },
   { id: "audit", label: "Günlükler", icon: History, group: "Moderasyon" },

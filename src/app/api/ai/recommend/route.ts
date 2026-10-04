@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { notSuspended } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_AI } from "@/lib/rate-limit"
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       resolveUser(req).catch(() => null),
       // only approved teachers are ever recommended
       db.teacher.findMany({
-        where: { isTrialMode: false, user: { banned: false } },
+        where: { isTrialMode: false, user: { banned: false, ...notSuspended() } },
         include: { user: { select: { name: true, country: true } }, bookings: { where: { status: "COMPLETED" }, include: { review: true } } },
         take: 1000,
       }),

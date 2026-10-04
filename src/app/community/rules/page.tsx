@@ -2,6 +2,7 @@ import Link from "next/link"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
 import { DAILY_STRIKES_FOR_LONG_MUTE, HOURLY_STRIKES_FOR_MUTE, LONG_MUTE_MIN, SHORT_MUTE_MIN } from "@/lib/moderation"
+import { POLICY_LADDER_TR } from "@/lib/policy-ladder"
 import { COMMENT_MAX, MAX_POSTS_PER_HOUR, POST_MAX } from "@/lib/community"
 
 export const metadata = { title: "Topluluk kuralları" }
@@ -43,6 +44,17 @@ export default function RulesPage() {
             <li>Fotoğrafları bir yazılım güvenilir biçimde değerlendiremez; bu yüzden yeni üyelerin ilk fotoğrafları yönetici onayından geçer. İki onaylı paylaşımdan sonra fotoğrafların anında yayınlanır.</li>
             <li>Kaldırılan içeriklerin sahibine nedeniyle birlikte bildirim gider. Yanlış bir karar olduğunu düşünüyorsan <Link href="/dashboard/reports" className="underline">bildirimlerim</Link> sayfasından bize yaz.</li>
           </ul>
+        </section>
+
+        <section className="mt-14 border-t border-rule pt-10" aria-labelledby="teachers-rules" data-testid="teacher-rules">
+          <h2 id="teachers-rules" className="font-display text-3xl mb-3">Eğitmenler için: platform dışına yönlendirme yasak</h2>
+          <p className="text-sage-700 leading-relaxed mb-5">AYA'da öğrencilerle iletişim ve ödeme yalnızca platform üzerinden yapılır. Profilde, atölye ve video açıklamalarında, yayın başlığında, mesajlarda ya da sohbette <strong>sosyal medya hesabı, WhatsApp/telefon, e-posta, harici bağlantı, "kendi kursuma gel", "dışarıdan ödeme"</strong> gibi yönlendirmeler otomatik engellenir, yönetim paneline kaydedilir ve kademeli yaptırıma bağlanır:</p>
+          <ol className="space-y-3">
+            {POLICY_LADDER_TR.map((l) => (
+              <li key={l.strike} className="flex gap-4 items-start"><span className="font-display text-4xl text-clay-500 w-8 leading-none">{l.strike}</span><div><p className="font-semibold">{l.action}</p><p className="text-sm text-sage-600">{l.detail}</p></div></li>
+            ))}
+          </ol>
+          <p className="text-sm text-sage-500 mt-4">Aynı mesajı kısa süre içinde yeniden denemek yeni ihlal sayılmaz. Yanlış alarm olduğunu düşünüyorsan Canlı Destek'e yaz; yönetim ihlali inceleyip affedebilir.</p>
         </section>
 
         <div className="mt-12"><Link href="/community" className="inline-flex items-center px-6 py-3 bg-ink text-cream rounded-md text-sm font-medium hover:bg-sage-800 transition-colors">Topluluğa dön</Link></div>

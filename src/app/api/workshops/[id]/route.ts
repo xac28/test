@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { enforceTeacherText, suspensionGate } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { findWorkshop, presentWorkshop } from "@/lib/workshop-server"
@@ -35,6 +36,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    const susp = w.teacher.userId === user.id ? await suspensionGate(user.id) : null
+    if (susp) return susp
     const body = await req.json().catch(() => ({}))
     const data: Record<string, unknown> = {}
 
@@ -51,6 +54,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       const active = w.enrollments.filter((e) => e.status !== "CANCELLED").length
       if (v.data.capacity < active) {
         return NextResponse.json({ error: `Kontenjan, kayıtlı ${active} kişinin altına düşürülemez.` }, { status: 400 })
+      }
+      if (w.teacher.userId === user.id) {
+        const policy = await enforceTeacherText(user, [v.data.title, v.data.subtitle, v.data.description], "WORKSHOP")
+        if (policy) return NextResponse.json({ error: policy.error, code: policy.code, policy: { strike: policy.policy.strike, action: policy.policy.action } }, { status: policy.status })
       }
       Object.assign(data, v.data)
     }

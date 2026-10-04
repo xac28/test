@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { suspensionGate } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
@@ -43,6 +44,8 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: "Paylaşım yapmak için giriş yapın." }, { status: 401 })
     const gate = termsGate(user)
     if (gate) return gate
+    const susp = await suspensionGate(user.id)
+    if (susp) return susp
 
     const body = await req.json().catch(() => ({}))
     if (!(await isOwnUpload(body.image, user.id))) return NextResponse.json({ error: "Önce bir fotoğraf yükleyin.", code: "NO_PHOTO" }, { status: 400 })
@@ -51,7 +54,7 @@ export async function POST(req: Request) {
     if (lastHour >= MAX_POSTS_PER_HOUR) return NextResponse.json({ error: "Saatte en fazla 5 fotoğraf paylaşabilirsin.", code: "RATE_LIMIT" }, { status: 429 })
 
     const text = await moderateText(user, body.content, "POST", { max: POST_MAX, min: 3 })
-    if (!text.ok) return NextResponse.json({ error: text.error, code: text.code, hint: strikeHint(text) }, { status: text.status })
+    if (!text.ok) return NextResponse.json({ error: text.error, code: text.code, hint: strikeHint(text), policy: text.policy ? { strike: text.policy.strike, action: text.policy.action } : undefined }, { status: text.status })
     let title: string | null = null
     if (typeof body.title === "string" && body.title.trim()) {
       const t = await moderateText(user, body.title, "POST", { max: 120, min: 2 })

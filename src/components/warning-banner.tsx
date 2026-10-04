@@ -13,12 +13,13 @@ interface Warning {
 export function WarningBanner() {
   const [warnings, setWarnings] = useState<Warning[]>([])
   const [busy, setBusy] = useState<string | null>(null)
+  const [suspension, setSuspension] = useState<{ until: string; reason: string | null } | null>(null)
 
   useEffect(() => {
     let alive = true
     fetch("/api/warnings")
       .then((r) => (r.ok ? r.json() : { warnings: [] }))
-      .then((d) => alive && setWarnings(d.warnings || []))
+      .then((d) => { if (alive) { setWarnings(d.warnings || []); setSuspension(d.suspension || null) } })
       .catch(() => {})
     return () => {
       alive = false
@@ -35,9 +36,18 @@ export function WarningBanner() {
     }
   }
 
-  if (warnings.length === 0) return null
+  if (warnings.length === 0 && !suspension) return null
   return (
     <div className="space-y-3 mb-6" data-testid="warning-banner">
+      {suspension && (
+        <div role="alert" data-testid="suspension-banner" className="flex gap-3 items-start rounded-xl border border-red-300 bg-red-50 text-red-900 p-4">
+          <TriangleAlert className="shrink-0 mt-0.5" size={20} />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Hesabın {new Date(suspension.until).toLocaleDateString("tr-TR")} tarihine kadar uzaklaştırıldı</p>
+            <p className="text-sm mt-1">Bu sürede profilin listelerde görünmez; ders, yayın, atölye açamaz, mesaj ve paylaşım yapamazsın.{suspension.reason ? ` Neden: ${suspension.reason}.` : ""} Bir sonraki ihlalde hesabın kalıcı olarak kapatılır. Yanlış olduğunu düşünüyorsan Canlı Destek'e yaz.</p>
+          </div>
+        </div>
+      )}
       {warnings.map((w) => (
         <div key={w.id} role="alert" className="flex gap-3 items-start rounded-xl border border-amber-300 bg-amber-50 text-amber-900 p-4">
           <TriangleAlert className="shrink-0 mt-0.5" size={20} />

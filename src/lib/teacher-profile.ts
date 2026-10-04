@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { notSuspended } from "@/lib/policy"
 import type { Teacher } from "@/lib/teachers"
 import type { Level, YogaStyle } from "@/lib/constants"
 
@@ -46,7 +47,7 @@ export async function upcomingSlots(teacherId: string): Promise<string[]> {
 /** The public profile of an approved, database-backed teacher in the same shape as the static demo teachers. */
 export async function getDbTeacherProfile(idOrSlug: string): Promise<Teacher | null> {
   const t = await db.teacher.findFirst({
-    where: { isTrialMode: false, OR: [{ id: idOrSlug }, { userId: idOrSlug }] },
+    where: { isTrialMode: false, user: notSuspended(), OR: [{ id: idOrSlug }, { userId: idOrSlug }] },
     include: {
       user: { select: { name: true, image: true, country: true, firstName: true, lastName: true } },
       bookings: { where: { status: "COMPLETED" }, include: { review: true } },

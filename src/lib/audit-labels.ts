@@ -5,6 +5,7 @@ const EXACT: Record<string, string> = {
   REMOVE_POST: "Fotoğraf kaldırıldı", REMOVE_COMMENT: "Yorum kaldırıldı", REMOVE_CONTENT: "İçerik kaldırıldı (rapor)", UNMUTE_USER: "Susturma kaldırıldı",
   BLOCKED_WORD_ADD: "Yasaklı kelime eklendi", BLOCKED_WORD_REMOVE: "Yasaklı kelime silindi",
   AI_TEACH: "Rehbere cevap öğretildi", AI_TAUGHT_EDIT: "Öğretilen cevap düzenlendi", AI_TAUGHT_DELETE: "Öğretilen cevap silindi", AI_DISMISS: "Rehber sorusu yoksayıldı",
+  POLICY_FORGIVE: "Politika ihlali affedildi", POLICY_LIFT: "Uzaklaştırma kaldırıldı", POLICY_SUSPEND: "Eğitmen uzaklaştırıldı", POLICY_RECORD: "Politika ihlali kaydedildi",
   REPORT_BULK: "Toplu rapor işlemi", REPORT_ESCALATED: "Rapor acile yükseldi", REPORT_UPDATE: "Rapor güncellendi",
   SUPPORT_REPLY: "Destek yanıtı", SUPPORT_NOTE: "Destek iç notu", SUPPORT_CLOSE: "Destek kapatıldı", SUPPORT_REOPEN: "Destek yeniden açıldı", SUPPORT_ASSIGN: "Destek üstlenildi", SUPPORT_UNASSIGN: "Destek devredildi", SUPPORT_PRIORITY: "Destek önceliği",
   POST_APPROVE: "Fotoğraf onaylandı", POST_REJECT: "Fotoğraf reddedildi", POST_REMOVE: "Fotoğraf kaldırıldı", POST_RESTORE: "Fotoğraf geri yüklendi",

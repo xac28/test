@@ -103,7 +103,7 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <p className="text-xs font-mono text-sage-400 hidden md:block bg-sage-50 px-3 py-1.5 rounded-lg border border-sage-100">
+              <p className="text-xs font-mono text-sage-500 hidden md:block bg-sage-50 px-3 py-1.5 rounded-lg border border-sage-100">
                 {new Date(app.submittedAt).toLocaleDateString("tr-TR")}
               </p>
               
@@ -143,31 +143,31 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
                 
                 <div className="space-y-6 relative z-10">
                   <div>
-                    <h4 className="text-[10px] font-bold text-sage-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><UserIcon size={12}/> Kişisel Bilgiler</h4>
+                    <h4 className="text-[10px] font-bold text-sage-500 uppercase tracking-widest mb-3 flex items-center gap-1.5"><UserIcon size={12}/> Kişisel Bilgiler</h4>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm">
                       <div>
-                        <p className="text-sage-400 text-[11px] uppercase tracking-wide font-medium">Ad Soyad</p>
+                        <p className="text-sage-500 text-[11px] uppercase tracking-wide font-medium">Ad Soyad</p>
                         <p className="text-sage-800 font-semibold mt-0.5">{app.firstName} {app.lastName}</p>
                       </div>
                       <div>
-                        <p className="text-sage-400 text-[11px] uppercase tracking-wide font-medium">Telefon</p>
+                        <p className="text-sage-500 text-[11px] uppercase tracking-wide font-medium">Telefon</p>
                         <p className="text-sage-800 font-semibold mt-0.5 flex items-center gap-1">
                           {app.phone || "—"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sage-400 text-[11px] uppercase tracking-wide font-medium">Ülke</p>
+                        <p className="text-sage-500 text-[11px] uppercase tracking-wide font-medium">Ülke</p>
                         <p className="text-sage-800 font-semibold mt-0.5">{app.country || "—"}</p>
                       </div>
                       <div>
-                        <p className="text-sage-400 text-[11px] uppercase tracking-wide font-medium">Pasaport / Kimlik</p>
+                        <p className="text-sage-500 text-[11px] uppercase tracking-wide font-medium">Pasaport / Kimlik</p>
                         <p className="text-sage-800 font-mono mt-0.5">{app.passportId || "—"}</p>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="text-[10px] font-bold text-sage-400 uppercase tracking-widest mb-3">Uzmanlıklar</h4>
+                    <h4 className="text-[10px] font-bold text-sage-500 uppercase tracking-widest mb-3">Uzmanlıklar</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {parseSpecialties(app.specialties).map(s => (
                         <span key={s} className="bg-sage-100/50 border border-sage-200 text-sage-700 px-3 py-1 rounded-lg text-xs font-semibold tracking-wide">
@@ -175,7 +175,7 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
                         </span>
                       ))}
                       {parseSpecialties(app.specialties).length === 0 && (
-                        <span className="text-sage-400 text-xs italic">Uzmanlık belirtilmemiş</span>
+                        <span className="text-sage-500 text-xs italic">Uzmanlık belirtilmemiş</span>
                       )}
                     </div>
                   </div>
@@ -183,7 +183,7 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
 
                 <div className="space-y-6 relative z-10">
                   <div>
-                    <h4 className="text-[10px] font-bold text-sage-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><FileBadge size={12}/> Sertifika</h4>
+                    <h4 className="text-[10px] font-bold text-sage-500 uppercase tracking-widest mb-3 flex items-center gap-1.5"><FileBadge size={12}/> Sertifika</h4>
                     <div className="bg-sage-50 p-4 rounded-xl border border-sage-100/50 flex flex-col gap-3">
                       {app.certificateUrl ? (
                         <a
@@ -202,7 +202,7 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
                       
                       {app.certificateStartDate && (
                         <div className="flex items-center gap-2 text-xs text-sage-600 bg-white p-2.5 rounded-lg border border-sage-100">
-                          <Calendar size={14} className="text-sage-400" />
+                          <Calendar size={14} className="text-sage-500" />
                           <span>Sertifika tarihi: <strong className="text-sage-800">{new Date(app.certificateStartDate).toLocaleDateString("tr-TR")}</strong></span>
                         </div>
                       )}
@@ -214,7 +214,7 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
               {/* Experience */}
               {app.experience && (
                 <div className="bg-white rounded-2xl p-6 border border-sage-100 shadow-inner">
-                  <h4 className="text-[10px] font-bold text-sage-400 uppercase tracking-widest mb-3">Deneyim ve Geçmiş</h4>
+                  <h4 className="text-[10px] font-bold text-sage-500 uppercase tracking-widest mb-3">Deneyim ve Geçmiş</h4>
                   <p className="text-sage-700 text-sm whitespace-pre-wrap leading-relaxed bg-sage-50 p-4 rounded-xl border border-sage-100/50">{app.experience}</p>
                 </div>
               )}

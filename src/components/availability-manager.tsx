@@ -64,7 +64,7 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
       {slots.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-sage-500 text-lg mb-4">No availability set yet</p>
-          <p className="text-sage-400 text-sm mb-6">Add your weekly schedule so students can book sessions with you</p>
+          <p className="text-sage-500 text-sm mb-6">Add your weekly schedule so students can book sessions with you</p>
         </div>
       ) : (
         <div className="space-y-4">

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Camera, Upload, X } from "lucide-react"
+import { Camera, Upload } from "lucide-react"
+import { useL } from "@/components/editorial"
 
 interface AvatarUploaderProps {
   currentImageUrl?: string | null
@@ -9,7 +10,9 @@ interface AvatarUploaderProps {
 }
 
 export function AvatarUploader({ currentImageUrl, onUploadSuccess }: AvatarUploaderProps) {
+  const L = useL()
   const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -19,6 +22,7 @@ export function AvatarUploader({ currentImageUrl, onUploadSuccess }: AvatarUploa
     if (!file) return
 
     setUploading(true)
+    setError(null)
 
     try {
       // 1. Create a local preview and resize via Canvas
@@ -40,12 +44,12 @@ export function AvatarUploader({ currentImageUrl, onUploadSuccess }: AvatarUploa
         const data = await res.json()
         onUploadSuccess(data.url)
       } else {
-        const data = await res.json()
-        alert(data.error || "Failed to upload avatar")
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || L("Fotoğraf yüklenemedi.", "Could not upload the photo."))
       }
     } catch (err) {
       console.error(err)
-      alert("Error processing image")
+      setError(L("Görsel işlenemedi, başka bir dosya deneyin.", "Could not process the image, try another file."))
     } finally {
       setUploading(false)
     }
@@ -93,9 +97,9 @@ export function AvatarUploader({ currentImageUrl, onUploadSuccess }: AvatarUploa
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="relative group">
-        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-sage-200 bg-sage-50 shadow-sm relative">
+        <div className="w-32 h-32 rounded-full overflow-hidden border border-rule bg-sage-100 relative">
           {previewUrl ? (
-            <img src={previewUrl} alt="Avatar preview" className="w-full h-full object-cover" />
+            <img src={previewUrl} alt={L("Profil fotoğrafı önizlemesi", "Profile photo preview")} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-sage-300">
               <Camera size={40} />
@@ -116,10 +120,10 @@ export function AvatarUploader({ currentImageUrl, onUploadSuccess }: AvatarUploa
           type="button"
           disabled={uploading}
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2 bg-sage-100 text-sage-700 rounded-full text-sm font-medium hover:bg-sage-200 transition disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 border border-rule bg-paper text-ink rounded-md text-sm font-medium hover:border-ink transition disabled:opacity-50"
         >
           <Upload size={16} />
-          Upload Photo
+          {L("Fotoğraf yükle", "Upload photo")}
         </button>
 
         {/* Capture from camera (works on mobile browsers) */}
@@ -127,10 +131,10 @@ export function AvatarUploader({ currentImageUrl, onUploadSuccess }: AvatarUploa
           type="button"
           disabled={uploading}
           onClick={() => cameraInputRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2 bg-sage-100 text-sage-700 rounded-full text-sm font-medium hover:bg-sage-200 transition disabled:opacity-50 md:hidden"
+          className="flex items-center gap-2 px-4 py-2 border border-rule bg-paper text-ink rounded-md text-sm font-medium hover:border-ink transition disabled:opacity-50 md:hidden"
         >
           <Camera size={16} />
-          Take Photo
+          {L("Fotoğraf çek", "Take photo")}
         </button>
 
         <input
@@ -149,7 +153,8 @@ export function AvatarUploader({ currentImageUrl, onUploadSuccess }: AvatarUploa
           className="hidden"
         />
       </div>
-      <p className="text-xs text-sage-400">JPEG, PNG or WebP. Max 10MB.</p>
+      <p className="text-xs text-sage-500">{L("JPEG, PNG veya WebP · en fazla 10 MB", "JPEG, PNG or WebP · max 10 MB")}</p>
+      {error && <p role="alert" className="text-xs text-clay-600">{error}</p>}
     </div>
   )
 }

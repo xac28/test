@@ -49,7 +49,7 @@ export function TeacherRecordedVideos({ teacherId }: { teacherId: string }) {
               {video.description && (
                 <p className="text-sm text-sage-500 mt-1 line-clamp-2">{video.description}</p>
               )}
-              <div className="text-xs text-sage-400 mt-3 flex items-center gap-1">
+              <div className="text-xs text-sage-500 mt-3 flex items-center gap-1">
                 <ExternalLink size={12} /> Watch on External Player
               </div>
             </div>

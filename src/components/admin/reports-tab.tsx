@@ -125,6 +125,25 @@ export function ReportsTab({ onChanged, onOpenUser }: { onChanged: () => void; o
         <Empty icon={<Flag size={32} />}>{status === "open" ? "Açık rapor yok. Harika! 🎉" : "Bu filtreyle eşleşen rapor yok."}</Empty>
       ) : data ? (
         <div className={loading ? "opacity-60 transition-opacity" : ""}>
+          {/* phones: one card per report instead of a seven-column table */}
+          <ul className="md:hidden space-y-2.5" data-testid="report-cards">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <button onClick={() => setOpenId(r.id)} className="w-full text-left bg-paper border border-rule rounded-xl p-4 active:bg-sage-50">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Pill tone={PRIORITY_TONE[r.priority]}>{PRIORITY_LABEL_TR[r.priority]}</Pill>
+                    <Pill tone={STATUS_TONE[r.status]}>{STATUS_LABEL_TR[r.status]}</Pill>
+                    {r.reportedOpenCount > 1 && <Pill tone="amber">{r.reportedOpenCount} açık</Pill>}
+                    <span className="ml-auto text-xs text-sage-500">{ago(r.createdAt)}</span>
+                  </div>
+                  <p className="font-medium text-ink mt-2">{CATEGORY_LABEL_TR(r.category)} <span className="text-sage-500 font-normal">· {TARGET_LABEL_TR[r.targetType] ?? r.targetType}</span></p>
+                  <p className="text-sm text-sage-700 line-clamp-2 mt-1">{r.reason}</p>
+                  <p className="text-xs text-sage-500 mt-2 truncate">{r.reporter?.name ?? "—"} → <strong className="text-ink">{r.reported?.name ?? "—"}</strong></p>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
           <Table head={["", "Öncelik", "Konu", "Raporlayan → Raporlanan", "Açıklama", "Zaman", "Durum"]}>
             {rows.map((r) => (
               <tr key={r.id} data-testid="report-row" onClick={() => setOpenId(r.id)} className="hover:bg-sage-50 cursor-pointer align-top">
@@ -143,7 +162,7 @@ export function ReportsTab({ onChanged, onOpenUser }: { onChanged: () => void; o
                   <p className="text-xs text-sage-500">{TARGET_LABEL_TR[r.targetType] ?? r.targetType}</p>
                 </td>
                 <td className="px-4 py-3">
-                  <p className="text-ink">{r.reporter?.name ?? "—"} <span className="text-sage-400">→</span> <strong>{r.reported?.name ?? "—"}</strong></p>
+                  <p className="text-ink">{r.reporter?.name ?? "—"} <span className="text-sage-500">→</span> <strong>{r.reported?.name ?? "—"}</strong></p>
                   <p className="text-xs text-sage-500 flex items-center gap-1.5 flex-wrap">
                     {r.reported?.email}
                     {r.reported?.banned && <Pill tone="red">Yasaklı</Pill>}
@@ -156,7 +175,8 @@ export function ReportsTab({ onChanged, onOpenUser }: { onChanged: () => void; o
               </tr>
             ))}
           </Table>
-          <div className="flex items-center gap-2 mt-2 text-xs text-sage-500">
+          </div>
+          <div className="hidden md:flex items-center gap-2 mt-2 text-xs text-sage-500">
             <input type="checkbox" id="sel-all" checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(rows.filter((r) => r.status === "PENDING" || r.status === "REVIEWED").map((r) => r.id)))} />
             <label htmlFor="sel-all">Bu sayfadaki açık raporların tümünü seç</label>
           </div>
@@ -295,7 +315,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
               {evidence.message && (
                 <blockquote className="border-l-4 border-accent bg-sage-50 px-3 py-2">
                   <span className="font-semibold">{evidence.message.senderName}: </span>{evidence.message.text}
-                  <p className="text-[11px] text-sage-400 mt-1">{fmtDateTime(evidence.message.sentAt)}{evidence.reporterSupplied && " · bildiren kişinin sunduğu içerik, sunucu doğrulaması yok"}</p>
+                  <p className="text-[11px] text-sage-500 mt-1">{fmtDateTime(evidence.message.sentAt)}{evidence.reporterSupplied && " · bildiren kişinin sunduğu içerik, sunucu doğrulaması yok"}</p>
                 </blockquote>
               )}
               {target && (
@@ -344,7 +364,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
                   <button onClick={() => onOpenReport(s.id)} className="w-full text-left flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-rule bg-paper hover:bg-sage-50">
                     <Pill tone={STATUS_TONE[s.status]}>{STATUS_LABEL_TR[s.status]}</Pill>
                     <span className="flex-1 truncate">{CATEGORY_LABEL_TR(s.category)} · {s.reporter.name}</span>
-                    <span className="text-xs text-sage-400">{ago(s.createdAt)}</span>
+                    <span className="text-xs text-sage-500">{ago(s.createdAt)}</span>
                   </button>
                 </li>
               ))}
@@ -432,7 +452,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
                 <li key={t.id} className="text-sm">
                   <p><span className="font-medium">{t.actor}</span> <span className="text-sage-500">· {t.action.replace(/_/g, " ").toLowerCase()}</span></p>
                   {t.reason && <p className="text-xs text-sage-500">{t.reason}</p>}
-                  <p className="text-[11px] text-sage-400">{fmtDateTime(t.createdAt)}</p>
+                  <p className="text-[11px] text-sage-500">{fmtDateTime(t.createdAt)}</p>
                 </li>
               ))}
             </ol>

@@ -1,7 +1,18 @@
 "use client"
 
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { ChevronLeft, ChevronRight, Loader2, X } from "lucide-react"
+
+/**
+ * Overlays render into <body>: the tab content is animated (a transformed ancestor becomes the containing
+ * block of position:fixed children, which would clip dialogs to the page area and put them under the navbar).
+ */
+export function Portal({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  return mounted ? createPortal(children, document.body) : null
+}
 
 export class ApiError extends Error {
   status: number
@@ -82,7 +93,7 @@ export function ago(d: string | Date) {
 
 export function Spinner({ label }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-12 text-sage-400 text-sm">
+    <div className="flex items-center justify-center gap-2 py-12 text-sage-500 text-sm">
       <Loader2 className="animate-spin" size={18} /> {label ?? "Yükleniyor…"}
     </div>
   )
@@ -142,13 +153,13 @@ export function SectionTitle({ title, hint, actions }: { title: string; hint?: s
 
 export function Pager({ page, pageSize, total, onPage }: { page: number; pageSize: number; total: number; onPage: (p: number) => void }) {
   const pages = Math.max(1, Math.ceil(total / pageSize))
-  if (total <= pageSize) return <p className="text-xs text-sage-400 mt-3">{total} kayıt</p>
+  if (total <= pageSize) return <p className="text-xs text-sage-500 mt-3">{total} kayıt</p>
   return (
     <div className="flex items-center justify-between mt-4 text-sm text-sage-600">
       <span>{total} kayıt · Sayfa {page}/{pages}</span>
       <div className="flex gap-2">
-        <button disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Önceki sayfa" className="p-2 border border-rule rounded-lg disabled:opacity-40 hover:bg-sage-50"><ChevronLeft size={16} /></button>
-        <button disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Sonraki sayfa" className="p-2 border border-rule rounded-lg disabled:opacity-40 hover:bg-sage-50"><ChevronRight size={16} /></button>
+        <button disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Önceki sayfa" className="w-10 h-10 flex items-center justify-center border border-rule rounded-lg disabled:opacity-40 hover:bg-sage-50 focus-visible:ring-2 focus-visible:ring-ink"><ChevronLeft size={16} /></button>
+        <button disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Sonraki sayfa" className="w-10 h-10 flex items-center justify-center border border-rule rounded-lg disabled:opacity-40 hover:bg-sage-50 focus-visible:ring-2 focus-visible:ring-ink"><ChevronRight size={16} /></button>
       </div>
     </div>
   )
@@ -164,10 +175,10 @@ export function Segmented<T extends string>({ value, onChange, options, testid }
           aria-selected={value === o.id}
           onClick={() => onChange(o.id)}
           data-testid={testid ? `${testid}-${o.id}` : undefined}
-          className={`px-3 py-1.5 rounded-full text-sm border transition ${value === o.id ? "bg-ink text-cream border-ink" : "bg-paper border-rule text-sage-700 hover:border-sage-400"}`}
+          className={`px-3.5 py-2 min-h-[40px] rounded-full text-sm border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream ${value === o.id ? "bg-ink text-cream border-ink" : "bg-paper border-rule text-sage-700 hover:border-sage-400"}`}
         >
           {o.label}
-          {o.count !== undefined && <span className={`ml-1.5 text-xs ${value === o.id ? "text-cream/70" : "text-sage-400"}`}>{o.count}</span>}
+          {o.count !== undefined && <span className={`ml-1.5 text-xs ${value === o.id ? "text-cream/70" : "text-sage-500"}`}>{o.count}</span>}
         </button>
       ))}
     </div>
@@ -183,14 +194,14 @@ export function SearchBox({ value, onChange, placeholder, testid }: { value: str
       placeholder={placeholder}
       data-testid={testid}
       aria-label={placeholder}
-      className="w-full sm:w-72 px-3.5 py-2 bg-white border border-rule rounded-lg text-sm focus:outline-none focus:border-sage-500"
+      className="w-full sm:w-72 px-3.5 py-2 min-h-[40px] bg-white border border-rule rounded-lg text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink"
     />
   )
 }
 
 export function Select({ value, onChange, children, label, testid }: { value: string; onChange: (v: string) => void; children: ReactNode; label: string; testid?: string }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label} data-testid={testid} className="px-3 py-2 bg-white border border-rule rounded-lg text-sm focus:outline-none focus:border-sage-500">
+    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label} data-testid={testid} className="px-3 py-2 min-h-[40px] bg-white border border-rule rounded-lg text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink">
       {children}
     </select>
   )
@@ -203,7 +214,7 @@ export function Button({ children, tone = "default", ...rest }: React.ButtonHTML
     : tone === "ghost" ? "text-sage-700 hover:bg-sage-100"
     : "bg-paper border border-rule text-sage-800 hover:bg-sage-50"
   return (
-    <button {...rest} className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${cls} ${rest.className ?? ""}`}>
+    <button {...rest} className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[40px] rounded-lg text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-cream ${cls} ${rest.className ?? ""}`}>
       {children}
     </button>
   )
@@ -219,6 +230,7 @@ export function Drawer({ title, subtitle, onClose, children, testid }: { title: 
     return () => document.removeEventListener("keydown", onKey)
   }, [onClose])
   return (
+    <Portal>
     <div className="fixed inset-0 z-[80] flex justify-end" data-testid={testid}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
       <aside ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title} className="relative w-full max-w-xl bg-cream h-full overflow-y-auto shadow-2xl outline-none border-l border-rule">
@@ -227,11 +239,12 @@ export function Drawer({ title, subtitle, onClose, children, testid }: { title: 
             <h3 className="font-display text-2xl truncate">{title}</h3>
             {subtitle && <div className="text-sm text-sage-500 mt-0.5">{subtitle}</div>}
           </div>
-          <button onClick={onClose} aria-label="Kapat" className="p-1.5 rounded-lg hover:bg-sage-100 text-sage-500"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Kapat" className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-sage-100 text-sage-600 focus-visible:ring-2 focus-visible:ring-ink"><X size={18} /></button>
         </header>
         <div className="p-6 space-y-6">{children}</div>
       </aside>
     </div>
+    </Portal>
   )
 }
 
@@ -272,6 +285,7 @@ export function ConfirmDialog({ spec, onClose }: { spec: ConfirmSpec; onClose: (
   }
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" data-testid="confirm-dialog">
       <div className="absolute inset-0 bg-black/50" onClick={() => !busy && onClose()} aria-hidden />
       <div role="alertdialog" aria-modal="true" aria-label={spec.title} className="relative bg-paper rounded-2xl border border-rule shadow-2xl w-full max-w-md p-6 space-y-4">
@@ -285,7 +299,7 @@ export function ConfirmDialog({ spec, onClose }: { spec: ConfirmSpec; onClose: (
             ) : (
               <input autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder={spec.input.placeholder} data-testid="confirm-input" className="mt-1.5 w-full px-3 py-2 bg-white border border-rule rounded-lg text-sm focus:outline-none focus:border-sage-500" />
             )}
-            {min > 0 && value.trim().length < min && <span className="text-[11px] text-sage-400">En az {min} karakter</span>}
+            {min > 0 && value.trim().length < min && <span className="text-[11px] text-sage-500">En az {min} karakter</span>}
           </label>
         )}
         {error && <p role="alert" data-testid="confirm-error" className="text-sm text-red-600">{error}</p>}
@@ -297,6 +311,7 @@ export function ConfirmDialog({ spec, onClose }: { spec: ConfirmSpec; onClose: (
         </div>
       </div>
     </div>
+    </Portal>
   )
 }
 
@@ -313,9 +328,11 @@ export function Toast({ message, onDone }: { message: string; onDone: () => void
     return () => clearTimeout(t)
   }, [onDone])
   return (
-    <div role="status" data-testid="toast" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[120] bg-ink text-cream text-sm px-5 py-3 rounded-full shadow-xl">
-      {message}
-    </div>
+    <Portal>
+      <div role="status" data-testid="toast" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[120] bg-ink text-cream text-sm px-5 py-3 rounded-full shadow-xl max-w-[90vw] text-center">
+        {message}
+      </div>
+    </Portal>
   )
 }
 
@@ -354,7 +371,7 @@ export function Stat({ label, value, hint, tone }: { label: string; value: React
     <Card className="p-4">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-sage-500">{label}</p>
       <p className={`font-display text-3xl mt-1 ${color}`}>{value}</p>
-      {hint && <p className="text-xs text-sage-400 mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-sage-500 mt-1">{hint}</p>}
     </Card>
   )
 }

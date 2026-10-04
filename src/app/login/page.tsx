@@ -143,13 +143,13 @@ function LoginContent() {
               {mode === "register" && (
                 <div className="relative">
                   <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ad Soyad" required className={field} />
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-sage-400" size={16} />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-sage-500" size={16} />
                 </div>
               )}
 
               <div className="relative">
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-posta adresi" required className={field} />
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-sage-400" size={16} />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-sage-500" size={16} />
               </div>
 
               <div className="relative">
@@ -162,8 +162,8 @@ function LoginContent() {
                   minLength={6}
                   className={`${field} pr-11`}
                 />
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-sage-400" size={16} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"} className="absolute right-4 top-1/2 -translate-y-1/2 text-sage-400 hover:text-ink">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-sage-500" size={16} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"} className="absolute right-4 top-1/2 -translate-y-1/2 text-sage-500 hover:text-ink">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>

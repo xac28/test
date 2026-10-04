@@ -98,7 +98,7 @@ export default function Navbar() {
                 <button
                   onClick={() => setLocale(l)}
                   aria-pressed={locale === l}
-                  className={`uppercase ${locale === l ? 'text-ink' : 'text-sage-400 hover:text-ink'}`}
+                  className={`uppercase ${locale === l ? 'text-ink' : 'text-sage-500 hover:text-ink'}`}
                 >
                   {l}
                 </button>
@@ -181,9 +181,9 @@ export default function Navbar() {
                 <Link href="/dashboard" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">Panelim</Link>
               )}
               <div className="flex items-center gap-1.5 text-xs font-semibold">
-                <button onClick={() => setLocale('tr')} className={locale === 'tr' ? 'text-ink' : 'text-sage-400'}>TR</button>
+                <button onClick={() => setLocale('tr')} className={locale === 'tr' ? 'text-ink' : 'text-sage-500'}>TR</button>
                 <span className="text-rule">/</span>
-                <button onClick={() => setLocale('en')} className={locale === 'en' ? 'text-ink' : 'text-sage-400'}>EN</button>
+                <button onClick={() => setLocale('en')} className={locale === 'en' ? 'text-ink' : 'text-sage-500'}>EN</button>
               </div>
             </div>
           </nav>

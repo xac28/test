@@ -82,6 +82,25 @@ export function UsersTab({ onOpenUser, refreshKey }: { onOpenUser: (id: string) 
         <Empty icon={<Users size={32} />}>Eşleşen kullanıcı yok.</Empty>
       ) : data ? (
         <div className={loading ? "opacity-60 transition-opacity" : ""}>
+          <ul className="md:hidden space-y-2.5">
+            {data.users.map((u) => (
+              <li key={u.id}>
+                <button onClick={() => onOpenUser(u.id)} className="w-full text-left bg-paper border border-rule rounded-xl p-4 flex items-center gap-3 active:bg-sage-50">
+                  <Avatar name={u.name} image={u.image} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`font-medium truncate ${u.banned ? "line-through text-sage-500" : "text-ink"}`}>{u.name ?? "—"}</p>
+                    <p className="text-xs text-sage-500 truncate">{u.email}</p>
+                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                      <Pill tone={ROLE_TONE[u.role]}>{ROLE_LABEL[u.role]}</Pill>
+                      {u.banned && <Pill tone="red">Yasaklı</Pill>}
+                      {u.openReports > 0 && <Pill tone="orange">{u.openReports} açık rapor</Pill>}
+                    </div>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
           <Table head={["Kullanıcı", "Rol", "Durum", "Açık rapor", "Katılım"]}>
             {data.users.map((u) => (
               <tr key={u.id} data-testid="user-row" onClick={() => onOpenUser(u.id)} className="hover:bg-sage-50 cursor-pointer">
@@ -89,7 +108,7 @@ export function UsersTab({ onOpenUser, refreshKey }: { onOpenUser: (id: string) 
                   <div className="flex items-center gap-3">
                     <Avatar name={u.name} image={u.image} />
                     <div className="min-w-0">
-                      <p className={`font-medium ${u.banned ? "line-through text-sage-400" : "text-ink"}`}>{u.name ?? "—"}</p>
+                      <p className={`font-medium ${u.banned ? "line-through text-sage-500" : "text-ink"}`}>{u.name ?? "—"}</p>
                       <p className="text-xs text-sage-500">{u.email}</p>
                     </div>
                   </div>
@@ -104,6 +123,7 @@ export function UsersTab({ onOpenUser, refreshKey }: { onOpenUser: (id: string) 
               </tr>
             ))}
           </Table>
+          </div>
           <Pager page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
         </div>
       ) : null}
@@ -256,7 +276,7 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
                 <li key={r.id} className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-rule bg-paper">
                   <Pill tone={r.status === "PENDING" || r.status === "REVIEWED" ? "amber" : "gray"}>{STATUS_LABEL_TR[r.status]}</Pill>
                   <span className="flex-1 truncate">{CATEGORY_LABEL_TR(r.category)} · {TARGET_LABEL_TR[r.targetType] ?? r.targetType}</span>
-                  <span className="text-xs text-sage-400">{PRIORITY_LABEL_TR[r.priority]} · {fmtDate(r.createdAt)}</span>
+                  <span className="text-xs text-sage-500">{PRIORITY_LABEL_TR[r.priority]} · {fmtDate(r.createdAt)}</span>
                 </li>
               ))}
             </ul>
@@ -284,7 +304,7 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
               {data.ips.map((ip) => (
                 <li key={ip.ip} className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-rule bg-paper">
                   <span className="font-mono">{ip.ip}</span>
-                  <span className="text-xs text-sage-400 flex-1">{ip.hits} istek · {fmtDateTime(ip.lastSeenAt)}</span>
+                  <span className="text-xs text-sage-500 flex-1">{ip.hits} istek · {fmtDateTime(ip.lastSeenAt)}</span>
                   {ip.banned ? (
                     <Pill tone="red">Engelli</Pill>
                   ) : ip.bannable && u.role !== "ADMIN" ? (
@@ -307,7 +327,7 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
                       Engelle
                     </button>
                   ) : (
-                    <span className="text-[11px] text-sage-400">yerel/özel</span>
+                    <span className="text-[11px] text-sage-500">yerel/özel</span>
                   )}
                 </li>
               ))}
@@ -323,7 +343,7 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
                 <li key={a.id} className="text-sm">
                   <p><span className="font-medium">{a.actor}</span> <span className="text-sage-500">· {a.action.replace(/_/g, " ").toLowerCase()}</span></p>
                   {a.reason && <p className="text-xs text-sage-500">{a.reason}</p>}
-                  <p className="text-[11px] text-sage-400">{fmtDateTime(a.createdAt)}</p>
+                  <p className="text-[11px] text-sage-500">{fmtDateTime(a.createdAt)}</p>
                 </li>
               ))}
             </ol>

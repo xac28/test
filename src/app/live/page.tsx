@@ -88,7 +88,7 @@ export default function LiveDirectoryPage() {
 
           {list && list.length === 0 && (
             <div data-testid="no-broadcasts" className="border border-dashed border-sage-300 rounded-2xl py-20 text-center">
-              <Radio className="mx-auto text-sage-400 mb-4" size={36} />
+              <Radio className="mx-auto text-sage-500 mb-4" size={36} />
               <p className="font-display text-2xl text-ink mb-1">Şu anda canlı yayın yok</p>
               <p className="text-ink/60 text-sm">Bir eğitmen yayına başladığında burada görünür.</p>
             </div>

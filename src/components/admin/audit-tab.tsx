@@ -36,7 +36,7 @@ export function AuditTab() {
                 <td className="px-4 py-3 whitespace-nowrap text-xs text-sage-500">{fmtDateTime(l.createdAt)}</td>
                 <td className="px-4 py-3 whitespace-nowrap">{l.actor}</td>
                 <td className="px-4 py-3"><Pill>{l.action}</Pill></td>
-                <td className="px-4 py-3 text-sage-700 break-words max-w-md">{l.reason || "—"}{l.targetId && <p className="text-[11px] text-sage-400 font-mono">{l.targetId}</p>}</td>
+                <td className="px-4 py-3 text-sage-700 break-words max-w-md">{l.reason || "—"}{l.targetId && <p className="text-[11px] text-sage-500 font-mono">{l.targetId}</p>}</td>
               </tr>
             ))}
           </Table>

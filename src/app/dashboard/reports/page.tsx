@@ -54,7 +54,7 @@ export default function MyReportsPage() {
       <section>
         <h2 className="text-sm font-bold uppercase tracking-widest text-sage-500 mb-4 flex items-center gap-2"><Flag size={14} /> Gönderdiğim bildirimler</h2>
         {reports === null && !error ? (
-          <Loader2 className="animate-spin text-sage-400" />
+          <Loader2 className="animate-spin text-sage-500" />
         ) : reports && reports.length === 0 ? (
           <p data-testid="no-reports" className="text-sage-500 border border-dashed border-rule rounded-xl p-8 text-center">
             Henüz bildirim göndermediniz. Canlı yayın, atölye, eğitmen profili veya ders odasındaki “Bildir” düğmesiyle sorun bildirebilirsiniz.
@@ -71,7 +71,7 @@ export default function MyReportsPage() {
                 </div>
                 <p className="text-sm text-sage-700 line-clamp-2 whitespace-pre-line">{r.description}</p>
                 <p className="text-sm text-sage-600 mt-2">{r.message}</p>
-                <p className="text-xs text-sage-400 mt-1">
+                <p className="text-xs text-sage-500 mt-1">
                   {new Date(r.createdAt).toLocaleString("tr-TR")} · No: {r.id.slice(-8).toUpperCase()}
                 </p>
               </li>

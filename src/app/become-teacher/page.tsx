@@ -4,91 +4,94 @@ import { useSession, signIn } from "next-auth/react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { CheckCircle2, Loader2, Send } from "lucide-react"
+import Navbar from "@/components/Navbar"
+import Footer from "@/components/Footer"
 import { AvatarUploader } from "@/components/avatar-uploader"
-import { User, BookOpen, FileBadge, History, CheckCircle2, Circle, Flower2, Send } from "lucide-react"
+import { useL } from "@/components/editorial"
 
-const YOGA_STYLES = [
-  "Face Yoga",
-  "Yin Yoga",
-  "Fasyal Yoga",
-  "Vinyasa",
-  "Hatha Yoga",
-  "Mindfulness & Meditation",
+// Stored values stay English/stable (the admin and the API read them); only the labels are translated.
+const YOGA_STYLES: { value: string; tr: string; en: string }[] = [
+  { value: "Face Yoga", tr: "Yüz yogası", en: "Face yoga" },
+  { value: "Yin Yoga", tr: "Yin yoga", en: "Yin yoga" },
+  { value: "Fasyal Yoga", tr: "Fasyal yoga", en: "Fascial yoga" },
+  { value: "Vinyasa", tr: "Vinyasa", en: "Vinyasa" },
+  { value: "Hatha Yoga", tr: "Hatha yoga", en: "Hatha yoga" },
+  { value: "Mindfulness & Meditation", tr: "Farkındalık ve meditasyon", en: "Mindfulness & meditation" },
 ]
 
-const COUNTRIES = [
-  "Turkey", "United States", "United Kingdom", "Germany", "France", "India",
-  "Brazil", "Japan", "Australia", "Canada", "Spain", "Italy", "Netherlands",
-  "Sweden", "Norway", "Switzerland", "Austria", "Portugal", "Greece", "Other"
+const COUNTRIES: { value: string; tr: string }[] = [
+  { value: "Turkey", tr: "Türkiye" }, { value: "United States", tr: "Amerika Birleşik Devletleri" }, { value: "United Kingdom", tr: "Birleşik Krallık" },
+  { value: "Germany", tr: "Almanya" }, { value: "France", tr: "Fransa" }, { value: "India", tr: "Hindistan" }, { value: "Brazil", tr: "Brezilya" },
+  { value: "Japan", tr: "Japonya" }, { value: "Australia", tr: "Avustralya" }, { value: "Canada", tr: "Kanada" }, { value: "Spain", tr: "İspanya" },
+  { value: "Italy", tr: "İtalya" }, { value: "Netherlands", tr: "Hollanda" }, { value: "Sweden", tr: "İsveç" }, { value: "Norway", tr: "Norveç" },
+  { value: "Switzerland", tr: "İsviçre" }, { value: "Austria", tr: "Avusturya" }, { value: "Portugal", tr: "Portekiz" }, { value: "Greece", tr: "Yunanistan" },
+  { value: "Other", tr: "Diğer" },
 ]
+
+const input = "w-full border border-rule bg-white px-3.5 py-3 text-sm text-ink placeholder:text-sage-500 rounded-md focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink"
+
+function Field({ id, label, hint, children, wide }: { id: string; label: string; hint?: string; children: React.ReactNode; wide?: boolean }) {
+  return (
+    <div className={wide ? "md:col-span-2" : ""}>
+      <label htmlFor={id} className="block text-sm font-medium text-ink mb-1.5">{label}</label>
+      {children}
+      {hint && <p className="text-xs text-sage-500 mt-1.5">{hint}</p>}
+    </div>
+  )
+}
+
+function Section({ n, title, hint, children }: { n: string; title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="grid md:grid-cols-12 gap-6 py-10 border-t border-rule first:border-t-0 first:pt-0">
+      <div className="md:col-span-4">
+        <p className="eyebrow mb-2">{n}</p>
+        <h2 className="font-display text-3xl leading-tight">{title}</h2>
+        {hint && <p className="text-sm text-sage-600 mt-2 leading-relaxed">{hint}</p>}
+      </div>
+      <div className="md:col-span-8">{children}</div>
+    </section>
+  )
+}
 
 export default function BecomeTeacherPage() {
+  const L = useL()
   const { data: session, status } = useSession()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [uploadingCert, setUploadingCert] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Form state
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    image: "",
-    dateOfBirth: "",
-    phone: "",
-    address: "",
-    country: "",
-    passportId: "",
-    specialties: [] as string[],
-    certificateUrl: "",
-    certificateStartDate: "",
-    experience: "",
+    firstName: "", lastName: "", image: "", dateOfBirth: "", phone: "", address: "", country: "", passportId: "",
+    specialties: [] as string[], certificateUrl: "", certificateStartDate: "", experience: "",
   })
 
-  // Set initial image from session
   useEffect(() => {
-    if (session?.user?.image && !form.image) {
-      setForm(prev => ({ ...prev, image: session.user.image as string }))
-    }
+    if (session?.user?.image && !form.image) setForm((prev) => ({ ...prev, image: session.user.image as string }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.image])
 
-  const updateForm = (field: string, value: any) => {
-    setForm(prev => ({ ...prev, [field]: value }))
-  }
-
-  const toggleSpecialty = (style: string) => {
-    setForm(prev => ({
-      ...prev,
-      specialties: prev.specialties.includes(style)
-        ? prev.specialties.filter(s => s !== style)
-        : [...prev.specialties, style]
-    }))
-  }
+  const updateForm = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }))
+  const toggleSpecialty = (style: string) =>
+    setForm((prev) => ({ ...prev, specialties: prev.specialties.includes(style) ? prev.specialties.filter((s) => s !== style) : [...prev.specialties, style] }))
 
   const handleCertUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     setUploadingCert(true)
+    setError(null)
     try {
       const formData = new FormData()
       formData.append("file", file)
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        updateForm("certificateUrl", data.url)
-      } else {
-        const data = await res.json()
-        alert(data.error || "Upload failed")
-      }
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) updateForm("certificateUrl", data.url)
+      else setError(data.error || L("Sertifika yüklenemedi.", "Could not upload the certificate."))
     } catch {
-      alert("Upload failed — please try again")
+      setError(L("Sertifika yüklenemedi, lütfen tekrar deneyin.", "Could not upload the certificate, please try again."))
     } finally {
       setUploadingCert(false)
     }
@@ -96,37 +99,18 @@ export default function BecomeTeacherPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!session) {
-      signIn("google")
-      return
-    }
-
-    if (!agreedToTerms) {
-      alert("Platform sözleşmesini ve kurallarını kabul etmeniz gerekmektedir.")
-      return
-    }
-
-    if (form.specialties.length === 0) {
-      alert("Please select at least one specialty area")
-      return
-    }
+    setError(null)
+    if (!session) return signIn("google")
+    if (!agreedToTerms) return setError(L("Devam etmek için sözleşmeyi kabul etmelisiniz.", "You must accept the agreement to continue."))
+    if (form.specialties.length === 0) return setError(L("En az bir uzmanlık alanı seçin.", "Select at least one specialty."))
 
     setIsSubmitting(true)
     try {
-      const res = await fetch("/api/teachers/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-      })
-
-      if (res.ok) {
-        setSuccess(true)
-      } else {
-        const text = await res.text()
-        alert(text || "Something went wrong.")
-      }
+      const res = await fetch("/api/teachers/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) })
+      if (res.ok) setSuccess(true)
+      else setError((await res.text()) || L("Başvuru gönderilemedi.", "The application could not be sent."))
     } catch {
-      alert("Error submitting application.")
+      setError(L("Bağlantı hatası, başvuru gönderilemedi.", "Connection error, the application was not sent."))
     } finally {
       setIsSubmitting(false)
     }
@@ -134,279 +118,141 @@ export default function BecomeTeacherPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-cream">
-        <div className="animate-pulse-ring w-16 h-16 bg-sage-300 rounded-full" />
-      </div>
+      <>
+        <Navbar />
+        <div className="min-h-[60vh] flex items-center justify-center text-sage-500"><Loader2 className="animate-spin" /></div>
+      </>
     )
   }
 
   return (
-    <div className="min-h-screen relative bg-sage-900 py-12 px-4 overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-        <svg className="absolute left-0 top-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="0.5">
-          <path d="M0,100 C30,60 70,40 100,0 L100,100 Z" fill="currentColor" opacity="0.2"/>
-          <path d="M20,100 C50,50 80,30 100,0 L100,100 Z" fill="currentColor" opacity="0.4"/>
-        </svg>
-      </div>
-      <div className="absolute top-20 right-20 w-96 h-96 bg-sage-500/20 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-20 left-10 w-96 h-96 bg-clay-500/10 rounded-full blur-3xl" style={{ animationDelay: '2s' }} />
-
-      <div className="max-w-4xl mx-auto z-10 relative pt-10">
-        {/* Header */}
-        <div className="text-center mb-12 animate-fade-up">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest text-sage-200 mb-6 border border-white/10">
-            <Flower2 size={14} className="text-pink-300" /> Instructor Application
-          </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-display text-white mb-6 leading-tight">Share Your <span className="italic text-sage-300">Light</span></h1>
-          <p className="text-sage-300 text-lg md:text-xl max-w-2xl mx-auto font-light">
-            Join our global community of certified teachers. Connect deeply, teach globally, and grow your practice.
+    <>
+      <Navbar />
+      <main className="max-w-5xl mx-auto px-6 lg:px-12 pt-14 pb-24">
+        <header className="max-w-2xl mb-12">
+          <p className="eyebrow mb-4">{L("Eğitmen başvurusu", "Teacher application")}</p>
+          <h1 className="font-display font-light text-5xl md:text-6xl leading-[1.04]">
+            {L("Pratiğini ", "Share your practice ")}<span className="italic text-clay-600">{L("paylaş.", "with us.")}</span>
+          </h1>
+          <p className="text-lg text-sage-600 mt-5 leading-relaxed">
+            {L(
+              "Sertifikalı eğitmenlerden oluşan topluluğumuza katıl. Başvurunu inceleriz, ardından kısa bir deneme yayınında yöneticilerle tanışırsın.",
+              "Join our community of certified teachers. We review your application, then you meet our team in a short trial broadcast."
+            )}
           </p>
-        </div>
+          <ol className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-sage-700">
+            {[L("1 · Başvuru", "1 · Apply"), L("2 · İnceleme", "2 · Review"), L("3 · Deneme yayını", "3 · Trial broadcast"), L("4 · Ders vermeye başla", "4 · Start teaching")].map((x) => <li key={x}>{x}</li>)}
+          </ol>
+        </header>
 
         {success ? (
-          <div className="bg-white/90 backdrop-blur-xl p-12 rounded-[2.5rem] text-center border border-sage-100 shadow-2xl animate-scale-in">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-green-200">
-              <CheckCircle2 size={48} className="text-green-600" />
-            </div>
-            <h2 className="text-4xl font-display text-sage-900 mb-4">Application Submitted!</h2>
-            <p className="text-sage-600 mb-2 text-xl font-light">Thank you. Our team will review your application and certificates.</p>
-            <p className="text-sage-500 text-sm mb-10">You will be notified via email once your application is processed.</p>
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="bg-sage-900 text-white px-10 py-4 rounded-xl hover:bg-sage-800 transition font-bold btn-press shadow-lg shadow-sage-900/20"
-            >
-              Return to Dashboard
+          <div className="border border-ink bg-paper p-10 md:p-14 text-center" role="status" data-testid="apply-success">
+            <CheckCircle2 size={44} className="mx-auto text-emerald-600 mb-5" />
+            <h2 className="font-display text-4xl mb-3">{L("Başvurun alındı", "Application received")}</h2>
+            <p className="text-sage-700 text-lg">{L("Ekibimiz başvurunu ve sertifikalarını inceleyecek.", "Our team will review your application and certificates.")}</p>
+            <p className="text-sage-600 text-sm mt-2 mb-8">{L("Sonuç e-posta ile bildirilir.", "You will be notified by e-mail.")}</p>
+            <button onClick={() => router.push("/dashboard")} className="bg-ink text-cream px-8 py-3 text-sm font-semibold rounded-md hover:bg-sage-800">
+              {L("Panele dön", "Back to dashboard")}
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="bg-white/95 backdrop-blur-xl p-8 md:p-14 rounded-[2.5rem] border border-sage-100/50 shadow-2xl shadow-sage-900/40 space-y-12 animate-fade-in relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none text-sage-900">
-              <Flower2 size={200} />
-            </div>
-            
-            {/* Section: Personal Information */}
-            <div className="relative z-10">
-              <h3 className="text-xl font-display text-sage-900 mb-6 flex items-center gap-3">
-                <span className="w-10 h-10 bg-sage-100/80 rounded-xl flex items-center justify-center text-sage-700 shadow-inner border border-sage-200/60">
-                  <User size={18} />
-                </span>
-                Personal Information
-              </h3>
-
-              <div className="mb-8 flex flex-col items-center justify-center">
-                <AvatarUploader 
-                  currentImageUrl={form.image} 
-                  onUploadSuccess={(url) => updateForm("image", url)} 
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">First Name *</label>
-                  <input
-                    required
-                    value={form.firstName}
-                    onChange={e => updateForm("firstName", e.target.value)}
-                    className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-                    placeholder="Jane"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Last Name *</label>
-                  <input
-                    required
-                    value={form.lastName}
-                    onChange={e => updateForm("lastName", e.target.value)}
-                    className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-                    placeholder="Doe"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Date of Birth *</label>
-                  <input
-                    required
-                    type="date"
-                    value={form.dateOfBirth}
-                    onChange={e => updateForm("dateOfBirth", e.target.value)}
-                    className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Phone *</label>
-                  <input
-                    required
-                    type="tel"
-                    value={form.phone}
-                    onChange={e => updateForm("phone", e.target.value)}
-                    className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-                    placeholder="+90 555 123 4567"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Address</label>
-                  <input
-                    value={form.address}
-                    onChange={e => updateForm("address", e.target.value)}
-                    className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-                    placeholder="Full address"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Country *</label>
-                  <select
-                    required
-                    value={form.country}
-                    onChange={e => updateForm("country", e.target.value)}
-                    className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-                  >
-                    <option value="">Select country</option>
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+          <form onSubmit={handleSubmit} noValidate={false} className="border border-rule bg-paper px-6 md:px-10 py-10">
+            <Section n="01" title={L("Kişisel bilgiler", "Personal details")} hint={L("Yalnızca yönetim ekibi görür; herkese açık profilde yer almaz.", "Only the admin team sees these; they are not on your public profile.")}>
+              <div className="mb-8"><AvatarUploader currentImageUrl={form.image} onUploadSuccess={(url) => updateForm("image", url)} /></div>
+              <div className="grid md:grid-cols-2 gap-5">
+                <Field id="firstName" label={L("Ad *", "First name *")}>
+                  <input id="firstName" required autoComplete="given-name" value={form.firstName} onChange={(e) => updateForm("firstName", e.target.value)} className={input} />
+                </Field>
+                <Field id="lastName" label={L("Soyad *", "Last name *")}>
+                  <input id="lastName" required autoComplete="family-name" value={form.lastName} onChange={(e) => updateForm("lastName", e.target.value)} className={input} />
+                </Field>
+                <Field id="dob" label={L("Doğum tarihi *", "Date of birth *")}>
+                  <input id="dob" required type="date" autoComplete="bday" value={form.dateOfBirth} onChange={(e) => updateForm("dateOfBirth", e.target.value)} className={input} />
+                </Field>
+                <Field id="phone" label={L("Telefon *", "Phone *")}>
+                  <input id="phone" required type="tel" autoComplete="tel" value={form.phone} onChange={(e) => updateForm("phone", e.target.value)} className={input} placeholder="+90 555 123 4567" />
+                </Field>
+                <Field id="address" label={L("Adres", "Address")} wide>
+                  <input id="address" autoComplete="street-address" value={form.address} onChange={(e) => updateForm("address", e.target.value)} className={input} />
+                </Field>
+                <Field id="country" label={L("Ülke *", "Country *")}>
+                  <select id="country" required autoComplete="country-name" value={form.country} onChange={(e) => updateForm("country", e.target.value)} className={input}>
+                    <option value="">{L("Ülke seçin", "Select a country")}</option>
+                    {COUNTRIES.map((c) => <option key={c.value} value={c.value}>{L(c.tr, c.value)}</option>)}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Passport / ID Number</label>
-                  <input
-                    value={form.passportId}
-                    onChange={e => updateForm("passportId", e.target.value)}
-                    className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-                    placeholder="TR12345678"
-                  />
-                </div>
+                </Field>
+                <Field id="passport" label={L("Kimlik / pasaport no", "ID / passport number")}>
+                  <input id="passport" value={form.passportId} onChange={(e) => updateForm("passportId", e.target.value)} className={input} />
+                </Field>
               </div>
-            </div>
+            </Section>
 
-            {/* Section: Specialties */}
-            <div className="relative z-10 pt-8 border-t border-sage-100">
-              <h3 className="text-xl font-display text-sage-900 mb-2 flex items-center gap-3">
-                <span className="w-10 h-10 bg-sage-100/80 rounded-xl flex items-center justify-center text-sage-700 shadow-inner border border-sage-200/60">
-                  <BookOpen size={18} />
-                </span>
-                Teaching Specialties
-              </h3>
-              <p className="text-sage-500 text-sm mb-6 pl-13">Select all the areas you are qualified to teach</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {YOGA_STYLES.map(style => {
-                  const isSelected = form.specialties.includes(style)
+            <Section n="02" title={L("Uzmanlık alanları", "Specialties")} hint={L("Ders verebileceğin tüm alanları seç.", "Select every area you are qualified to teach.")}>
+              <div role="group" aria-label={L("Uzmanlık alanları", "Specialties")} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {YOGA_STYLES.map((style) => {
+                  const on = form.specialties.includes(style.value)
                   return (
                     <button
-                      key={style}
+                      key={style.value}
                       type="button"
-                      onClick={() => toggleSpecialty(style)}
-                      className={`p-4 rounded-2xl border-2 text-sm font-bold transition-all text-left flex items-center gap-3 shadow-sm btn-press ${
-                        isSelected
-                          ? "border-sage-600 bg-sage-50 text-sage-900"
-                          : "border-sage-100 bg-white text-sage-500 hover:border-sage-300 hover:text-sage-700"
-                      }`}
+                      aria-pressed={on}
+                      onClick={() => toggleSpecialty(style.value)}
+                      className={`flex items-center gap-3 border px-4 py-3.5 text-left text-sm rounded-md transition ${on ? "border-ink bg-ink text-cream" : "border-rule bg-white text-ink hover:border-ink"}`}
                     >
-                      {isSelected ? <CheckCircle2 size={18} className="text-sage-600" /> : <Circle size={18} className="text-sage-300" />}
-                      {style}
+                      <span className={`w-4 h-4 rounded-sm border flex items-center justify-center text-[10px] ${on ? "bg-cream text-ink border-cream" : "border-sage-400"}`} aria-hidden>{on ? "✓" : ""}</span>
+                      {L(style.tr, style.en)}
                     </button>
                   )
                 })}
               </div>
-            </div>
+            </Section>
 
-            {/* Section: Certificate */}
-            <div className="relative z-10 pt-8 border-t border-sage-100">
-              <h3 className="text-xl font-display text-sage-900 mb-6 flex items-center gap-3">
-                <span className="w-10 h-10 bg-sage-100/80 rounded-xl flex items-center justify-center text-sage-700 shadow-inner border border-sage-200/60">
-                  <FileBadge size={18} />
-                </span>
-                Certification
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Certificate (PDF)</label>
+            <Section n="03" title={L("Sertifika", "Certification")} hint={L("Belge güvenle saklanır ve yalnızca inceleme için kullanılır.", "Your document is stored securely and only used for review.")}>
+              <div className="grid md:grid-cols-2 gap-5">
+                <Field id="cert" label={L("Sertifika (PDF veya görsel)", "Certificate (PDF or image)")} hint={form.certificateUrl ? undefined : L("En fazla 10 MB", "Max 10 MB")}>
                   <div className="relative">
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png,.webp"
-                      onChange={handleCertUpload}
-                      className="w-full rounded-xl border border-sage-200 bg-white/70 p-3 text-sm file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-sage-100 file:text-sage-700 hover:file:bg-sage-200 transition"
-                    />
-                    {uploadingCert && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="w-5 h-5 border-2 border-sage-300 border-t-sage-600 rounded-full animate-spin" />
-                      </div>
-                    )}
+                    <input id="cert" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={handleCertUpload} className={`${input} file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-sage-100 file:text-ink hover:file:bg-sage-200`} />
+                    {uploadingCert && <Loader2 size={16} className="animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-sage-500" />}
                   </div>
-                  {form.certificateUrl && (
-                    <p className="text-green-600 text-xs mt-2 flex items-center gap-1">
-                      ✓ Certificate uploaded successfully
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Certificate Start Date</label>
-                  <input
-                    type="date"
-                    value={form.certificateStartDate}
-                    onChange={e => updateForm("certificateStartDate", e.target.value)}
-                    className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-                  />
-                  <p className="text-sage-400 text-xs mt-1.5">This determines your seniority level</p>
-                </div>
+                  {form.certificateUrl && <p className="text-emerald-700 text-xs mt-1.5">✓ {L("Sertifika yüklendi", "Certificate uploaded")}</p>}
+                </Field>
+                <Field id="certDate" label={L("Sertifika tarihi", "Certificate date")} hint={L("Kıdem düzeyini belirler.", "Determines your seniority level.")}>
+                  <input id="certDate" type="date" value={form.certificateStartDate} onChange={(e) => updateForm("certificateStartDate", e.target.value)} className={input} />
+                </Field>
               </div>
-            </div>
+            </Section>
 
-            {/* Section: Experience */}
-            <div className="relative z-10 pt-8 border-t border-sage-100">
-              <h3 className="text-xl font-display text-sage-900 mb-6 flex items-center gap-3">
-                <span className="w-10 h-10 bg-sage-100/80 rounded-xl flex items-center justify-center text-sage-700 shadow-inner border border-sage-200/60">
-                  <History size={18} />
-                </span>
-                Experience & Background
-              </h3>
-              <textarea
-                rows={5}
-                value={form.experience}
-                onChange={e => updateForm("experience", e.target.value)}
-                placeholder="Tell us about your yoga journey, teaching experience, certifications, and why you want to teach on AYA..."
-                className="w-full rounded-xl border border-sage-200 bg-white/70 p-4 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition resize-none text-sage-900 placeholder:text-sage-400 text-sm leading-relaxed"
-              />
-            </div>
+            <Section n="04" title={L("Deneyim", "Experience")} hint={L("Yoga yolculuğunu ve neden AYA'da ders vermek istediğini anlat.", "Tell us about your journey and why you want to teach on AYA.")}>
+              <label htmlFor="experience" className="sr-only">{L("Deneyim", "Experience")}</label>
+              <textarea id="experience" rows={6} value={form.experience} onChange={(e) => updateForm("experience", e.target.value)} className={`${input} resize-y leading-relaxed`} />
+            </Section>
 
-            {/* Legal Agreement */}
-            <div className="pt-2">
+            <div className="pt-10 border-t border-rule space-y-6">
               <label className="flex items-start gap-3 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  required
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 accent-sage-600 rounded"
-                />
-                <span className="text-sm text-ink/70 leading-relaxed">
-                  Platform üzerinden vereceğim derslerin tıbbi tavsiye yerine geçmediğini, ödeme ve komisyon oranlarını kabul ettiğimi, ve dersleri platformun resmî kayıt özelliği dışında kayıt altına almayacağımı, platformda alınan kayıtların yalnızca öğrenci ile benim tarafımdan indirilebileceğini ve 30 gün sonra silineceğini <Link href="/terms" target="_blank" className="text-sage-600 underline font-medium">Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi</Link> kapsamında kabul ve beyan ederim.
+                <input type="checkbox" required checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} className="mt-1 w-4 h-4 accent-orange-700" />
+                <span className="text-sm text-sage-700 leading-relaxed">
+                  Platform üzerinden vereceğim derslerin tıbbi tavsiye yerine geçmediğini, ödeme ve komisyon oranlarını kabul ettiğimi, dersleri platformun resmî kayıt özelliği dışında kayıt altına almayacağımı, platformda alınan kayıtların yalnızca öğrenci ile benim tarafımdan indirilebileceğini ve 30 gün sonra silineceğini{" "}
+                  <Link href="/terms" target="_blank" className="text-ink underline underline-offset-2 font-medium">Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi</Link> kapsamında kabul ve beyan ederim.
                 </span>
               </label>
+
+              {error && <p role="alert" data-testid="apply-error" className="text-sm text-clay-600 border border-clay-200 bg-clay-50 rounded-md px-4 py-3">{error}</p>}
+
+              {!session ? (
+                <button type="button" onClick={() => signIn("google")} className="w-full sm:w-auto bg-ink text-cream px-10 py-3.5 text-sm font-semibold rounded-md hover:bg-sage-800">
+                  {L("Başvurmak için giriş yap", "Sign in to apply")}
+                </button>
+              ) : (
+                <button type="submit" disabled={isSubmitting || !agreedToTerms} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-ink text-cream px-10 py-3.5 text-sm font-semibold rounded-md hover:bg-sage-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                  {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> {L("Gönderiliyor…", "Sending…")}</> : <><Send size={16} /> {L("Başvuruyu gönder", "Submit application")}</>}
+                </button>
+              )}
+              <p className="text-xs text-sage-500">{L("Sertifikaların ekibimiz tarafından gizlilikle incelenir.", "Your certificates are reviewed confidentially by our team.")}</p>
             </div>
-
-            {/* Submit */}
-            {!session ? (
-              <button
-                type="button"
-                onClick={() => signIn("google")}
-                className="w-full bg-sage-900 text-sage-50 py-4 md:py-5 rounded-2xl font-bold hover:bg-sage-800 transition btn-press shadow-xl shadow-sage-900/20 text-lg flex items-center justify-center gap-3"
-              >
-                <User size={20} /> Sign In to Apply
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={isSubmitting || !agreedToTerms}
-                className="w-full bg-sage-800 text-white py-4 md:py-5 rounded-2xl font-bold hover:bg-sage-900 transition disabled:opacity-50 disabled:cursor-not-allowed btn-press shadow-xl shadow-sage-900/20 text-lg flex items-center justify-center gap-3"
-              >
-                {isSubmitting ? "Submitting Application..." : <><Send size={20} /> Submit Application</>}
-              </button>
-            )}
-
-            <p className="text-center text-sage-400 text-xs">
-              Your certificates will be securely reviewed by our team.
-            </p>
           </form>
         )}
-      </div>
-    </div>
+      </main>
+      <Footer />
+    </>
   )
 }

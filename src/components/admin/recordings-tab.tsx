@@ -32,7 +32,7 @@ export function RecordingsTab() {
           <Table head={["Tür", "Eğitmen / öğrenci", "Başlangıç", "Süre", "Boyut", "Silinme", "Durum", ""]}>
             {data.recordings.map((r) => (
               <tr key={r.id} data-testid="recording-row">
-                <td className="px-4 py-3">{r.kind}<p className="text-[11px] text-sage-400 font-mono">{r.id.slice(-8).toUpperCase()}</p></td>
+                <td className="px-4 py-3">{r.kind}<p className="text-[11px] text-sage-500 font-mono">{r.id.slice(-8).toUpperCase()}</p></td>
                 <td className="px-4 py-3">{r.teacher ?? "—"}{r.student && <p className="text-xs text-sage-500">{r.student}</p>}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs">{fmtDateTime(r.startedAt)}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs">{dur(r.durationSec)}</td>

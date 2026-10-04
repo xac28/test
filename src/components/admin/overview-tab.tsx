@@ -50,14 +50,14 @@ export function OverviewTab({ goTo }: { goTo: (tab: string) => void }) {
           {items.map((i) => (
             <button key={i.label} onClick={() => goTo(i.tab)} data-testid={`queue-${i.tab}-${i.label === "Acil raporlar" ? "urgent" : "all"}`} className={`text-left rounded-xl border p-4 transition hover:shadow-md ${i.value > 0 ? (i.tone === "red" ? "border-red-300 bg-red-50" : "border-amber-200 bg-amber-50/60") : "border-rule bg-paper"} ${i.show ? "" : "hidden"}`}>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-sage-500">{i.label}</p>
-              <p className={`font-display text-4xl mt-1 ${i.value > 0 ? (i.tone === "red" ? "text-red-600" : "text-amber-700") : "text-sage-400"}`}>{i.value}</p>
+              <p className={`font-display text-4xl mt-1 ${i.value > 0 ? (i.tone === "red" ? "text-red-600" : "text-amber-700") : "text-sage-500"}`}>{i.value}</p>
               <p className="text-xs text-sage-500 mt-1 flex items-center gap-1">{i.hint} <ChevronRight size={12} className="ml-auto" /></p>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Stat label="Kullanıcı" value={t.users} hint={`${t.teachers} eğitmen`} />
         <Stat label="Rezervasyon" value={t.bookings} hint={`son 7 günde ${t.bookings7d}`} />
         <Stat label="Canlı şimdi" value={t.liveNow} tone={t.liveNow ? "green" : undefined} hint={`${t.workshopsPublished} atölye yayında`} />
@@ -98,7 +98,7 @@ export function OverviewTab({ goTo }: { goTo: (tab: string) => void }) {
           <Card className="divide-y divide-rule">
             {data.recentAudit.length === 0 ? <p className="p-4 text-sm text-sage-500">Henüz kayıt yok.</p> : data.recentAudit.map((a) => (
               <div key={a.id} className="p-3.5 text-sm">
-                <div className="flex items-center gap-2"><Pill>{a.action}</Pill><span className="text-xs text-sage-400 ml-auto">{ago(a.createdAt)}</span></div>
+                <div className="flex items-center gap-2"><Pill>{a.action}</Pill><span className="text-xs text-sage-500 ml-auto">{ago(a.createdAt)}</span></div>
                 <p className="mt-1"><span className="font-medium">{a.actor}</span>{a.reason && <span className="text-sage-500"> · {a.reason.slice(0, 90)}</span>}</p>
               </div>
             ))}

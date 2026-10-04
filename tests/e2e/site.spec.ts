@@ -237,7 +237,7 @@ test.describe("admin panel is Turkish", () => {
     await expect(a.page.getByTestId("tab-users")).toBeVisible()
     await a.page.getByTestId("admin-user-search").fill(needleName.toLowerCase())
     await expect(a.page.getByTestId("user-row")).toHaveCount(1)
-    await expect(a.page.getByText(needleName).first()).toBeVisible()
+    await expect(a.page.getByTestId("user-row")).toContainText(needleName)
     expect(needle.user.id).toBeTruthy()
     await a.ctx.close()
   })

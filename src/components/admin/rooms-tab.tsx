@@ -36,7 +36,7 @@ export function RoomsTab({ onChanged }: { onChanged: () => void }) {
                       <div className="min-w-0">
                         <p className="font-medium truncate">{b.title}</p>
                         <p className="text-sm text-sage-500">{b.teacher.name} · {b.viewerCount} izleyici · {ago(b.startedAt)} başladı</p>
-                        {b.workshop && <p className="text-xs text-sage-400 mt-0.5">Atölye: {b.workshop.title}</p>}
+                        {b.workshop && <p className="text-xs text-sage-500 mt-0.5">Atölye: {b.workshop.title}</p>}
                       </div>
                       <Pill tone="red">Canlı</Pill>
                     </div>

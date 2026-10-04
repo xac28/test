@@ -40,11 +40,24 @@ export function Cover({
 }) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const bg = tone === 'clay' ? 'bg-clay-100 text-clay-300' : tone === 'ink' ? 'bg-sage-800 text-sage-600' : 'bg-sage-200 text-sage-400';
+  // a missing photo should still look designed: a soft tonal field with quiet concentric rings (and the initial)
+  const palette =
+    tone === 'clay'
+      ? ['from-clay-100 to-clay-200 text-clay-400', 'from-clay-200 to-clay-100 text-clay-400']
+      : tone === 'ink'
+      ? ['from-sage-800 to-sage-900 text-sage-600']
+      : ['from-sage-200 to-sage-100 text-sage-400', 'from-sage-100 to-clay-100 text-sage-400', 'from-clay-100 to-sage-200 text-sage-400'];
+  const seed = Array.from(label || alt || '·').reduce((n, c) => n + c.charCodeAt(0), 0);
+  const bg = `bg-gradient-to-br ${palette[seed % palette.length]}`;
   return (
     <div className={`relative overflow-hidden ${bg} ${className}`}>
+      <svg className="absolute inset-0 w-full h-full opacity-[0.35]" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden>
+        {[18, 30, 42, 56].map((r) => (
+          <circle key={r} cx="50" cy="54" r={r} fill="none" stroke="currentColor" strokeWidth="0.35" />
+        ))}
+      </svg>
       {label && (
-        <span className="absolute inset-0 flex items-center justify-center font-display text-7xl select-none opacity-70" aria-hidden>
+        <span className="absolute inset-0 flex items-center justify-center font-display text-7xl select-none opacity-80" aria-hidden>
           {label}
         </span>
       )}

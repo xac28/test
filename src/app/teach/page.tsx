@@ -111,7 +111,7 @@ export default async function TeachDashboardPage() {
               <ShieldCheck size={14} className="text-green-400" /> Eğitmen Paneli
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display text-white mb-2 leading-tight">Tekrar hoş geldiniz,<br/><span className="text-sage-200 italic">{session.user.name || "Teacher"}</span></h1>
-            <p className="text-sage-400 max-w-md">Derslerinizi yönetin, kazancınızı takip edin ve öğrencilerinizle buluşun.</p>
+            <p className="text-sage-500 max-w-md">Derslerinizi yönetin, kazancınızı takip edin ve öğrencilerinizle buluşun.</p>
           </div>
         </div>
       </div>
@@ -204,7 +204,7 @@ export default async function TeachDashboardPage() {
         </div>
         {upcomingBookings.length === 0 ? (
           <div className="glass-card p-12 rounded-3xl shadow-sm border border-sage-200/60 text-center animate-scale-in bg-gradient-to-br from-white to-sage-50/50">
-            <div className="w-20 h-20 bg-sage-100 text-sage-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+            <div className="w-20 h-20 bg-sage-100 text-sage-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
               <Calendar size={32} />
             </div>
             <p className="text-sage-500 text-lg">Yaklaşan ders yok. Öğrenciler profiliniz üzerinden randevu alabilir.</p>
@@ -243,7 +243,7 @@ export default async function TeachDashboardPage() {
 
                   <div className="flex items-center justify-between text-sm text-sage-700 mb-6 p-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-sage-100/50">
                     <span className="flex items-center gap-2 font-semibold">
-                      <Calendar size={16} className="text-sage-400" />
+                      <Calendar size={16} className="text-sage-500" />
                       {new Date(booking.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </span>
                     <span className="flex items-center gap-2 font-semibold bg-sage-100/50 px-2.5 py-1 rounded-lg">

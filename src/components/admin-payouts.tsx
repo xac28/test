@@ -171,7 +171,7 @@ export function AdminPayouts({ onChange }: { onChange?: () => void }) {
                             <button
                               title="IBAN'ı kopyala"
                               onClick={() => r.iban && navigator.clipboard?.writeText(r.iban)}
-                              className="text-sage-400 hover:text-sage-700"
+                              className="text-sage-500 hover:text-sage-700"
                             >
                               <Copy size={12} />
                             </button>

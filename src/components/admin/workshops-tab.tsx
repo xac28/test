@@ -37,7 +37,7 @@ export function WorkshopsTab({ onOpenUser, onChanged }: { onOpenUser: (id: strin
                 <td className="px-4 py-3 max-w-xs"><a href={`/atolyeler/${w.slug}`} target="_blank" rel="noreferrer" className="font-medium hover:underline">{w.title}</a><p className="text-xs text-sage-500">{w.mode === "LIVE" ? "Canlı" : "Kayıtlı"} · {w.priceUsd > 0 ? `$${w.priceUsd}` : "Ücretsiz"}</p></td>
                 <td className="px-4 py-3"><button className="hover:underline" onClick={() => onOpenUser(w.teacher.id)}>{w.teacher.name}</button></td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs text-sage-500">{w.startsAt ? fmtDateTime(w.startsAt) : "—"}</td>
-                <td className="px-4 py-3">{w.enrollments}{w.mode === "LIVE" && <span className="text-sage-400"> / {w.capacity}</span>}</td>
+                <td className="px-4 py-3">{w.enrollments}{w.mode === "LIVE" && <span className="text-sage-500"> / {w.capacity}</span>}</td>
                 <td className="px-4 py-3">{w.openReports > 0 ? <Pill tone="orange">{w.openReports} açık</Pill> : <span className="text-sage-300">—</span>}</td>
                 <td className="px-4 py-3"><Pill tone={TONE[w.status]}>{LABEL[w.status]}</Pill></td>
                 <td className="px-4 py-3 text-right">

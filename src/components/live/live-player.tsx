@@ -271,7 +271,7 @@ export function LivePlayer({ room, host, state, audioBlocked, theater, onToggleT
               setVolume(Number(e.target.value))
               setMuted(false)
             }}
-            className="w-20 accent-white"
+            className="w-20 accent-white hidden sm:block"
           />
           {paused && (
             <button onClick={togglePause} className="ml-2 text-xs bg-accent hover:bg-accent-dark px-2.5 py-1 rounded-full font-semibold">
@@ -295,8 +295,11 @@ export function LivePlayer({ room, host, state, audioBlocked, theater, onToggleT
                 <Settings size={17} /> {currentLabel}
               </button>
               {menuOpen && (
-                <div role="menu" data-testid="quality-menu" className="absolute bottom-full right-0 mb-2 w-48 max-h-44 sm:max-h-none overflow-y-auto bg-stage-2/95 backdrop-blur border border-white/15 rounded-lg overflow-hidden shadow-2xl">
-                  <p className="px-3 py-2 text-[11px] uppercase tracking-wider text-white/50 border-b border-white/10">Kalite</p>
+                <>
+                {/* phones: a bottom sheet (the 16:9 player is too short for a floating menu); desktop: a popover */}
+                <div className="fixed inset-0 z-40 sm:hidden bg-black/50" onClick={() => setMenuOpen(false)} aria-hidden />
+                <div role="menu" data-testid="quality-menu" className="fixed inset-x-0 bottom-0 z-50 max-h-[70vh] rounded-t-2xl sm:rounded-lg sm:absolute sm:inset-x-auto sm:bottom-full sm:right-0 sm:mb-2 sm:w-48 sm:max-h-none overflow-y-auto bg-stage-2 sm:bg-stage-2/95 backdrop-blur border border-white/15 shadow-2xl pb-[env(safe-area-inset-bottom)]">
+                  <p className="px-4 sm:px-3 py-3 sm:py-2 text-[11px] uppercase tracking-wider text-white/60 border-b border-white/10">Kalite</p>
                   {options.map((o) => (
                     <button
                       key={o.id}
@@ -307,7 +310,7 @@ export function LivePlayer({ room, host, state, audioBlocked, theater, onToggleT
                         setQualityId(o.id)
                         setMenuOpen(false)
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-white/10 text-left"
+                      className="w-full flex items-center justify-between px-4 sm:px-3 py-3.5 sm:py-2 text-base sm:text-sm hover:bg-white/10 text-left"
                     >
                       <span>
                         {o.label}
@@ -317,6 +320,7 @@ export function LivePlayer({ room, host, state, audioBlocked, theater, onToggleT
                     </button>
                   ))}
                 </div>
+                </>
               )}
             </div>
 

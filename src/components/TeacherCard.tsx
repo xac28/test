@@ -44,7 +44,7 @@ export default function TeacherCard({ teacher }: { teacher: Teacher }) {
       <p className="text-sm text-sage-600 line-clamp-2 mt-3 min-h-[2.6rem] leading-relaxed">{teacher.bio[locale]}</p>
 
       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-sm font-display italic text-sage-700">
-        {teacher.styles.slice(0, 3).map((s) => (
+        {Array.from(new Set(teacher.styles)).slice(0, 3).map((s) => (
           <span key={s}>{styleLabel(s, locale)}</span>
         ))}
       </div>

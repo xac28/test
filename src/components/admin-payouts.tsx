@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { CheckCircle2, Copy, Loader2, Wallet, XCircle, Banknote } from "lucide-react"
 import { PAYOUT_STATUS_LABEL_TR } from "@/lib/payouts"
 
@@ -41,21 +41,31 @@ export function AdminPayouts({ onChange }: { onChange?: () => void }) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Responses can arrive out of order (e.g. a reload after an action vs. a filter change):
+  // only the most recent request may update the table.
+  const requestId = useRef(0)
+  // `load` is also called from async handlers whose closure may predate a filter change
+  const filterRef = useRef(filter)
+  filterRef.current = filter
+
   const load = useCallback(async () => {
+    const mine = ++requestId.current
+    const current = filterRef.current
     setError(null)
     try {
-      const res = await fetch(`/api/admin/payouts${filter ? `?status=${filter}` : ""}`)
+      const res = await fetch(`/api/admin/payouts${current ? `?status=${current}` : ""}`)
       if (!res.ok) throw new Error()
-      setRows((await res.json()).requests)
+      const data = await res.json()
+      if (mine === requestId.current) setRows(data.requests)
     } catch {
-      setError("Ödeme talepleri yüklenemedi.")
+      if (mine === requestId.current) setError("Ödeme talepleri yüklenemedi.")
     }
-  }, [filter])
+  }, [])
 
   useEffect(() => {
     setRows(null)
     load()
-  }, [load])
+  }, [filter, load])
 
   const act = async (row: PayoutRow, action: "approve" | "reject" | "mark_paid") => {
     let note: string | undefined

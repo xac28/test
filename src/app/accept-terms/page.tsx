@@ -2,13 +2,12 @@
 
 import { Suspense, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
 import { Loader2, ShieldCheck } from "lucide-react"
 import { safeNextPath, RECORDING_RETENTION_DAYS } from "@/lib/terms"
 
 function AcceptTermsContent() {
-  const router = useRouter()
   const params = useSearchParams()
   const { update } = useSession()
   const [accepted, setAccepted] = useState(false)
@@ -31,9 +30,11 @@ function AcceptTermsContent() {
         throw new Error(data.error || "Kabul işlemi başarısız oldu.")
       }
       // Re-issue the JWT so the middleware sees termsAccepted = true
-      await update()
-      router.replace(next)
-      router.refresh()
+      await update({ termsAccepted: true }) // no-arg update() only re-reads the session; with data it re-issues the JWT
+      // Make sure the re-issued JWT cookie is stored before navigating (the jwt callback re-reads the DB on every session fetch)
+      await fetch('/api/auth/session', { cache: 'no-store', credentials: 'same-origin' })
+      // Hard navigation: the client router cache may still hold the gate's redirect for this path
+      window.location.assign(next)
     } catch (e: any) {
       setError(e.message || "Bir hata oluştu.")
     } finally {

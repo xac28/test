@@ -295,7 +295,7 @@ export function LivePlayer({ room, host, state, audioBlocked, theater, onToggleT
                 <Settings size={17} /> {currentLabel}
               </button>
               {menuOpen && (
-                <div role="menu" data-testid="quality-menu" className="absolute bottom-full right-0 mb-2 w-48 bg-stage-2/95 backdrop-blur border border-white/15 rounded-lg overflow-hidden shadow-2xl">
+                <div role="menu" data-testid="quality-menu" className="absolute bottom-full right-0 mb-2 w-48 max-h-44 sm:max-h-none overflow-y-auto bg-stage-2/95 backdrop-blur border border-white/15 rounded-lg overflow-hidden shadow-2xl">
                   <p className="px-3 py-2 text-[11px] uppercase tracking-wider text-white/50 border-b border-white/10">Kalite</p>
                   {options.map((o) => (
                     <button

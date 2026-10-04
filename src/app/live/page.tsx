@@ -73,6 +73,18 @@ export default function LiveDirectoryPage() {
 
           {failed && !list && <p className="text-ink/60">Yayınlar yüklenemedi. Biraz sonra tekrar deneyin.</p>}
 
+          {!failed && !list && (
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" aria-busy="true" aria-label="Yayınlar yükleniyor">
+              {[0, 1, 2].map((i) => (
+                <li key={i}>
+                  <div className="aspect-video rounded-xl shimmer" />
+                  <div className="mt-3 h-5 w-3/4 rounded shimmer" />
+                  <div className="mt-2 h-4 w-1/3 rounded shimmer" />
+                </li>
+              ))}
+            </ul>
+          )}
+
           {list && list.length === 0 && (
             <div data-testid="no-broadcasts" className="border border-dashed border-sage-300 rounded-2xl py-20 text-center">
               <Radio className="mx-auto text-sage-400 mb-4" size={36} />

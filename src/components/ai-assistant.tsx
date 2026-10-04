@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { MessageCircle, X, Send, Sparkles, ChevronRight, Mic, MicOff, Zap, Heart, Brain, Moon, Sun, Leaf } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 interface Message {
   role: "user" | "ai"
@@ -27,7 +28,13 @@ const AI_MOODS = [
   { icon: <Moon size={14} />, label: "Calm", color: "from-slate-500 to-blue-500" },
 ]
 
+// Full-screen live pages (broadcast viewer/studio, lesson room) own the bottom-right corner (chat send button)
+const isFullScreenLivePage = (path: string | null) =>
+  !!path && (path.startsWith("/live/") || path === "/room" || path.startsWith("/room/"))
+
 export function AiAssistant() {
+  const pathname = usePathname()
+
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -101,6 +108,8 @@ export function AiAssistant() {
   }
 
   const currentMood = AI_MOODS[selectedMood]
+
+  if (isFullScreenLivePage(pathname)) return null
 
   return (
     <>

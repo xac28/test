@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   LocalAudioTrack,
   LocalVideoTrack,
@@ -85,6 +85,7 @@ const publishOptsOf = (p: QualityPreset) => {
 
 export function Studio() {
   const router = useRouter()
+  const workshopId = useSearchParams().get("workshop")
   const live = useLiveRoom({ isHost: true })
   const { room } = live
 
@@ -170,6 +171,21 @@ export function Studio() {
       videoTrack.detach(el)
     }
   }, [videoTrack])
+
+  // opened from "Atölyeyi başlat": use the workshop's title and tell the host it is a members-only session
+  const [workshopTitle, setWorkshopTitle] = useState<string | null>(null)
+  useEffect(() => {
+    if (!workshopId) return
+    fetch(`/api/workshops/${workshopId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.workshop) {
+          setWorkshopTitle(d.workshop.title)
+          setTitle(d.workshop.title)
+        }
+      })
+      .catch(() => {})
+  }, [workshopId])
 
   // existing live session? offer to resume
   useEffect(() => {
@@ -257,7 +273,7 @@ export function Studio() {
       const res = await fetch("/api/room/instant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, ...(workshopId ? { workshopId } : {}) }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 403 && data.code === "TERMS_REQUIRED") return router.replace("/accept-terms?next=/live/studio")
@@ -540,6 +556,12 @@ export function Studio() {
           {/* setup / quality */}
           <section className="max-w-5xl rounded-xl border border-white/10 bg-stage-2 p-4 space-y-4">
             <h2 className="text-xs font-semibold tracking-[0.18em] uppercase text-white/60">Yayın ayarları</h2>
+
+            {workshopTitle && (
+              <p className="text-sm rounded-md border border-accent/40 bg-accent/10 px-3 py-2" data-testid="workshop-banner">
+                Atölye oturumu: <strong>{workshopTitle}</strong> — yalnızca onaylı katılımcılar izleyebilir.
+              </p>
+            )}
 
             {!isLive && (
               <label className="block">

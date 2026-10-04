@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
 import { createLiveKitToken } from "@/lib/livekit"
+import { canAccessContent } from "@/lib/workshops"
 
 // POST /api/live/:id/join — watch a broadcast: subscribe-only token (+ data for chat)
 export async function POST(req: Request, { params }: { params: { id: string } }) {
@@ -21,6 +22,26 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const isHost = room.teacher.userId === user.id
+
+    // Workshop sessions are for confirmed participants (and the host / admins) only
+    if (room.workshopId && !isHost && user.role !== "ADMIN") {
+      const enrollment = await db.workshopEnrollment.findUnique({
+        where: { workshopId_userId: { workshopId: room.workshopId, userId: user.id } },
+      })
+      if (!canAccessContent({ isOwner: false, isAdmin: false, enrollmentStatus: enrollment?.status })) {
+        const w = await db.workshop.findUnique({ where: { id: room.workshopId }, select: { slug: true, title: true } })
+        return NextResponse.json(
+          {
+            error: enrollment?.status === "RESERVED"
+              ? "Kaydınız alındı, ödemeniz onaylandığında yayına katılabilirsiniz."
+              : "Bu yayın yalnızca atölyeye kayıtlı katılımcılara açık.",
+            code: "ENROLLMENT_REQUIRED",
+            workshop: w,
+          },
+          { status: 403 }
+        )
+      }
+    }
     const token = await createLiveKitToken(room.roomName, user.name || "İzleyici", isHost, {
       identity: user.id,
       canPublish: isHost,

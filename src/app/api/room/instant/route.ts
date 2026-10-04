@@ -43,7 +43,18 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => ({}))
-    const title = String(body.title || "").trim().slice(0, 120) || "Canlı Yoga Dersi"
+
+    // A workshop session: only the workshop's own teacher may broadcast it
+    let workshop: { id: string; title: string } | null = null
+    if (body.workshopId) {
+      const w = await db.workshop.findUnique({ where: { id: String(body.workshopId) } })
+      if (!w || w.teacherId !== teacher.id || w.status !== "PUBLISHED" || w.mode !== "LIVE") {
+        return NextResponse.json({ error: "Bu atölyeyi yayınlayamazsınız." }, { status: 403 })
+      }
+      workshop = { id: w.id, title: w.title }
+    }
+
+    const title = String(body.title || "").trim().slice(0, 120) || workshop?.title || "Canlı Yoga Dersi"
     const roomName = `live-${teacher.id}-${Date.now()}`
     const livekitUrl = process.env.LIVEKIT_URL || "ws://localhost:7880"
 
@@ -52,7 +63,7 @@ export async function POST(req: Request) {
     for (const p of previous) await endLiveRoom(p.id).catch(() => {})
 
     const liveRoom = await db.liveRoom.create({
-      data: { teacherId: teacher.id, roomName, title, isActive: true },
+      data: { teacherId: teacher.id, roomName, title, isActive: true, workshopId: workshop?.id ?? null },
     })
     await createLiveKitRoom(roomName, title)
 

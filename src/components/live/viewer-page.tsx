@@ -17,7 +17,7 @@ interface StreamInfo {
   teacher: { id: string; name: string | null; image: string | null }
 }
 
-type Phase = "loading" | "watching" | "ended" | "error"
+type Phase = "loading" | "watching" | "ended" | "error" | "locked"
 
 export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
   const router = useRouter()
@@ -27,6 +27,7 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
   const [theater, setTheater] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const [copied, setCopied] = useState(false)
+  const [lockedWorkshop, setLockedWorkshop] = useState<{ slug: string; title: string } | null>(null)
 
   const live = useLiveRoom({ hostIdentity: stream?.hostIdentity, isHost: false })
   const { room, connect } = live
@@ -43,6 +44,12 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
       const data = await res.json().catch(() => ({}))
       if (res.status === 401) return router.replace(`/login?callbackUrl=/live/${liveRoomId}`)
       if (res.status === 403 && data.code === "TERMS_REQUIRED") return router.replace(`/accept-terms?next=/live/${liveRoomId}`)
+      if (res.status === 403 && data.code === "ENROLLMENT_REQUIRED") {
+        setLockedWorkshop(data.workshop)
+        setErrorMsg(data.error)
+        setPhase("locked")
+        return
+      }
       if (!res.ok) {
         setPhase(data.code === "ENDED" ? "ended" : "error")
         setErrorMsg(data.error || "Yayına katılınamadı")
@@ -88,6 +95,22 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {}
+  }
+
+  if (phase === "locked") {
+    return (
+      <div className="min-h-screen bg-stage text-white flex flex-col items-center justify-center gap-5 px-6 text-center">
+        <p className="eyebrow !text-white/50">Atölye yayını</p>
+        <h1 className="font-display text-4xl max-w-xl">{lockedWorkshop?.title ?? "Bu yayın atölye katılımcılarına açık"}</h1>
+        <p className="text-white/60 max-w-md">{errorMsg}</p>
+        <div className="flex gap-3">
+          {lockedWorkshop && (
+            <Link href={`/atolyeler/${lockedWorkshop.slug}`} className="bg-accent hover:bg-accent-dark px-6 py-2.5 rounded-md text-sm font-semibold">Atölyeye git</Link>
+          )}
+          <Link href="/live" className="border border-white/30 hover:bg-white/10 px-6 py-2.5 rounded-md text-sm font-semibold">Canlı yayınlar</Link>
+        </div>
+      </div>
+    )
   }
 
   if (phase === "ended" || phase === "error") {

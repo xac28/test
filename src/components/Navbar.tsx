@@ -1,176 +1,202 @@
 'use client';
 
 import Link from 'next/link';
-import { useI18n } from '@/i18n';
-import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, LogOut, User, LayoutDashboard, Search, MessageSquare, Compass, BookOpen, GraduationCap } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield } from 'lucide-react';
+import { useI18n } from '@/i18n';
+
+/** AYA wordmark: set in the display serif with wide tracking. */
+export function Wordmark({ className = '' }: { className?: string }) {
+  return <span className={`font-display font-medium tracking-[0.28em] ${className}`}>AYA</span>;
+}
 
 export default function Navbar() {
   const { t, locale, setLocale } = useI18n();
   const { data: session, status } = useSession();
-  const [langOpen, setLangOpen] = useState(false);
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [liveCount, setLiveCount] = useState(0);
+  const profileRef = useRef<HTMLDivElement>(null);
 
-  const isTeacher = session?.user?.role === 'TEACHER' || session?.user?.role === 'ADMIN';
+  const role = session?.user?.role;
+  const isTeacher = role === 'TEACHER' || role === 'ADMIN';
+
+  // little red dot next to "Canlı Yayın" while someone is on air
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch('/api/live/status')
+        .then((r) => (r.ok ? r.json() : { live: 0 }))
+        .then((d) => alive && setLiveCount(d.live || 0))
+        .catch(() => {});
+    load();
+    const id = setInterval(load, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
+
+  useEffect(() => setMobileOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const close = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [profileOpen]);
 
   const navLinks = [
-    { href: '/teachers', label: t.nav.findTeacher, icon: Search },
-    { href: '/messages', label: locale === 'en' ? 'Messages' : 'Mesajlar', icon: MessageSquare },
-    { href: '/pricing', label: locale === 'en' ? 'Plans' : 'Paketler', icon: Compass },
-    { href: '/become-teacher', label: t.nav.becomeTeacher, icon: GraduationCap },
+    { href: '/atolyeler', label: t.nav.workshops },
+    { href: '/live', label: t.nav.live, live: liveCount > 0 },
+    { href: '/teachers', label: t.nav.teachers },
+    { href: '/icerikler', label: t.nav.articles },
+    { href: '/pricing', label: t.nav.plans },
   ];
 
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
+  const initial = (session?.user?.name || session?.user?.email || 'A').trim()[0]?.toUpperCase();
+
   return (
-    <nav className="sticky top-0 z-50 bg-cream/80 backdrop-blur-xl border-b border-sage-100/80 shadow-sm shadow-sage-100/10">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <svg viewBox="0 0 32 32" className="w-7 h-7 text-sage-600 group-hover:text-sage-700 transition-colors" fill="currentColor">
-            <path d="M16 4c-1 4-4 6-7 7 3 1 6 3 7 7 1-4 4-6 7-7-3-1-6-3-7-7z" opacity="0.7" />
-            <path d="M16 13c-.5 2-2 3-3.5 3.5 1.5.5 3 1.5 3.5 3.5.5-2 2-3 3.5-3.5-1.5-.5-3-1.5-3.5-3.5z" />
-          </svg>
-          <span className="font-display text-2xl italic text-ink">AYA</span>
+    <header className="sticky top-0 z-50 bg-cream border-b border-rule">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between gap-8">
+        <Link href="/" aria-label="AYA ana sayfa" className="text-ink text-[1.65rem] leading-none">
+          <Wordmark />
         </Link>
 
-        {/* Desktop Links */}
-        <div className="hidden lg:flex items-center gap-2">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link key={link.href} href={link.href} className="group relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-sage-600 hover:text-sage-900 transition-all hover:bg-sage-50/80">
-                <Icon size={16} className="text-sage-400 group-hover:text-sage-600 transition-colors" />
-                {link.label}
-              </Link>
-            )
-          })}
-        </div>
-
-        {/* Right Side */}
-        <div className="flex items-center gap-3">
-          {/* Language switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setLangOpen(!langOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sage-200 hover:border-sage-400 transition-all text-sm hover:shadow-sm"
+        <nav aria-label="Ana menü" className="hidden lg:flex items-center gap-8 flex-1">
+          {navLinks.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-current={isActive(l.href) ? 'page' : undefined}
+              className={`relative text-[0.9rem] font-medium py-1 transition-colors ${
+                isActive(l.href) ? 'text-ink' : 'text-sage-600 hover:text-ink'
+              } after:absolute after:left-0 after:-bottom-0.5 after:h-px after:bg-ink after:transition-all ${
+                isActive(l.href) ? 'after:w-full' : 'after:w-0 hover:after:w-full'
+              }`}
             >
-              <span>{locale === 'en' ? '🇬🇧' : '🇹🇷'}</span>
-              <span className="font-medium uppercase text-xs">{locale}</span>
-            </button>
-            {langOpen && (
-              <div className="absolute right-0 mt-2 w-32 bg-cream border border-sage-200 rounded-xl shadow-lg overflow-hidden animate-slide-down z-50">
+              {l.label}
+              {l.live && (
+                <span title="Şu anda canlı yayın var" className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle animate-pulse" />
+              )}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-4">
+          {/* language */}
+          <div className="hidden sm:flex items-center text-xs font-semibold tracking-wider" role="group" aria-label="Dil">
+            {(['tr', 'en'] as const).map((l, i) => (
+              <span key={l} className="flex items-center">
+                {i > 0 && <span className="text-rule mx-1.5">/</span>}
                 <button
-                  onClick={() => { setLocale('en'); setLangOpen(false); }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-sage-50 flex items-center gap-2"
+                  onClick={() => setLocale(l)}
+                  aria-pressed={locale === l}
+                  className={`uppercase ${locale === l ? 'text-ink' : 'text-sage-400 hover:text-ink'}`}
                 >
-                  🇬🇧 English
+                  {l}
                 </button>
-                <button
-                  onClick={() => { setLocale('tr'); setLangOpen(false); }}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-sage-50 flex items-center gap-2"
-                >
-                  🇹🇷 Türkçe
-                </button>
-              </div>
-            )}
+              </span>
+            ))}
           </div>
 
-          {/* Auth Section */}
           {status === 'loading' ? (
-            <div className="w-20 h-9 skeleton-pulse rounded-full" />
+            <div className="w-24 h-9 shimmer rounded-md" />
           ) : session?.user ? (
-            <div className="relative">
+            <div className="relative" ref={profileRef}>
               <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-sage-200 hover:border-sage-400 transition-all hover:shadow-sm"
+                onClick={() => setProfileOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+                data-testid="profile-menu-button"
+                className="flex items-center gap-2.5 py-1 pl-1 pr-3 border border-rule hover:border-ink rounded-full transition-colors"
               >
-                <img
-                  src={session.user.image || `https://i.pravatar.cc/150?u=${session.user.id}`}
-                  alt=""
-                  className="w-7 h-7 rounded-full object-cover"
-                />
-                <span className="text-xs font-medium text-ink/80 hidden sm:inline max-w-[100px] truncate">{session.user.name}</span>
+                {session.user.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={session.user.image} alt="" className="w-7 h-7 rounded-full object-cover" />
+                ) : (
+                  <span className="w-7 h-7 rounded-full bg-ink text-cream text-xs font-semibold flex items-center justify-center">{initial}</span>
+                )}
+                <span className="text-xs font-medium hidden sm:inline max-w-[110px] truncate">{session.user.name}</span>
               </button>
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white border border-sage-200 rounded-2xl shadow-xl overflow-hidden animate-slide-down z-50">
-                  <div className="px-4 py-3 border-b border-sage-100 bg-sage-50/50">
-                    <p className="text-sm font-semibold text-ink truncate">{session.user.name}</p>
+                <div role="menu" className="absolute right-0 mt-2 w-60 bg-paper border border-ink shadow-lg z-50">
+                  <div className="px-4 py-3 border-b border-rule">
+                    <p className="text-sm font-semibold truncate">{session.user.name}</p>
                     <p className="text-xs text-sage-500 truncate">{session.user.email}</p>
                   </div>
-                  <Link href="/dashboard" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-sage-50 transition">
-                    <LayoutDashboard size={16} className="text-sage-500" /> Dashboard
-                  </Link>
-                  <Link href="/dashboard/profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-sage-50 transition">
-                    <User size={16} className="text-sage-500" /> Profil
-                  </Link>
-                  {isTeacher && (
-                    <Link href="/teach" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-sage-50 transition">
-                      🧘 Eğitmen Paneli
-                    </Link>
-                  )}
-                  {session.user.role === 'ADMIN' && (
-                    <Link href="/admin" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-sage-50 transition">
-                      ⚙️ Admin Panel
-                    </Link>
-                  )}
+                  <MenuLink href="/dashboard" icon={<LayoutDashboard size={15} />} onClick={() => setProfileOpen(false)}>Panelim</MenuLink>
+                  <MenuLink href="/dashboard/profile" icon={<Settings size={15} />} onClick={() => setProfileOpen(false)}>Profil</MenuLink>
+                  <MenuLink href="/messages" icon={<span className="w-[15px]" />} onClick={() => setProfileOpen(false)}>{t.nav.messages}</MenuLink>
+                  {isTeacher && <MenuLink href="/teach" icon={<Radio size={15} />} onClick={() => setProfileOpen(false)}>Eğitmen paneli</MenuLink>}
+                  {role === 'ADMIN' && <MenuLink href="/admin" icon={<Shield size={15} />} onClick={() => setProfileOpen(false)}>Yönetim paneli</MenuLink>}
                   <button
                     onClick={() => signOut({ callbackUrl: '/' })}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition border-t border-sage-100"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-clay-600 hover:bg-clay-50 border-t border-rule"
                   >
-                    <LogOut size={16} /> Çıkış Yap
+                    <LogOut size={15} /> Çıkış yap
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-2">
-              <Link href="/login" className="text-sm text-ink/70 hover:text-sage-700 px-4 py-2 transition animated-underline">
-                {t.nav.signIn}
-              </Link>
-              <Link href="/login" className="text-sm bg-sage-700 hover:bg-sage-800 text-cream px-5 py-2 rounded-full transition-all btn-magnetic">
+            <div className="hidden sm:flex items-center gap-5">
+              <Link href="/login" className="text-sm font-medium text-sage-700 hover:text-ink">{t.nav.signIn}</Link>
+              <Link href="/login" className="text-sm font-medium bg-ink text-cream hover:bg-sage-800 px-5 py-2.5 rounded-md transition-colors">
                 {t.nav.signUp}
               </Link>
             </div>
           )}
 
-          {/* Mobile hamburger */}
           <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 text-ink/70 hover:text-sage-700 transition"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-label={mobileOpen ? 'Menüyü kapat' : 'Menüyü aç'}
+            aria-expanded={mobileOpen}
+            className="lg:hidden p-2 -mr-2 text-ink"
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-sage-100 animate-slide-down shadow-xl absolute w-full left-0 mt-0">
-          <div className="max-w-7xl mx-auto px-6 py-6 space-y-2">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3.5 text-sm font-semibold text-sage-700 hover:bg-sage-50 hover:text-sage-900 rounded-xl transition-all"
-                >
-                  <Icon size={18} className="text-sage-400" />
-                  {link.label}
-                </Link>
-              )
-            })}
-            {!session && (
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="block px-4 py-3.5 mt-4 text-sm font-bold text-white bg-sage-900 rounded-xl text-center shadow-md">
-                Giriş Yap / Kayıt Ol
+        <div className="lg:hidden border-t border-rule bg-cream absolute w-full left-0 shadow-lg">
+          <nav className="max-w-7xl mx-auto px-6 py-4 flex flex-col">
+            {navLinks.map((l) => (
+              <Link key={l.href} href={l.href} className="py-3.5 border-b border-rule text-lg font-display flex items-center gap-2">
+                {l.label}
+                {l.live && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
               </Link>
-            )}
-          </div>
+            ))}
+            <div className="flex items-center justify-between pt-4">
+              {!session?.user ? (
+                <Link href="/login" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">{t.nav.signIn} / {t.nav.signUp}</Link>
+              ) : (
+                <Link href="/dashboard" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">Panelim</Link>
+              )}
+              <div className="flex items-center gap-1.5 text-xs font-semibold">
+                <button onClick={() => setLocale('tr')} className={locale === 'tr' ? 'text-ink' : 'text-sage-400'}>TR</button>
+                <span className="text-rule">/</span>
+                <button onClick={() => setLocale('en')} className={locale === 'en' ? 'text-ink' : 'text-sage-400'}>EN</button>
+              </div>
+            </div>
+          </nav>
         </div>
       )}
-    </nav>
+    </header>
   );
 }
 
+function MenuLink({ href, icon, children, onClick }: { href: string; icon: React.ReactNode; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <Link href={href} role="menuitem" onClick={onClick} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-sage-100 text-sage-800">
+      <span className="text-sage-500">{icon}</span> {children}
+    </Link>
+  );
+}

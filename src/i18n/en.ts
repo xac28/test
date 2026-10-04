@@ -12,6 +12,12 @@ export const en = {
     howItWorks: 'How it works',
     signIn: 'Sign in',
     signUp: 'Get started',
+    workshops: 'Workshops',
+    live: 'Live',
+    articles: 'Journal',
+    plans: 'Plans',
+    messages: 'Messages',
+    teachers: 'Teachers',
   },
   // Hero
   hero: {

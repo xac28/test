@@ -1,20 +1,21 @@
-import type { Metadata } from 'next';
-import { Inter, Cormorant_Garamond } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Inter, Newsreader } from 'next/font/google';
 import { I18nProvider } from '@/i18n';
 import { Providers } from '@/components/providers';
 import { AiAssistant } from '@/components/ai-assistant';
 import { ErrorBoundary } from '@/components/error-boundary';
 import './globals.css';
 
+// `latin-ext` carries ı ş ğ İ Ş Ğ — without it Turkish text silently falls back to a system font mid-word.
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-body',
   display: 'swap',
   preload: true,
 });
 
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
+const newsreader = Newsreader({
+  subsets: ['latin', 'latin-ext'],
   weight: ['300', '400', '500', '600'],
   style: ['normal', 'italic'],
   variable: '--font-display',
@@ -23,13 +24,18 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: 'AYA — Your practice, anywhere you breathe.',
-  description: 'Live 1-on-1 yoga and meditation classes with certified teachers worldwide.',
+  title: { default: 'AYA — Yoga ve meditasyonda canlı dersler', template: '%s · AYA' },
+  description:
+    'AYA: sertifikalı eğitmenlerle birebir dersler, canlı yayınlar, atölyeler ve yoga, nefes ve meditasyon üzerine yazılar.',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#f6f2ea',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
+    <html lang="tr" className={`${inter.variable} ${newsreader.variable}`}>
       <body className={inter.className}>
         <Providers>
           <I18nProvider>

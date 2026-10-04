@@ -12,12 +12,47 @@ html {
 }
 
 body {
-  background-color: #faf6f0;
-  color: #1a1f1a;
+  background-color: #f6f2ea;
+  color: #17140f;
   font-family: var(--font-body);
+  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+
+/* Editorial type scale: headings use the serif, tight tracking, balanced wrapping */
+h1, h2, h3, .font-display {
+  letter-spacing: -0.015em;
+}
+h1, h2 { text-wrap: balance; }
+
+::selection { background: #e8c3ad; color: #17140f; }
+
+:focus-visible {
+  outline: 2px solid #b9572b;
+  outline-offset: 2px;
+}
+
+/* Small-caps section label with a rule, e.g. "01 — Atölyeler" */
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7e7562;
+}
+.rule-top { border-top: 1px solid #17140f; }
+.hairline { border-color: #d9d2c3; }
+
+/* Article typography */
+.prose-aya p { font-size: 1.125rem; line-height: 1.8; margin: 0 0 1.4em; color: #2a261f; }
+.prose-aya h2 { font-family: var(--font-display); font-size: 1.9rem; line-height: 1.2; margin: 2.2em 0 0.6em; color: #17140f; }
+.prose-aya h3 { font-family: var(--font-display); font-size: 1.4rem; margin: 1.8em 0 0.5em; color: #17140f; }
+.prose-aya ul { margin: 0 0 1.4em 1.2em; list-style: disc; }
+.prose-aya li { font-size: 1.125rem; line-height: 1.7; margin-bottom: 0.4em; color: #2a261f; }
+.prose-aya blockquote { border-left: 3px solid #b9572b; padding: 0.2em 0 0.2em 1.2em; margin: 1.8em 0; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.45; font-style: italic; color: #17140f; }
+.prose-aya > p:first-of-type::first-letter { font-family: var(--font-display); font-size: 3.6em; line-height: 0.85; float: left; padding: 0.08em 0.1em 0 0; color: #b9572b; }
 
 /* Lightweight texture — removed heavy SVG feTurbulence filter for performance */
 .texture-overlay {
@@ -42,11 +77,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #aec39d;
+  background: #c7bfab;
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #88a574;
+  background: #a39a84;
 }
 
 /* Decorative divider */
@@ -54,14 +89,14 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: #aec39d;
+  color: #c7bfab;
 }
 .lotus-divider::before,
 .lotus-divider::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #aec39d, transparent);
+  background: #d9d2c3;
 }
 
 /* ====== ENTERPRISE ANIMATIONS ====== */
@@ -98,34 +133,29 @@ body {
   animation: watermark-move 25s linear infinite;
 }
 
-/* Smooth card hover */
+/* Card hover: a quiet border/shadow change, no bounce */
 .card-hover {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .card-hover:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 16px 48px -12px rgba(44, 59, 39, 0.15);
+  border-color: #17140f;
+  box-shadow: 0 8px 24px -12px rgba(23, 20, 15, 0.25);
 }
 
-/* Glassmorphism card */
+/* Flat card (kept the old class name so every page picks up the new look) */
 .glass-card {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(174, 195, 157, 0.2);
+  background: #fffdf9;
+  border: 1px solid #d9d2c3;
 }
 
-/* Gradient text */
+/* Gradient text is gone — plain ink */
 .gradient-text {
-  background: linear-gradient(135deg, #2c3b27 0%, #6a8a56 50%, #88a574 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #17140f;
 }
 
 /* Shimmer loading */
 .shimmer {
-  background: linear-gradient(90deg, #e8eee2 25%, #f6f8f4 50%, #e8eee2 75%);
+  background: linear-gradient(90deg, #efebe2 25%, #f8f6f1 50%, #efebe2 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -218,7 +248,7 @@ body {
 /* Focus visible ring */
 .focus-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(106, 138, 86, 0.4);
+  box-shadow: 0 0 0 3px rgba(185, 87, 43, 0.35);
 }
 
 /* Stat counter animation */
@@ -255,10 +285,10 @@ body {
 
 /* Glow effect for interactive elements */
 .glow-sage {
-  box-shadow: 0 0 20px rgba(106, 138, 86, 0.15);
+  box-shadow: none;
 }
 .glow-sage:hover {
-  box-shadow: 0 0 30px rgba(106, 138, 86, 0.25);
+  box-shadow: none;
 }
 
 /* Gradient border */
@@ -271,7 +301,7 @@ body {
   inset: 0;
   padding: 1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(174, 195, 157, 0.4), rgba(214, 179, 148, 0.4));
+  background: #d9d2c3;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -307,7 +337,7 @@ body {
   50% { opacity: 0.8; }
 }
 .skeleton-pulse {
-  background: linear-gradient(90deg, #e8eee2 0%, #f6f8f4 50%, #e8eee2 100%);
+  background: linear-gradient(90deg, #efebe2 0%, #f8f6f1 50%, #efebe2 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite, skeletonPulse 2s ease-in-out infinite;
   border-radius: 12px;
@@ -318,8 +348,8 @@ body {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 .btn-magnetic:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 40px -10px rgba(74, 93, 35, 0.3);
+  transform: none;
+  box-shadow: 0 6px 18px -8px rgba(23, 20, 15, 0.35);
 }
 .btn-magnetic:active {
   transform: translateY(0) scale(0.98);
@@ -362,7 +392,7 @@ body {
 .typewriter {
   overflow: hidden;
   white-space: nowrap;
-  border-right: 2px solid #4A5D23;
+  border-right: 2px solid #17140f;
   animation: typewriter 2s steps(40) forwards, blink 0.7s step-end infinite;
 }
 
@@ -433,8 +463,8 @@ body {
   transform-style: preserve-3d;
 }
 .card-3d:hover {
-  transform: translateY(-8px) rotateX(2deg);
-  box-shadow: 0 20px 60px -15px rgba(44, 59, 39, 0.2);
+  transform: none;
+  box-shadow: 0 12px 32px -14px rgba(23, 20, 15, 0.3);
 }
 
 /* Smooth underline animation */
@@ -448,7 +478,7 @@ body {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #4A5D23, #88a574);
+  background: #b9572b;
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .animated-underline:hover::after {
@@ -481,7 +511,7 @@ body {
 }
 .loading-bar {
   height: 3px;
-  background: linear-gradient(90deg, #4A5D23, #88a574, #4A5D23);
+  background: #b9572b;
   animation: loadingBar 1.5s ease-in-out;
 }
 

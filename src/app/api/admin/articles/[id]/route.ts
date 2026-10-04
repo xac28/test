@@ -1,0 +1,48 @@
+import { db } from "@/lib/db"
+import { NextResponse } from "next/server"
+import { resolveUser } from "@/lib/auth-utils"
+import { validateArticleInput } from "@/lib/articles"
+
+async function adminOnly(req: Request) {
+  const user = await resolveUser(req)
+  return user && user.role === "ADMIN" ? user : null
+}
+
+// GET one (full body) for the editor
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  if (!(await adminOnly(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const article = await db.article.findUnique({ where: { id: params.id } })
+  if (!article) return NextResponse.json({ error: "Yazı bulunamadı" }, { status: 404 })
+  return NextResponse.json({ article })
+}
+
+// PATCH — edit / publish / unpublish
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  try {
+    if (!(await adminOnly(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const existing = await db.article.findUnique({ where: { id: params.id } })
+    if (!existing) return NextResponse.json({ error: "Yazı bulunamadı" }, { status: 404 })
+    const body = await req.json().catch(() => ({}))
+    const v = validateArticleInput({ ...existing, ...body })
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+    const publishing = v.data.status === "PUBLISHED" && existing.status !== "PUBLISHED"
+    const article = await db.article.update({
+      where: { id: params.id },
+      data: {
+        ...v.data,
+        ...(publishing ? { publishedAt: new Date() } : {}),
+        ...(v.data.status === "DRAFT" ? { publishedAt: null } : {}),
+      },
+    })
+    return NextResponse.json({ success: true, article })
+  } catch (error) {
+    console.error("[ADMIN_ARTICLE_PATCH_ERROR]", error)
+    return NextResponse.json({ error: "Internal error" }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  if (!(await adminOnly(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  await db.article.deleteMany({ where: { id: params.id } })
+  return NextResponse.json({ success: true })
+}

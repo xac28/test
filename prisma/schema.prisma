@@ -91,6 +91,8 @@ model User {
   conversationsReceived Conversation[] @relation("UserTwo")
   messagesSent         Message[]
   comments             Comment[]
+  workshopEnrollments  WorkshopEnrollment[]
+  articles             Article[]
 }
 
 model Conversation {
@@ -208,6 +210,7 @@ model Teacher {
   liveRooms       LiveRoom[]
   videos          TeacherVideo[]
   payoutRequests  PayoutRequest[]
+  workshops       Workshop[]
 }
 
 model TeacherVideo {
@@ -321,6 +324,10 @@ model LiveRoom {
   roomName    String   @unique
   title       String   @default("Live Yoga Session")
   isActive    Boolean  @default(true)
+
+  // Set when the broadcast is a workshop session: only confirmed enrollees may watch
+  workshopId  String?
+  workshop    Workshop? @relation(fields: [workshopId], references: [id], onDelete: SetNull)
   
   createdAt   DateTime @default(now())
   endedAt     DateTime?
@@ -492,4 +499,94 @@ model PayoutRequest {
 
   @@index([status, createdAt])
   @@index([teacherId])
+}
+
+
+// ── Workshops (Atölyeler): group live sessions or recorded courses ──────────
+
+enum WorkshopMode {
+  LIVE
+  RECORDED
+}
+
+enum WorkshopStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+// RESERVED = seat held, waiting for the payment to be confirmed by the teacher/admin
+enum EnrollmentStatus {
+  RESERVED
+  CONFIRMED
+  CANCELLED
+}
+
+model Workshop {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String         @db.VarChar(160)
+  subtitle    String?        @db.VarChar(240)
+  description String         @db.Text
+  category    String         @db.VarChar(60)
+  level       String         @default("Tüm seviyeler") @db.VarChar(40)
+  mode        WorkshopMode   @default(LIVE)
+  status      WorkshopStatus @default(PUBLISHED)
+
+  teacherId   String
+  teacher     Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  startsAt    DateTime?      // LIVE workshops
+  durationMin Int            @default(60)
+  priceUsd    Float          @default(0)
+  capacity    Int            @default(20)
+  coverUrl    String?        @db.Text
+  videoUrl    String?        @db.Text // RECORDED workshops: shown only to confirmed enrollees
+
+  enrollments WorkshopEnrollment[]
+  liveRooms   LiveRoom[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status, startsAt])
+  @@index([teacherId])
+}
+
+model WorkshopEnrollment {
+  id         String           @id @default(cuid())
+  workshopId String
+  workshop   Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     EnrollmentStatus @default(CONFIRMED)
+  createdAt  DateTime         @default(now())
+
+  @@unique([workshopId, userId])
+  @@index([userId])
+}
+
+// ── Articles (İçerikler): editorial pieces on yoga, breath and meditation ───
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Article {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String        @db.VarChar(200)
+  excerpt     String        @db.VarChar(400)
+  body        String        @db.LongText
+  category    String        @db.VarChar(60)
+  coverUrl    String?       @db.Text
+  status      ArticleStatus @default(DRAFT)
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, publishedAt])
 }

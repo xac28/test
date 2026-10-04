@@ -10,6 +10,12 @@ export const tr = {
     howItWorks: 'Nasıl Çalışır',
     signIn: 'Giriş Yap',
     signUp: 'Başla',
+    workshops: 'Atölyeler',
+    live: 'Canlı Yayın',
+    articles: 'İçerikler',
+    plans: 'Paketler',
+    messages: 'Mesajlar',
+    teachers: 'Eğitmenler',
   },
   hero: {
     eyebrow: 'Yoga ve Meditasyon, sana göre',

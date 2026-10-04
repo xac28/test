@@ -39,6 +39,7 @@ export interface LiveSummary {
   startedAt: string
   viewerCount: number
   teacher: { id: string; name: string | null; image: string | null }
+  workshop: { slug: string; title: string } | null
 }
 
 /**
@@ -48,7 +49,10 @@ export interface LiveSummary {
 export async function listActiveBroadcasts(): Promise<LiveSummary[]> {
   const rooms = await db.liveRoom.findMany({
     where: { isActive: true },
-    include: { teacher: { include: { user: { select: { id: true, name: true, image: true } } } } },
+    include: {
+      teacher: { include: { user: { select: { id: true, name: true, image: true } } } },
+      workshop: { select: { slug: true, title: true } },
+    },
     orderBy: { createdAt: "desc" },
     take: 50,
   })
@@ -83,6 +87,7 @@ export async function listActiveBroadcasts(): Promise<LiveSummary[]> {
       startedAt: r.createdAt.toISOString(),
       viewerCount,
       teacher: { id: r.teacher.user.id, name: r.teacher.user.name, image: r.teacher.user.image },
+      workshop: r.workshop,
     })
   }
   return result

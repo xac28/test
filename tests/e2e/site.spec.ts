@@ -227,7 +227,7 @@ test.describe("admin panel is Turkish", () => {
     const a = await newSession(browser, admin.email)
     await a.page.goto("/admin")
     const body = await a.page.locator("body").innerText()
-    for (const word of ["Genel Bakış", "Başvurular", "Deneme Odaları", "Finans", "Ödeme Talepleri", "İçerikler", "Canlı Oturumlar", "Kullanıcılar", "Raporlar", "Güvenlik", "Denetim Kayıtları", "Rezervasyonlar", "Ders Kayıtları", "Atölyeler"]) {
+    for (const word of ["Genel Bakış", "Başvurular", "Deneme Odaları", "Finans", "Ödeme Talepleri", "İçerikler", "Canlı Oturumlar", "Kullanıcılar", "Raporlar", "Güvenlik", "Günlükler", "Rezervasyonlar", "Ders Kayıtları", "Atölyeler"]) {
       expect(body).toContain(word)
     }
     expect(body).not.toMatch(/Pending Applications|Platform Financials|User Management|Welcome to Admin/)

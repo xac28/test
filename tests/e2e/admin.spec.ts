@@ -295,6 +295,7 @@ test.describe("users, security and audit", () => {
 
     // audit trail
     await a.page.getByTestId("nav-audit").click()
+    await a.page.getByTestId("log-view-admin").click() // the log tab opens on system events; admin actions are the second view
     await a.page.getByTestId("audit-search").fill("Platform kurallarını")
     await expect(a.page.getByTestId("audit-row").first()).toContainText("BAN_USER", { timeout: 15_000 })
     const csv = await a.page.request.get(`/api/admin/audit?format=csv&q=${encodeURIComponent("Platform kurallarını")}`)

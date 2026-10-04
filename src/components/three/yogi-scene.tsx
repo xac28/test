@@ -59,11 +59,15 @@ export function YogiScene({ poses = ["kolay-oturus", "dag-durusu", "savasci-2", 
       const model = await loadYogi().catch(() => null)
       if (disposed || !model || !renderer) return
 
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
+      // without a GPU (software GL) full-rate rendering would starve the page: draw small, unshadowed and at a low frame rate
+      const gl = renderer.getContext()
+      const dbg = gl.getExtension("WEBGL_debug_renderer_info")
+      const soft = /swiftshader|llvmpipe|software|softpipe/i.test(String(dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : ""))
+      renderer.setPixelRatio(soft ? 0.7 : Math.min(window.devicePixelRatio, 1.75))
       renderer.outputColorSpace = THREE.SRGBColorSpace
       renderer.toneMapping = THREE.ACESFilmicToneMapping
       renderer.toneMappingExposure = 1.05
-      renderer.shadowMap.enabled = true
+      renderer.shadowMap.enabled = !soft
       renderer.shadowMap.type = THREE.PCFSoftShadowMap
       el.appendChild(renderer.domElement)
       renderer.domElement.style.width = "100%"
@@ -76,7 +80,7 @@ export function YogiScene({ poses = ["kolay-oturus", "dag-durusu", "savasci-2", 
       scene.add(new THREE.HemisphereLight(0xfff4e8, 0xcfe6e2, 1.5))
       const key = new THREE.DirectionalLight(0xffffff, 2.3)
       key.position.set(2.4, 4.2, 3.2)
-      key.castShadow = true
+      key.castShadow = !soft
       key.shadow.mapSize.set(1024, 1024)
       key.shadow.camera.left = -2; key.shadow.camera.right = 2; key.shadow.camera.top = 2.5; key.shadow.camera.bottom = -1
       key.shadow.bias = -0.0005
@@ -160,10 +164,13 @@ export function YogiScene({ poses = ["kolay-oturus", "dag-durusu", "savasci-2", 
       const clock = new THREE.Clock()
       let t = 0
       const TR = 1.7
-      const frame = () => {
+      let lastDraw = 0
+      const frame = (now = 0) => {
         raf = requestAnimationFrame(frame)
         if (!visible || document.hidden) { clock.getDelta(); return }
-        const dt = Math.min(clock.getDelta(), 0.05)
+        if (soft && now - lastDraw < 120) return
+        lastDraw = now
+        const dt = Math.min(clock.getDelta(), soft ? 0.2 : 0.05)
         t += dt
         if (frames.length > 1) {
           const cycle = hold + TR

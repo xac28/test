@@ -32,6 +32,7 @@ export async function POST(req: Request) {
       db.teacher.findMany({
         where: { isTrialMode: false, user: { banned: false, ...notSuspended() } },
         include: { user: { select: { name: true, country: true } }, bookings: { where: { status: "COMPLETED" }, include: { review: true } } },
+        orderBy: { user: { createdAt: "desc" } },
         take: 1000,
       }),
       db.workshop.findMany({

@@ -306,7 +306,7 @@ test.describe("workshops", () => {
     }
     // the directory lists the 100 soonest workshops: leftovers of earlier runs must not push this one off the page
     await db.workshop.updateMany({ where: { status: "PUBLISHED" }, data: { status: "DRAFT" } })
-    const freeTitle = `Ücretsiz Atölye ${Date.now()}`
+    const freeTitle = `Ücretsiz Atölye ${Date.now().toString(36)}`
     await fill(freeTitle, { price: "0", capacity: "1" })
     await expect(t.page.getByTestId("managed-workshop").filter({ hasText: freeTitle })).toBeVisible({ timeout: 20_000 })
     // the page reloads after creating; retry the click until hydration has happened and the form opens
@@ -314,7 +314,7 @@ test.describe("workshops", () => {
       if (!(await form.isVisible())) await t.page.getByTestId("new-workshop").click()
       await expect(form).toBeVisible({ timeout: 1500 })
     }).toPass({ timeout: 20_000 })
-    const paidTitle = `Ücretli Kayıtlı ${Date.now()}`
+    const paidTitle = `Ücretli Kayıtlı ${Date.now().toString(36)}`
     await fill(paidTitle, { price: "25", mode: "RECORDED" })
     await expect(t.page.getByTestId("managed-workshop").filter({ hasText: paidTitle })).toBeVisible({ timeout: 20_000 })
 

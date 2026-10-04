@@ -3,6 +3,7 @@ import { Inter, Newsreader } from 'next/font/google';
 import { I18nProvider } from '@/i18n';
 import { Providers } from '@/components/providers';
 import { AiAssistant } from '@/components/ai-assistant';
+import { SignupNudge } from '@/components/signup-nudge';
 import { ErrorBoundary } from '@/components/error-boundary';
 import './globals.css';
 
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
+            <SignupNudge />
             <AiAssistant />
           </I18nProvider>
         </Providers>

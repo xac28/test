@@ -1,26 +1,44 @@
 'use client';
 
-import { use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LanguagePicker from '@/components/LanguagePicker';
 import BookingWidget from '@/components/BookingWidget';
 import { useI18n } from '@/i18n';
-import { getTeacher } from '@/lib/teachers';
+import { useTeacher } from '@/lib/use-teacher';
+import { Cover } from '@/components/editorial';
 import { styleLabel } from '@/lib/constants';
 import { TeacherRecordedVideos } from '@/components/teacher-recorded-videos';
 import { MessageTeacherButton } from '@/components/message-teacher-button';
 import { ReportButton } from '@/components/report-dialog';
 
-export default function TeacherProfilePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
-  const teacher = getTeacher(slug);
+export default function TeacherProfilePage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
+  const { teacher, loading } = useTeacher(slug);
   const { t, locale } = useI18n();
 
-  if (!teacher) return notFound();
+  if (!teacher) {
+    return (
+      <>
+        <Navbar />
+        <main className="max-w-3xl mx-auto px-6 py-32 text-center">
+          {loading ? (
+            <p className="text-sage-500">{locale === 'tr' ? 'Yükleniyor…' : 'Loading…'}</p>
+          ) : (
+            <>
+              <h1 className="font-display text-4xl mb-3">{locale === 'tr' ? 'Eğitmen bulunamadı' : 'Teacher not found'}</h1>
+              <p className="text-sage-600 mb-6">{locale === 'tr' ? 'Bu profil yok ya da henüz onaylanmadı.' : 'This profile does not exist or is not approved yet.'}</p>
+              <Link href="/teachers" className="underline underline-offset-4 font-semibold">{locale === 'tr' ? 'Tüm eğitmenler' : 'All teachers'}</Link>
+            </>
+          )}
+        </main>
+        <Footer />
+      </>
+    );
+  }
+  const isUpload = teacher.avatar.startsWith('/uploads/') || !teacher.avatar;
 
   return (
     <>
@@ -44,7 +62,7 @@ export default function TeacherProfilePage({ params }: { params: Promise<{ slug:
               <div className="bg-cream rounded-3xl p-6 lg:p-8 border border-sage-100">
                 <div className="flex flex-col sm:flex-row gap-6">
                   <div className="relative w-32 h-32 rounded-3xl overflow-hidden flex-shrink-0">
-                    <Image src={teacher.avatar} alt={teacher.name} fill sizes="128px" className="object-cover" />
+                    {isUpload ? <Cover src={teacher.avatar || null} alt={teacher.name} label={teacher.name[0]} className="absolute inset-0 [&_span]:text-5xl" /> : <Image src={teacher.avatar} alt={teacher.name} fill sizes="128px" className="object-cover" />}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2 text-sm text-ink/60">
@@ -79,13 +97,15 @@ export default function TeacherProfilePage({ params }: { params: Promise<{ slug:
                 <h2 className="font-display text-2xl text-ink mb-4">{t.profile.intro}</h2>
                 <div className="aspect-video rounded-2xl bg-gradient-to-br from-sage-700 via-sage-600 to-clay-500 relative overflow-hidden flex items-center justify-center group cursor-pointer">
                   {/* Faux video poster */}
-                  <Image
-                    src={teacher.avatar}
-                    alt=""
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 66vw"
-                    className="object-cover opacity-40 group-hover:opacity-30 transition-opacity"
-                  />
+                  {!isUpload && (
+                    <Image
+                      src={teacher.avatar}
+                      alt=""
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 66vw"
+                      className="object-cover opacity-40 group-hover:opacity-30 transition-opacity"
+                    />
+                  )}
                   <div className="relative z-10 text-center">
                     <div className="w-20 h-20 rounded-full bg-cream/95 flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-2xl">
                       <svg className="w-7 h-7 text-sage-700 ml-1" viewBox="0 0 24 24" fill="currentColor">

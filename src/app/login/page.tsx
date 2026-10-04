@@ -5,6 +5,8 @@ import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Navbar from "@/components/Navbar"
+import { Aurora, MeditationScene, PhotoBackdrop } from "@/components/motion"
+import { PHOTOS } from "@/lib/photos"
 import { Eye, EyeOff, Loader2, Mail, Lock, User } from "lucide-react"
 
 function LoginContent() {
@@ -18,7 +20,7 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState<"login" | "register">("login")
+  const [mode, setMode] = useState<"login" | "register">(searchParams.get("mode") === "register" ? "register" : "login")
   const [name, setName] = useState("")
   const [acceptTerms, setAcceptTerms] = useState(false)
 
@@ -89,9 +91,14 @@ function LoginContent() {
       <Navbar />
       <main className="min-h-[calc(100vh-4rem)] grid lg:grid-cols-2">
         {/* editorial side panel */}
-        <aside className="hidden lg:flex flex-col justify-between bg-sage-900 text-cream p-14">
-          <p className="eyebrow !text-cream/50">AYA</p>
-          <div>
+        <aside className="relative overflow-hidden hidden lg:flex flex-col justify-between bg-sage-900 text-cream p-14">
+          <PhotoBackdrop sources={PHOTOS.breath} opacity={0.28} />
+          <div className="absolute inset-0 bg-gradient-to-b from-sage-900/70 via-sage-900/50 to-sage-900" aria-hidden />
+          <div className="absolute right-[-6%] top-[2%] w-[78%] h-[52%] opacity-95" aria-hidden>
+            <MeditationScene variant="lotus" className="absolute inset-0" />
+          </div>
+          <p className="eyebrow !text-cream/60 relative">AYA</p>
+          <div className="relative">
             <h2 className="font-display font-light text-6xl leading-[1.02]">
               {mode === "login" ? "Pratiğine" : "Nefes almaya"}<br />
               <em className="italic text-clay-300">{mode === "login" ? "kaldığın yerden devam et." : "bugün başla."}</em>
@@ -102,7 +109,7 @@ function LoginContent() {
               <li>— Derslerin 30 gün boyunca indirilebilir kaydı</li>
             </ul>
           </div>
-          <p className="text-xs text-cream/40">© {new Date().getFullYear()} AYA</p>
+          <p className="text-xs text-cream/50 relative">© {new Date().getFullYear()} AYA</p>
         </aside>
 
         <section className="flex items-center justify-center px-6 py-16">

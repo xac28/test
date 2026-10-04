@@ -148,7 +148,7 @@ export default function Navbar() {
           ) : (
             <div className="hidden sm:flex items-center gap-5">
               <Link href="/login" className="text-sm font-medium text-sage-700 hover:text-ink">{t.nav.signIn}</Link>
-              <Link href="/login" className="text-sm font-medium bg-ink text-cream hover:bg-sage-800 px-5 py-2.5 rounded-md transition-colors">
+              <Link href="/login?mode=register" className="text-sm font-medium bg-ink text-cream hover:bg-sage-800 px-5 py-2.5 rounded-md transition-colors">
                 {t.nav.signUp}
               </Link>
             </div>
@@ -176,7 +176,7 @@ export default function Navbar() {
             ))}
             <div className="flex items-center justify-between pt-4">
               {!session?.user ? (
-                <Link href="/login" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">{t.nav.signIn} / {t.nav.signUp}</Link>
+                <Link href="/login?mode=register" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">{t.nav.signIn} / {t.nav.signUp}</Link>
               ) : (
                 <Link href="/dashboard" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">Panelim</Link>
               )}

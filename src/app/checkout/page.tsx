@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LanguagePicker from '@/components/LanguagePicker';
 import { useI18n } from '@/i18n';
-import { getTeacher } from '@/lib/teachers';
+import { useTeacher } from '@/lib/use-teacher';
 import { formatLocalPrice, formatUSD, localCurrencyCode } from '@/lib/currency';
 import { formatLocalDate, formatLocalTime, userTimezone } from '@/lib/time';
 
@@ -21,10 +21,16 @@ function CheckoutInner() {
   const slot = params.get('slot') ?? '';
   const type = (params.get('type') as 'trial' | 'regular') ?? 'trial';
 
-  const teacher = getTeacher(teacherSlug);
+  const { teacher, loading } = useTeacher(teacherSlug);
   const [currency, setCurrency] = useState('USD');
   useEffect(() => setCurrency(localCurrencyCode()), []);
+  const [paying, setPaying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'iyzico'>('stripe');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
+  if (!teacher && loading) {
+    return <div className="max-w-3xl mx-auto px-6 py-24 text-center text-sage-500">…</div>;
+  }
   if (!teacher) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-24 text-center">
@@ -35,9 +41,6 @@ function CheckoutInner() {
   }
 
   const priceUSD = type === 'trial' ? teacher.trialPriceUSD : teacher.pricePerClassUSD;
-  const [paying, setPaying] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'iyzico'>('stripe');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();

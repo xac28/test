@@ -31,7 +31,8 @@ export async function POST(req: Request) {
     })
 
     const slugNormalized = teacherSlug.toLowerCase().replace(/-/g, " ")
-    const teacher = teachers.find(t => 
+    // database teachers are addressed by id, demo/legacy ones by a name slug
+    const teacher = teachers.find(t => t.id === teacherSlug) ?? teachers.find(t =>
       t.user.name?.toLowerCase().replace(/-/g, " ") === slugNormalized
     )
 

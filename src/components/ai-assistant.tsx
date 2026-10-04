@@ -5,20 +5,25 @@ import { MessageCircle, X, Send, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
+interface GuideLink {
+  label: string
+  href: string
+}
 interface Message {
   role: "user" | "ai"
   text: string
   teachers?: any[]
+  links?: GuideLink[]
   timestamp?: Date
 }
 
 const QUICK_PROMPTS = [
-  { icon: "🧘", text: "Başlangıç seviyesi yoga", category: "level" },
-  { icon: "😰", text: "Stres ve anksiyete için", category: "health" },
-  { icon: "💪", text: "Güçlendirme yogası", category: "style" },
-  { icon: "🌙", text: "Uyku öncesi rahatlama", category: "time" },
-  { icon: "🤰", text: "Hamilelik yogası", category: "special" },
-  { icon: "🔥", text: "Kilo verme programı", category: "goal" },
+  { icon: "", text: "Bel ağrım için hangi yoga?", category: "health" },
+  { icon: "", text: "Stres ve uyku için", category: "health" },
+  { icon: "", text: "Canlı yayın var mı?", category: "live" },
+  { icon: "", text: "Atölyeleri göster", category: "workshops" },
+  { icon: "", text: "Üye olmak istiyorum", category: "account" },
+  { icon: "", text: "Eğitmen olmak istiyorum", category: "teacher" },
 ]
 
 
@@ -33,7 +38,7 @@ export function AiAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "ai",
-      text: "🙏 **Merhaba!** Ben AYA, yapay zeka yoga asistanınızım.\n\nSize en uygun öğretmeni bulabilir, yoga stilleri hakkında bilgi verebilir ve kişisel öneriler sunabilirim.\n\nAşağıdaki hızlı butonları kullanın veya doğrudan sorunuzu yazın!",
+      text: "**Merhaba!** Ben AYA Rehber. Sana uygun eğitmeni, atölyeyi ya da canlı yayını bulurum; üyelik, ders kaydı ve ödeme gibi konularda doğru sayfaya yönlendiririm.\n\nBir şey yaz ya da aşağıdan seç.",
       timestamp: new Date()
     }
   ])
@@ -64,7 +69,7 @@ export function AiAssistant() {
   }, [])
 
   // Typing animation for AI responses
-  const typeMessage = (fullText: string, teachers?: any[]) => {
+  const typeMessage = (fullText: string, teachers?: any[], links?: GuideLink[]) => {
     setIsTyping(true)
     setTypingText("")
     let i = 0
@@ -76,7 +81,7 @@ export function AiAssistant() {
         clearInterval(interval)
         setIsTyping(false)
         setTypingText("")
-        setMessages(prev => [...prev, { role: "ai", text: fullText, teachers, timestamp: new Date() }])
+        setMessages(prev => [...prev, { role: "ai", text: fullText, teachers, links, timestamp: new Date() }])
       }
     }, 12) // Fast but visible typing speed
   }
@@ -97,11 +102,12 @@ export function AiAssistant() {
         body: JSON.stringify({ message: userMsg })
       })
 
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       setLoading(false)
       typeMessage(
         data.reply || "Şu an size yardımcı olamıyorum, lütfen tekrar deneyin.",
-        data.teachers
+        data.teachers,
+        data.links
       )
     } catch {
       setLoading(false)
@@ -117,8 +123,10 @@ export function AiAssistant() {
   // the student-facing helper has no place in the admin workspace or in the dashboards' working screens
   if (isFullScreenLivePage(pathname) || pathname?.startsWith("/admin")) return null
 
+  // everything shown here (visitor input, teacher and workshop names) is escaped before the light markdown is applied
+  const escapeHtml = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
   const renderText = (text: string) =>
-    text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-ink">$1</strong>').replace(/\n/g, "<br />")
+    escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-ink">$1</strong>').replace(/\n/g, "<br />")
 
   return (
     <>
@@ -154,19 +162,34 @@ export function AiAssistant() {
 
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0" role="log" aria-live="polite">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={i} data-testid={msg.role === "ai" ? "ai-message" : "ai-user-message"} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[88%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${msg.role === "user" ? "bg-ink text-cream rounded-br-sm" : "bg-sage-100/70 text-sage-800 rounded-bl-sm"}`}>
                   <div dangerouslySetInnerHTML={{ __html: renderText(msg.text) }} />
                   {msg.teachers && msg.teachers.length > 0 && (
                     <div className="mt-3 space-y-1.5 border-t border-rule pt-3">
                       {msg.teachers.map((t: any, j: number) => (
-                        <Link key={j} href={`/teachers/${t.id}`} className="flex items-center gap-3 p-2 rounded-lg bg-paper hover:bg-white border border-rule group">
+                        <Link key={j} href={t.href || `/teachers/${t.id}`} onClick={() => setIsOpen(false)} className="flex items-center gap-3 p-2 rounded-lg bg-paper hover:bg-white border border-rule group">
                           <div className="w-9 h-9 rounded-full bg-sage-200 flex items-center justify-center text-sage-700 font-display flex-shrink-0">{(t.name || "T")[0]}</div>
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-ink text-xs truncate">{t.name}</p>
                             <p className="text-[11px] text-sage-500">★ {t.rating} · ${t.hourlyRate}/saat · {t.studentsCount} öğrenci</p>
                           </div>
                           <ChevronRight size={14} className="text-sage-400 group-hover:translate-x-0.5 transition" />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  {msg.links && msg.links.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {msg.links.map((l, k) => (
+                        <Link
+                          key={k}
+                          href={l.href}
+                          onClick={() => setIsOpen(false)}
+                          data-testid="ai-link"
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${k === 0 ? "bg-ink text-cream border-ink hover:bg-sage-800" : "bg-paper text-ink border-rule hover:border-ink"}`}
+                        >
+                          {l.label} <ChevronRight size={12} />
                         </Link>
                       ))}
                     </div>
@@ -213,12 +236,14 @@ export function AiAssistant() {
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Nasıl yardımcı olabilirim?"
                 aria-label="Mesajınız"
+                data-testid="ai-input"
                 className="flex-1 bg-transparent outline-none text-sm text-ink placeholder:text-sage-500"
               />
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || loading}
                 aria-label="Gönder"
+                data-testid="ai-send"
                 className="w-9 h-9 rounded-md flex items-center justify-center bg-ink text-cream disabled:opacity-30 hover:bg-sage-800 transition"
               >
                 <Send size={14} />

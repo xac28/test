@@ -63,6 +63,10 @@ export async function makeBooking(
 export function api(path: string, user?: { token: string } | null, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
   if (user) headers.set("Authorization", `Bearer ${user.token}`)
+  // The API rate-limits per client IP; give every test request its own address
+  if (!headers.has("x-forwarded-for")) {
+    headers.set("x-forwarded-for", `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`)
+  }
   return fetch(`${BASE}${path}`, { ...init, headers })
 }
 

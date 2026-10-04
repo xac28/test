@@ -5,47 +5,7 @@ import path from "path"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_UPLOAD } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
-
-// ── FIX #9: Magic byte kontrolü eklendi — MIME type taklit koruması ──
-
-// Magic byte signatures for common file types
-const MAGIC_BYTES: Record<string, number[][]> = {
-  "image/jpeg": [[0xFF, 0xD8, 0xFF]],
-  "image/png": [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
-  "image/webp": [[0x52, 0x49, 0x46, 0x46]], // RIFF header (followed by WEBP at offset 8)
-  "image/gif": [[0x47, 0x49, 0x46, 0x38]], // GIF8
-  "application/pdf": [[0x25, 0x50, 0x44, 0x46]], // %PDF
-  "video/mp4": [[0x00, 0x00, 0x00]], // ftyp box starts at offset 4, but first 3 bytes are size
-  "video/webm": [[0x1A, 0x45, 0xDF, 0xA3]], // EBML header
-  "video/ogg": [[0x4F, 0x67, 0x67, 0x53]], // OggS
-}
-
-function validateMagicBytes(buffer: ArrayBuffer, declaredMimeType: string): boolean {
-  const bytes = new Uint8Array(buffer)
-  
-  // Minimum file size check
-  if (bytes.length < 4) return false
-
-  const signatures = MAGIC_BYTES[declaredMimeType]
-  if (!signatures) {
-    // Bilinmeyen MIME type'lar için reject
-    return false
-  }
-
-  return signatures.some(sig => {
-    for (let i = 0; i < sig.length; i++) {
-      if (bytes[i] !== sig[i]) return false
-    }
-
-    // WebP için ek kontrol: offset 8'de "WEBP" string'i olmalı
-    if (declaredMimeType === "image/webp" && bytes.length >= 12) {
-      const webpMarker = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11])
-      return webpMarker === "WEBP"
-    }
-
-    return true
-  })
-}
+import { normalizeMime, validateMagicBytes } from "@/lib/upload-validation"
 
 // POST /api/upload — Upload a file (certificates, etc.)
 export async function POST(req: Request) {
@@ -69,14 +29,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
 
-    // Validate file type
-    const allowedTypes = type === "avatar" 
+    // Validate file type (mobile clients report some types differently — normalise first)
+    const mime = normalizeMime(file.type)
+    const allowedTypes = type === "avatar"
       ? ["image/jpeg", "image/png", "image/webp"]
-      : type === "video" 
-      ? ["video/mp4", "video/webm", "video/ogg"]
+      : type === "video"
+      ? ["video/mp4", "video/webm", "video/ogg", "video/quicktime"]
       : ["application/pdf", "image/jpeg", "image/png", "image/webp"]
-      
-    if (!allowedTypes.includes(file.type)) {
+
+    if (!allowedTypes.includes(mime)) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
     }
 
@@ -90,7 +51,7 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer()
 
     // Magic byte validation — MIME type spoofing koruması
-    if (!validateMagicBytes(bytes, file.type)) {
+    if (!validateMagicBytes(bytes, mime)) {
       return NextResponse.json(
         { error: "File content does not match declared type. Upload rejected for security." }, 
         { status: 400 }
@@ -106,13 +67,18 @@ export async function POST(req: Request) {
     await mkdir(uploadsDir, { recursive: true })
 
     // Generate unique filename (orijinal dosya adı kullanılmıyor, güvenli prefix + timestamp)
-    const ext = path.extname(safeOrigName) || (type === "avatar" ? ".jpg" : type === "video" ? ".mp4" : ".pdf")
+    const mimeExt: Record<string, string> = {
+      "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "application/pdf": ".pdf",
+      "video/mp4": ".mp4", "video/webm": ".webm", "video/ogg": ".ogg", "video/quicktime": ".mov",
+    }
+    // Phone libraries often hand over names without (or with the wrong) extension: trust the validated type
+    const ext = mimeExt[mime] || path.extname(safeOrigName)
     
     // Extension whitelist kontrolü
     const safeExtensions = type === "avatar" 
       ? [".jpg", ".jpeg", ".png", ".webp"]
       : type === "video"
-      ? [".mp4", ".webm", ".ogg"]
+      ? [".mp4", ".webm", ".ogg", ".mov"]
       : [".pdf", ".jpg", ".jpeg", ".png", ".webp"]
     
     if (!safeExtensions.includes(ext.toLowerCase())) {

@@ -4,7 +4,19 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/auth';
 import { API_BASE, colors } from '../../constants';
 import { AvatarPicker } from '../../components/AvatarPicker';
-import { Ionicons } from '@expo/vector-icons';
+import { TeacherVideos } from '../../components/TeacherVideos';
+
+// The API stores interests as a JSON string but expects an array on update
+function parseInterests(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw
+  if (typeof raw !== 'string' || !raw) return []
+  try {
+    const v = JSON.parse(raw)
+    return Array.isArray(v) ? v : []
+  } catch {
+    return []
+  }
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -52,17 +64,21 @@ export default function ProfileScreen() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}` 
         },
+        // Only the fields the API allows — sending the whole profile (id, email, role…) is rejected with 403
         body: JSON.stringify({
-          ...profileData,
           firstName,
           lastName,
           phone,
           country,
+          dateOfBirth: profileData?.dateOfBirth ?? null,
+          address: profileData?.address ?? null,
+          passportId: profileData?.passportId ?? null,
+          interests: parseInterests(profileData?.interests),
         })
       });
 
       if (res.ok) {
-        Alert.alert('Success', 'Profile updated successfully!');
+        Alert.alert('Başarılı', 'Profil güncellendi!');
       } else {
         const data = await res.json();
         Alert.alert('Error', data.error || 'Failed to update profile');
@@ -156,6 +172,8 @@ export default function ProfileScreen() {
             <Text style={styles.saveBtnText}>{saving ? 'Saving...' : 'Save Profile'}</Text>
           </TouchableOpacity>
         </View>
+
+        {user?.role === 'TEACHER' && <TeacherVideos />}
       </ScrollView>
     </SafeAreaView>
   );

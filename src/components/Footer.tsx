@@ -17,7 +17,7 @@ export default function Footer() {
                 <path d="M16 4c-1 4-4 6-7 7 3 1 6 3 7 7 1-4 4-6 7-7-3-1-6-3-7-7z" opacity="0.7" />
                 <path d="M16 13c-.5 2-2 3-3.5 3.5 1.5.5 3 1.5 3.5 3.5.5-2 2-3 3.5-3.5-1.5-.5-3-1.5-3.5-3.5z" />
               </svg>
-              <span className="font-display text-2xl italic text-cream">Namaste</span>
+              <span className="font-display text-2xl italic text-cream">AYA</span>
             </div>
             <p className="font-display italic text-cream/60 text-lg max-w-xs">
               {t.footer.tagline}
@@ -52,7 +52,7 @@ export default function Footer() {
         </div>
 
         <div className="pt-8 border-t border-sage-700 text-xs text-cream/50 flex justify-between items-center">
-          <p>© {year} Namaste. {t.footer.rights}</p>
+          <p>© {year} AYA. {t.footer.rights}</p>
           <p className="font-display italic">🙏</p>
         </div>
       </div>

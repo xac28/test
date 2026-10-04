@@ -96,7 +96,7 @@ function LoginContent() {
           <div className="text-center mb-8 animate-fade-in">
             <Link href="/" className="inline-flex items-center gap-2">
               <Sparkles className="text-sage-600" size={28} />
-              <span className="font-display text-3xl text-ink">Namaste</span>
+              <span className="font-display text-3xl text-ink">AYA</span>
             </Link>
             <p className="text-sage-500 text-sm mt-2">
               {mode === "login" ? "Hesabınıza giriş yapın" : "Yeni bir hesap oluşturun"}

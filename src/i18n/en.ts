@@ -1,7 +1,7 @@
 export const en = {
   // Language picker
   langPicker: {
-    title: 'Welcome to Namaste',
+    title: 'Welcome to AYA',
     subtitle: 'Choose your language to begin',
     continueBtn: 'Continue',
   },

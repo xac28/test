@@ -125,7 +125,7 @@ export default async function TeachDashboardPage() {
                 Deneme Aşamasındasınız
               </h2>
               <p className="text-amber-800/80 text-sm max-w-2xl leading-relaxed">
-                Tebrikler, eğitmenlik başvurunuz onaylandı! Ancak platformda öğrencilere ders açmaya başlamadan önce Namaste yetkilileriyle <strong>5 dakikalık bir deneme canlı yayını</strong> yapmanız gerekmektedir. Bu yayın sonrası profiliniz tamamen aktif olacaktır.
+                Tebrikler, eğitmenlik başvurunuz onaylandı! Ancak platformda öğrencilere ders açmaya başlamadan önce AYA yetkilileriyle <strong>5 dakikalık bir deneme canlı yayını</strong> yapmanız gerekmektedir. Bu yayın sonrası profiliniz tamamen aktif olacaktır.
               </p>
             </div>
             <Link 

@@ -10,7 +10,7 @@ const MOV = new Uint8Array([0, 0, 0, 0x14, ...ascii("ftypqt  "), 0, 0, 0, 0, ...
 
 function form(bytes: Uint8Array, name: string, type: string, kind: string) {
   const fd = new FormData()
-  fd.append("file", new Blob([bytes], { type }), name)
+  fd.append("file", new Blob([bytes as unknown as BlobPart], { type }), name)
   fd.append("type", kind)
   return fd
 }

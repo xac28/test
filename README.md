@@ -1,8 +1,8 @@
-# 🙏 Namaste
+# 🙏 AYA
 
 > Your practice, anywhere you breathe.
 
-Namaste is a 1-on-1 yoga and meditation marketplace — like Cambly/Preply, but for breath, body, and mind.
+AYA is a 1-on-1 yoga and meditation marketplace — like Cambly/Preply, but for breath, body, and mind.
 
 ## ✨ What's in this MVP
 
@@ -33,7 +33,7 @@ npm run dev
 ## 📁 Project structure
 
 ```
-namaste/
+aya/
 ├── src/
 │   ├── app/                       # Next.js App Router pages
 │   │   ├── page.tsx               # Landing page

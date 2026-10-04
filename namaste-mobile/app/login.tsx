@@ -69,7 +69,7 @@ export default function LoginScreen() {
           <Animated.View style={[styles.logoCircle, { transform: [{ scale: pulseAnim }], marginBottom: 30, width: 100, height: 100, borderRadius: 50 }]}>
             <Text style={{ fontSize: 40 }}>🧘</Text>
           </Animated.View>
-          <Text style={{ fontFamily: 'serif', fontSize: 24, color: colors.sage[900], letterSpacing: 2 }}>NAMASTE</Text>
+          <Text style={{ fontFamily: 'serif', fontSize: 24, color: colors.sage[900], letterSpacing: 2 }}>AYA</Text>
           <Text style={{ color: colors.sage[500], marginTop: 10, fontStyle: 'italic' }}>Preparing your practice...</Text>
         </Animated.View>
       </View>
@@ -92,7 +92,7 @@ export default function LoginScreen() {
               <Text style={styles.logoEmoji}>🧘</Text>
             </View>
           </View>
-          <Text style={styles.brand}>NAMASTE</Text>
+          <Text style={styles.brand}>AYA</Text>
           <Text style={styles.tagline}>Your practice, anywhere you breathe.</Text>
         </View>
 

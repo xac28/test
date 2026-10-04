@@ -31,7 +31,7 @@ export default function Navbar() {
             <path d="M16 4c-1 4-4 6-7 7 3 1 6 3 7 7 1-4 4-6 7-7-3-1-6-3-7-7z" opacity="0.7" />
             <path d="M16 13c-.5 2-2 3-3.5 3.5 1.5.5 3 1.5 3.5 3.5.5-2 2-3 3.5-3.5-1.5-.5-3-1.5-3.5-3.5z" />
           </svg>
-          <span className="font-display text-2xl italic text-ink">Namaste</span>
+          <span className="font-display text-2xl italic text-ink">AYA</span>
         </Link>
 
         {/* Desktop Links */}

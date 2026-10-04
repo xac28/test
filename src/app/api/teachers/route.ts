@@ -42,7 +42,7 @@ export async function GET() {
         name: t.user.name || `${t.user.firstName || ""} ${t.user.lastName || ""}`.trim() || "Teacher",
         avatar: t.user.image || `https://i.pravatar.cc/400?u=${t.id}`,
         country: t.user.country || "Unknown",
-        bio: t.bio || "Certified yoga teacher on Namaste.",
+        bio: t.bio || "Certified yoga teacher on AYA.",
         specialties,
         hourlyRate: t.hourlyRate,
         studentsCount: completedSessions,

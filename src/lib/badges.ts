@@ -1,4 +1,4 @@
-// Badge definitions for the Namaste gamification system
+// Badge definitions for the AYA gamification system
 export interface Badge {
   id: string
   name: string

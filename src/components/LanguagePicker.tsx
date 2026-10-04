@@ -38,7 +38,7 @@ export default function LanguagePicker() {
 
         <div className="mt-8 text-center">
           <h1 className="font-display text-4xl md:text-5xl text-ink mb-3 italic">
-            Namaste
+            AYA
           </h1>
           <p className="font-display text-xl md:text-2xl text-sage-700 mb-2">
             Welcome · Hoş Geldiniz

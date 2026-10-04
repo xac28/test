@@ -23,7 +23,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: 'Namaste — Your practice, anywhere you breathe.',
+  title: 'AYA — Your practice, anywhere you breathe.',
   description: 'Live 1-on-1 yoga and meditation classes with certified teachers worldwide.',
 };
 

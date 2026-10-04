@@ -12,7 +12,7 @@ const { auth } = NextAuth(authConfig)
 const TERMS_GATE_EXEMPT = ["/accept-terms", "/terms", "/privacy", "/login", "/auth-error", "/api"]
 
 /**
- * 🛡️ Namaste Middleware
+ * 🛡️ AYA Middleware
  * 
  * Katmanlı güvenlik:
  * 1. Auth/login/register API'lerde IP ban kontrolü (Edge-level)

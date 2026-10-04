@@ -1,6 +1,6 @@
 export const tr = {
   langPicker: {
-    title: 'Namaste\'ye Hoş Geldiniz',
+    title: 'AYA\'ya Hoş Geldiniz',
     subtitle: 'Başlamak için dilinizi seçin',
     continueBtn: 'Devam Et',
   },

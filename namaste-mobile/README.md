@@ -1,4 +1,4 @@
-# Namaste Mobile App
+# AYA Mobile App
 
 Cross-platform mobile application for iOS and Android built with React Native + Expo.
 

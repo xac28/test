@@ -33,7 +33,7 @@ export default function AIScreen() {
     {
       id: "welcome",
       role: "ai",
-      text: "🙏 Namaste! Ben yapay zeka yoga asistanınızım.\n\nSize en uygun öğretmeni bulabilir, yoga stilleri hakkında bilgi verebilir ve kişisel öneriler sunabilirim.",
+      text: "🙏 Merhaba! Ben AYA, yapay zeka yoga asistanınızım.\n\nSize en uygun öğretmeni bulabilir, yoga stilleri hakkında bilgi verebilir ve kişisel öneriler sunabilirim.",
       timestamp: new Date(),
     },
   ])
@@ -153,7 +153,7 @@ export default function AIScreen() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <View style={styles.headerDot} />
-          <Text style={styles.headerTitle}>Namaste AI</Text>
+          <Text style={styles.headerTitle}>AYA AI</Text>
           <View style={styles.proBadge}>
             <Text style={styles.proText}>PRO</Text>
           </View>

@@ -32,7 +32,7 @@ export function AiAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "ai",
-      text: "🙏 **Namaste!** Ben yapay zeka yoga asistanınızım.\n\nSize en uygun öğretmeni bulabilir, yoga stilleri hakkında bilgi verebilir ve kişisel öneriler sunabilirim.\n\nAşağıdaki hızlı butonları kullanın veya doğrudan sorunuzu yazın!",
+      text: "🙏 **Merhaba!** Ben AYA, yapay zeka yoga asistanınızım.\n\nSize en uygun öğretmeni bulabilir, yoga stilleri hakkında bilgi verebilir ve kişisel öneriler sunabilirim.\n\nAşağıdaki hızlı butonları kullanın veya doğrudan sorunuzu yazın!",
       timestamp: new Date()
     }
   ])
@@ -150,7 +150,7 @@ export function AiAssistant() {
               </div>
               <div className="flex-1">
                 <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                  Namaste AI
+                  AYA AI
                   <span className="bg-white/20 text-[9px] px-2 py-0.5 rounded-full font-medium backdrop-blur-sm">PRO</span>
                 </h3>
                 <p className="text-white/60 text-xs flex items-center gap-1">
@@ -296,7 +296,7 @@ export function AiAssistant() {
                 <Send size={14} className={input.trim() ? "ml-0.5" : ""} />
               </button>
             </div>
-            <p className="text-[9px] text-sage-300 text-center mt-2">Namaste AI · Gemini ile güçlendirilmiştir</p>
+            <p className="text-[9px] text-sage-300 text-center mt-2">AYA AI · Gemini ile güçlendirilmiştir</p>
           </div>
         </div>
       )}

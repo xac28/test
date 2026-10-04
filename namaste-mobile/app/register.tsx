@@ -53,7 +53,7 @@ export default function RegisterScreen() {
           <View style={styles.logoCircle}>
             <Text style={styles.logoEmoji}>🌱</Text>
           </View>
-          <Text style={styles.brand}>NAMASTE</Text>
+          <Text style={styles.brand}>AYA</Text>
           <Text style={styles.tagline}>Begin your journey</Text>
         </View>
 

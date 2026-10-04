@@ -87,7 +87,7 @@ export default function WelcomeScreen() {
 
       <View style={styles.contentContainer}>
         <Animated.View style={[styles.textContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Text style={styles.brand}>NAMASTE</Text>
+          <Text style={styles.brand}>AYA</Text>
           
           <View style={{ height: 120, justifyContent: 'center' }}>
             <Text style={styles.title}>{ONBOARDING_DATA[activeIndex].title}</Text>
@@ -111,7 +111,7 @@ export default function WelcomeScreen() {
           </TouchableOpacity>
           
           <View style={styles.secondaryContainer}>
-            <Text style={styles.secondaryText}>New to Namaste? </Text>
+            <Text style={styles.secondaryText}>New to AYA? </Text>
             <TouchableOpacity onPress={() => router.push("/register")} hitSlop={{top:10,bottom:10,left:10,right:10}}>
               <Text style={styles.secondaryLink}>Create Account</Text>
             </TouchableOpacity>

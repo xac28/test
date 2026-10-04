@@ -169,7 +169,7 @@ export default function BecomeTeacherPage() {
               <CheckCircle2 size={48} className="text-green-600" />
             </div>
             <h2 className="text-4xl font-display text-sage-900 mb-4">Application Submitted!</h2>
-            <p className="text-sage-600 mb-2 text-xl font-light">Namaste. Our team will review your application and certificates.</p>
+            <p className="text-sage-600 mb-2 text-xl font-light">Thank you. Our team will review your application and certificates.</p>
             <p className="text-sage-500 text-sm mb-10">You will be notified via email once your application is processed.</p>
             <button
               onClick={() => router.push("/dashboard")}
@@ -361,7 +361,7 @@ export default function BecomeTeacherPage() {
                 rows={5}
                 value={form.experience}
                 onChange={e => updateForm("experience", e.target.value)}
-                placeholder="Tell us about your yoga journey, teaching experience, certifications, and why you want to teach on Namaste..."
+                placeholder="Tell us about your yoga journey, teaching experience, certifications, and why you want to teach on AYA..."
                 className="w-full rounded-xl border border-sage-200 bg-white/70 p-4 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition resize-none text-sage-900 placeholder:text-sage-400 text-sm leading-relaxed"
               />
             </div>

@@ -1,5 +1,5 @@
 /**
- * 🛡️ Namaste Ban Engine — IP Ban & Evasion Detection System
+ * 🛡️ AYA Ban Engine — IP Ban & Evasion Detection System
  * 
  * Merkezi ban motoru. Tüm ban kontrolleri, IP loglama ve evasion tespiti
  * bu modül üzerinden yapılır. Auth, register ve admin endpoint'leri bu

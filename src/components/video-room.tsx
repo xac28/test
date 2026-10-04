@@ -117,7 +117,7 @@ export default function VideoRoom({ bookingId }: { bookingId: string }) {
     <div className="h-screen w-screen bg-[#111] flex flex-col overflow-hidden" data-lk-theme="default">
       <header className="h-14 bg-black/50 backdrop-blur border-b border-white/10 flex items-center justify-between px-6 z-10 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <span className="font-display text-lg text-white tracking-widest">NAMASTE</span>
+          <span className="font-display text-lg text-white tracking-widest">AYA</span>
           <span className="h-4 w-px bg-white/20" />
           <span className="text-white/60 text-sm">
             {roomData.role === "teacher" ? roomData.booking.studentName : roomData.booking.teacherName}

@@ -48,7 +48,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {!collapsed && (
           <div>
             <Link href="/" className="font-display text-2xl tracking-widest text-sage-100 hover:text-white transition-colors btn-press inline-block">
-              NAMASTE
+              AYA
             </Link>
             <p className="text-sage-500 text-xs font-medium tracking-widest uppercase mt-1">
               {pathname.startsWith("/admin") ? "Yönetim Paneli" : pathname.startsWith("/teach") ? "Teacher Portal" : "Student Hub"}
@@ -146,7 +146,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </svg>
           </button>
           <Link href="/" className="font-display text-xl tracking-widest text-sage-900 btn-press">
-            NAMASTE
+            AYA
           </Link>
           <div className="w-8" />
         </header>

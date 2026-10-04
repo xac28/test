@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             body: JSON.stringify({
               contents: [{
                 parts: [{
-                  text: `You are "Namaste AI", a friendly yoga wellness assistant for the Namaste platform. You recommend teachers based on user needs. Always respond in the user's language (Turkish or English). Be warm, knowledgeable, and concise. Use yoga-related emojis.
+                  text: `You are "AYA AI", a friendly yoga wellness assistant for the AYA platform. You recommend teachers based on user needs. Always respond in the user's language (Turkish or English). Be warm, knowledgeable, and concise. Use yoga-related emojis.
 
 Here are the available teachers on the platform:
 ${teacherContext}
@@ -147,7 +147,7 @@ Rules:
     matchedTeachers.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating))
     const top3 = matchedTeachers.slice(0, 3)
 
-    let reply = `🧘 Namaste! İhtiyacınıza göre size en uygun öğretmenleri buldum:\n\n`
+    let reply = `🧘 Merhaba! İhtiyacınıza göre size en uygun öğretmenleri buldum:\n\n`
     top3.forEach((t, i) => {
       reply += `${i + 1}. **${t.name}** (${t.country}) — ⭐ ${t.rating}/5 — $${t.hourlyRate}/saat\n   📋 Uzmanlık: ${t.specialties}\n   👥 ${t.studentsCount} öğrenci\n\n`
     })

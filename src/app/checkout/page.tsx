@@ -108,7 +108,7 @@ function CheckoutInner() {
             {formatLocalTime(slot, locale)} ({userTimezone()})
           </p>
           <p className="text-sm text-ink/50 mb-8 italic font-display">
-            Your session is confirmed and ready. Namaste. 🙏
+            Your session is confirmed and ready. See you on AYA. 🙏
           </p>
           <div className="flex flex-col gap-3">
             <Link

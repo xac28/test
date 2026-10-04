@@ -15,7 +15,7 @@ export default function RoomScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header bar */}
       <View style={styles.header}>
-        <Text style={styles.headerBrand}>NAMASTE</Text>
+        <Text style={styles.headerBrand}>AYA</Text>
         <View style={styles.headerLive}>
           <View style={styles.headerDot} />
           <Text style={styles.headerLiveText}>LIVE HD</Text>

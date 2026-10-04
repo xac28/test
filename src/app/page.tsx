@@ -22,7 +22,7 @@ export default function Home() {
       <nav className={`fixed w-full z-50 top-0 transition-all duration-500 ${scrolled ? "glass-card border-b border-sage-100/50 shadow-sm" : "bg-transparent"}`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="font-display text-2xl tracking-widest text-sage-900 animate-scale-in">
-            NAMASTE
+            AYA
           </Link>
           <div className="hidden md:flex items-center gap-8 animate-slide-right">
             <Link href="/teachers" className="text-sage-700 hover:text-sage-900 font-medium transition hover:-translate-y-0.5 text-sm">
@@ -132,7 +132,7 @@ export default function Home() {
           {/* ─── FEATURES ─── */}
           <section className="py-24 stagger-children">
             <div className="text-center mb-16">
-              <p className="text-sage-500 text-sm font-medium tracking-wider uppercase mb-3">Why Namaste</p>
+              <p className="text-sage-500 text-sm font-medium tracking-wider uppercase mb-3">Why AYA</p>
               <h2 className="text-3xl md:text-5xl font-display text-sage-900">Everything you need to <span className="italic gradient-text">grow</span></h2>
             </div>
             <div className="grid md:grid-cols-3 gap-8">
@@ -187,7 +187,7 @@ export default function Home() {
             </div>
             <div className="grid md:grid-cols-3 gap-8">
               {[
-                { name: "Sarah M.", location: "London, UK", text: "Namaste transformed my practice. Having a dedicated teacher who knows my strengths and challenges makes all the difference.", stars: 5 },
+                { name: "Sarah M.", location: "London, UK", text: "AYA transformed my practice. Having a dedicated teacher who knows my strengths and challenges makes all the difference.", stars: 5 },
                 { name: "Ahmet K.", location: "Istanbul, TR", text: "The video quality is incredible — it truly feels like being in the same room. I've been practicing daily for 6 months now.", stars: 5 },
                 { name: "Maria L.", location: "São Paulo, BR", text: "As a teacher, this platform gave me the freedom to teach globally while maintaining deep, personal connections with my students.", stars: 5 },
               ].map((review, i) => (
@@ -232,7 +232,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-6 py-16">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
               <div className="col-span-2 md:col-span-1">
-                <p className="font-display text-2xl tracking-widest text-white mb-4">NAMASTE</p>
+                <p className="font-display text-2xl tracking-widest text-white mb-4">AYA</p>
                 <p className="text-sage-500 text-sm leading-relaxed">Your practice, anywhere you breathe. Live 1-on-1 yoga with certified teachers worldwide.</p>
               </div>
               <div>
@@ -259,7 +259,7 @@ export default function Home() {
               </div>
             </div>
             <div className="pt-8 border-t border-sage-800 text-xs text-sage-600 flex flex-col md:flex-row justify-between items-center gap-4">
-              <p>© {new Date().getFullYear()} Namaste. All rights reserved.</p>
+              <p>© {new Date().getFullYear()} AYA. All rights reserved.</p>
               <p className="font-display italic text-sage-500">Built with 🙏 for the global yoga community</p>
             </div>
           </div>

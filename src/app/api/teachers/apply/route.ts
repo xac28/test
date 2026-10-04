@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
+import { termsGate } from "@/lib/terms"
 
 export async function POST(req: Request) {
   try {
@@ -8,6 +9,8 @@ export async function POST(req: Request) {
     if (!user) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     const body = await req.json()
     const {

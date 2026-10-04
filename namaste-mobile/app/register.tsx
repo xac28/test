@@ -1,11 +1,11 @@
 import React, { useState } from "react"
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, Alert,
+  KeyboardAvoidingView, Platform, ScrollView, Alert, Linking,
 } from "react-native"
 import { useRouter } from "expo-router"
 import { useAuth } from "../context/auth"
-import { colors } from "../constants"
+import { colors, API_BASE } from "../constants"
 
 export default function RegisterScreen() {
   const router = useRouter()
@@ -14,6 +14,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
 
   const handleRegister = async () => {
@@ -26,8 +27,13 @@ export default function RegisterScreen() {
       return
     }
 
+    if (!acceptedTerms) {
+      Alert.alert("Sözleşme", "Kayıt olmak için sözleşmeyi kabul etmelisiniz.")
+      return
+    }
+
     setLoading(true)
-    const result = await signUp(name.trim(), email.trim(), password.trim())
+    const result = await signUp(name.trim(), email.trim(), password.trim(), acceptedTerms)
     setLoading(false)
 
     if (result.success) {
@@ -107,10 +113,33 @@ export default function RegisterScreen() {
               </View>
             </View>
 
+            <View style={styles.termsRow}>
+              <TouchableOpacity
+                testID="register-accept-terms"
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: acceptedTerms }}
+                onPress={() => setAcceptedTerms(!acceptedTerms)}
+                style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                {acceptedTerms && <Text style={styles.checkboxTick}>✓</Text>}
+              </TouchableOpacity>
+              <Text style={styles.termsText}>
+                <Text style={styles.termsLink} onPress={() => Linking.openURL(`${API_BASE}/terms`)}>
+                  Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi
+                </Text>
+                {" ile "}
+                <Text style={styles.termsLink} onPress={() => Linking.openURL(`${API_BASE}/privacy`)}>
+                  Gizlilik Politikası
+                </Text>
+                {"'nı okudum, kabul ediyorum."}
+              </Text>
+            </View>
+
             <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+              style={[styles.button, (loading || !acceptedTerms) && styles.buttonDisabled]}
               onPress={handleRegister}
-              disabled={loading}
+              disabled={loading || !acceptedTerms}
               activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>{loading ? "Creating account..." : "Create Account"}</Text>
@@ -180,6 +209,15 @@ const styles = StyleSheet.create({
     shadowColor: colors.sage[900], shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 6,
   },
   buttonDisabled: { opacity: 0.6 },
+  termsRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  checkbox: {
+    width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: colors.sage[400],
+    backgroundColor: colors.white, alignItems: "center", justifyContent: "center", marginTop: 1,
+  },
+  checkboxChecked: { backgroundColor: colors.sage[600], borderColor: colors.sage[600] },
+  checkboxTick: { color: colors.white, fontSize: 14, fontWeight: "800" },
+  termsText: { flex: 1, fontSize: 13, color: colors.sage[700], lineHeight: 19 },
+  termsLink: { color: colors.sage[800], textDecorationLine: "underline", fontWeight: "600" },
   buttonText: { color: colors.white, fontSize: 17, fontWeight: "700", letterSpacing: 0.5 },
   divider: { flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 4 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.sage[200] },

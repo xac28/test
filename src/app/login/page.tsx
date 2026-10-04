@@ -20,11 +20,18 @@ function LoginContent() {
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<"login" | "register">("login")
   const [name, setName] = useState("")
+  const [acceptTerms, setAcceptTerms] = useState(false)
 
   const handleCredentialsLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
+
+    if (mode === "register" && !acceptTerms) {
+      setError("Kayıt olmak için sözleşmeyi kabul etmelisiniz.")
+      setLoading(false)
+      return
+    }
 
     try {
       if (mode === "register") {
@@ -32,7 +39,7 @@ function LoginContent() {
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, acceptTerms }),
         })
         const data = await res.json()
         if (!res.ok) {
@@ -197,6 +204,25 @@ function LoginContent() {
                 </div>
               )}
 
+              {/* Mandatory terms box (registration only) */}
+              {mode === "register" && (
+                <label className="flex items-start gap-3 cursor-pointer text-sm text-sage-700">
+                  <input
+                    type="checkbox"
+                    data-testid="register-accept-terms"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-sage-600"
+                  />
+                  <span>
+                    <Link href="/terms" target="_blank" className="underline font-medium">Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi</Link>
+                    {" "}ile{" "}
+                    <Link href="/privacy" target="_blank" className="underline font-medium">Gizlilik Politikası</Link>
+                    &apos;nı okudum, kabul ediyorum.
+                  </span>
+                </label>
+              )}
+
               {/* Error */}
               {error && (
                 <div className="bg-red-50 text-red-600 text-sm p-3 rounded-2xl border border-red-200 animate-fade-in flex items-center gap-2">
@@ -207,7 +233,7 @@ function LoginContent() {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (mode === "register" && !acceptTerms)}
                 className="w-full bg-sage-600 hover:bg-sage-700 active:scale-[0.98] text-white py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 shadow-lg shadow-sage-600/25 disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {loading ? (

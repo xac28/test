@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { termsGate } from "@/lib/terms"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 import { applyRateLimit } from "@/lib/api-protection"
@@ -56,6 +57,9 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     const formData = await req.formData()
     const file = formData.get("file") as File | null

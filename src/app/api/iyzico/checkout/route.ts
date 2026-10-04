@@ -1,6 +1,7 @@
 import Iyzipay from 'iyzipay';
 import { NextResponse } from 'next/server';
 import { resolveUser } from '@/lib/auth-utils';
+import { termsGate } from '@/lib/terms';
 import { db } from '@/lib/db';
 
 // Iyzico requires a registered Turkish company (Vergi Levhası) to get real API keys.
@@ -19,6 +20,8 @@ export async function POST(req: Request) {
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        const termsBlock = termsGate(user);
+        if (termsBlock) return termsBlock;
 
         const { bookingId } = await req.json();
 

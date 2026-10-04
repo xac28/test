@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import authConfig from "./auth.config"
 import bcrypt from "bcryptjs"
 import Credentials from "next-auth/providers/credentials"
+import { hasAcceptedCurrentTerms } from "@/lib/terms"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -82,15 +83,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true
     },
-    async session({ token, session }) {
-      if (token.sub && session.user) {
-        session.user.id = token.sub;
-      }
-      if (token.role && session.user) {
-        session.user.role = token.role as any;
-      }
-      return session;
-    },
+    session: authConfig.callbacks!.session!,
     async jwt({ token, user }) {
       // On initial sign-in, user object is available
       if (user) {
@@ -132,6 +125,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       
       token.role = existingUser.role;
+      token.termsAccepted = hasAcceptedCurrentTerms(existingUser);
       return token;
     }
   },

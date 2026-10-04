@@ -53,6 +53,10 @@ model User {
   
   stripeCustomerId String?
   expoPushToken    String?
+
+  // Terms acceptance (sözleşme kabulü) — null until the user accepts the current terms
+  termsAcceptedAt  DateTime?
+  termsVersion     String?
   
   // Subscriptions
   subscriptionPlan String @default("FREE") // FREE, PREMIUM, UNLIMITED
@@ -122,6 +126,7 @@ model Post {
   title     String?   @db.VarChar(255)
   content   String    @db.Text
   image     String?   @db.Text
+  mediaType String?   @db.VarChar(16) // "image" | "video" — how `image` (the media URL) should be rendered
   authorId  String
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   likes     Like[]
@@ -202,6 +207,7 @@ model Teacher {
   bookings        Booking[]
   liveRooms       LiveRoom[]
   videos          TeacherVideo[]
+  payoutRequests  PayoutRequest[]
 }
 
 model TeacherVideo {
@@ -414,3 +420,76 @@ model BanEvasionLog {
   @@index([createdAt])
 }
 
+
+
+// ── Lesson recordings ──────────────────────────────────────────────────────
+// Recorded in the teacher's browser, uploaded in chunks, downloadable only by
+// the teacher and the student of that lesson, deleted after `expiresAt` (30 days).
+
+enum RecordingStatus {
+  RECORDING
+  READY
+  FAILED
+  EXPIRED
+}
+
+model LessonRecording {
+  id            String          @id @default(cuid())
+
+  bookingId     String?         // scheduled lesson
+  liveRoomId    String?         // instant live room (teacher only — no single student)
+  roomName      String
+
+  teacherUserId String
+  studentUserId String?
+
+  status        RecordingStatus @default(RECORDING)
+  mimeType      String          @default("video/webm")
+  chunkCount    Int             @default(0)
+  sizeBytes     BigInt          @default(0)
+  durationSec   Int?
+  filePath      String?         // relative to the private storage root once merged
+
+  startedAt     DateTime        @default(now())
+  endedAt       DateTime?
+  expiresAt     DateTime        // startedAt + 30 days
+  deletedAt     DateTime?
+
+  @@index([teacherUserId, startedAt])
+  @@index([studentUserId, startedAt])
+  @@index([bookingId])
+  @@index([expiresAt])
+}
+
+// ── Teacher payout requests ────────────────────────────────────────────────
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model PayoutRequest {
+  id          String       @id @default(cuid())
+  teacherId   String
+  teacher     Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  amount      Float
+  currency    String       @default("USD")
+  method      String       @default("IBAN") // IBAN | STRIPE
+  iban        String?
+  accountName String?
+  note        String?      @db.Text
+
+  status      PayoutStatus @default(PENDING)
+  adminNote   String?      @db.Text
+  reviewerId  String?
+  reviewedAt  DateTime?
+  paidAt      DateTime?
+
+  createdAt   DateTime     @default(now())
+
+  @@index([status, createdAt])
+  @@index([teacherId])
+}

@@ -16,6 +16,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import crypto from "crypto"
 import { extractIp, logUserIp } from "@/lib/ban-engine"
+import { hasAcceptedCurrentTerms } from "@/lib/terms"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,8 @@ export interface AuthUser {
   email: string | null
   image: string | null
   role: string
+  /** True when the user has accepted the current terms (sözleşme). */
+  termsAccepted: boolean
 }
 
 export interface MobileSession {
@@ -208,6 +211,7 @@ export function sanitizeUser(user: any): AuthUser {
     email: user.email,
     image: user.image,
     role: user.role,
+    termsAccepted: hasAcceptedCurrentTerms(user),
   }
 }
 

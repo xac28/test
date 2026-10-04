@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import { createLiveKitToken } from "@/lib/livekit"
 import { NextResponse } from "next/server"
+import { termsGate } from "@/lib/terms"
 import { resolveUser } from "@/lib/auth-utils"
 
 // POST /api/room/join — Creates/joins a livekit room for a booking
@@ -10,6 +11,9 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     const { bookingId } = await req.json()
     if (!bookingId) {

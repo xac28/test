@@ -5,6 +5,13 @@ import { NextResponse } from "next/server"
 const { auth } = NextAuth(authConfig)
 
 /**
+ * Pages a signed-in user may open before accepting the terms. Everything else
+ * redirects to /accept-terms (the "terms gate"). API routes are not redirected —
+ * they answer 403 TERMS_REQUIRED themselves (see termsGate in src/lib/terms.ts).
+ */
+const TERMS_GATE_EXEMPT = ["/accept-terms", "/terms", "/privacy", "/login", "/auth-error", "/api"]
+
+/**
  * 🛡️ Namaste Middleware
  * 
  * Katmanlı güvenlik:
@@ -21,14 +28,26 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const { pathname } = req.nextUrl
 
-  const isProtectedRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/teach") || pathname.startsWith("/admin")
+  const isProtectedRoute = ["/dashboard", "/teach", "/admin", "/room", "/live", "/messages", "/accept-terms"].some((p) => pathname === p || pathname.startsWith(p + "/"))
 
   if (isProtectedRoute && !isLoggedIn) {
     return NextResponse.redirect(new URL("/", req.nextUrl))
   }
 
+  // Terms gate: signed in, but the current terms were not accepted yet
+  if (
+    isLoggedIn &&
+    req.auth?.user?.termsAccepted === false &&
+    !TERMS_GATE_EXEMPT.some((p) => pathname === p || pathname.startsWith(p + "/"))
+  ) {
+    const url = new URL("/accept-terms", req.nextUrl)
+    url.searchParams.set("next", pathname + req.nextUrl.search)
+    return NextResponse.redirect(url)
+  }
+
   // Basic Role Based Protection
-  if (pathname.startsWith("/teach") && req.auth?.user?.role !== "TEACHER" && req.auth?.user?.role !== "ADMIN") {
+  const isTeachArea = pathname === "/teach" || pathname.startsWith("/teach/")
+  if (isTeachArea && req.auth?.user?.role !== "TEACHER" && req.auth?.user?.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/dashboard", req.nextUrl))
   }
   
@@ -51,7 +70,9 @@ export default auth((req) => {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://sandbox-api.iyzipay.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.googleusercontent.com https://lh3.googleusercontent.com",
+      "img-src 'self' data: blob: https://*.googleusercontent.com https://lh3.googleusercontent.com https://images.unsplash.com https://i.pravatar.cc",
+      "media-src 'self' blob: data:",
+      "worker-src 'self' blob:",
       "connect-src 'self' https://api.stripe.com https://sandbox-api.iyzipay.com wss: ws:",
       "frame-src 'self' https://js.stripe.com https://sandbox-merchant.iyzipay.com",
       "object-src 'none'",
@@ -64,7 +85,7 @@ export default auth((req) => {
   response.headers.set("X-Frame-Options", "DENY")
   response.headers.set("X-XSS-Protection", "1; mode=block")
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(self), geolocation=()")
+  response.headers.set("Permissions-Policy", "camera=(self), microphone=(self), display-capture=(self), fullscreen=(self), geolocation=()")
 
   // ── CORS — sadece bilinen origin'lere izin ver ──
   const allowedOrigins = [

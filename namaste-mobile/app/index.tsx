@@ -60,7 +60,8 @@ export default function WelcomeScreen() {
   if (isLoading) return null // Hide while checking auth
 
   if (user) {
-    return <Redirect href="/(tabs)" />
+    // Terms gate: accounts that have not accepted the current terms must do so first
+    return <Redirect href={user.termsAccepted === false ? "/accept-terms" : "/(tabs)"} />
   }
 
   return (

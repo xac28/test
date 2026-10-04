@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import { createLiveKitToken } from "@/lib/livekit"
 import { NextResponse } from "next/server"
+import { termsGate } from "@/lib/terms"
 import { resolveUser } from "@/lib/auth-utils"
 
 // POST /api/room/instant — Teacher starts an instant live session
@@ -10,6 +11,9 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     if (user.role !== "TEACHER" && user.role !== "ADMIN") {
       return NextResponse.json({ error: "Only teachers can start live sessions" }, { status: 403 })
@@ -81,6 +85,9 @@ export async function DELETE(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     const { liveRoomId } = await req.json()
 

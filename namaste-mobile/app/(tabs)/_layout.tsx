@@ -11,6 +11,11 @@ export default function TabLayout() {
     return <Redirect href="/" />
   }
 
+  // Terms gate
+  if (user.termsAccepted === false) {
+    return <Redirect href="/accept-terms" />
+  }
+
   return (
     <Tabs
       screenOptions={{

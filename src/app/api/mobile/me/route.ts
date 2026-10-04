@@ -18,6 +18,7 @@ export async function GET(req: Request) {
         email: user.email,
         image: user.image,
         role: user.role,
+        termsAccepted: user.termsAccepted,
       },
     })
   } catch (error: any) {

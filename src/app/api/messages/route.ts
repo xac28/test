@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_API, RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
+import { termsGate } from "@/lib/terms"
 
 // GET conversations or messages
 export async function GET(req: Request) {
@@ -69,6 +70,8 @@ export async function POST(req: Request) {
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     const { targetUserId, teacherId, content } = await req.json()
     if ((!targetUserId && !teacherId) || !content) return NextResponse.json({ error: "Missing fields" }, { status: 400 })

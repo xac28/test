@@ -111,7 +111,7 @@ export function ReportDialog({ targetType, targetId, subject, message, theme = "
             <CheckCircle2 className="mx-auto text-green-500" size={44} />
             <h3 className="font-display text-xl">Bildiriminiz alındı</h3>
             <p className={`text-sm ${muted}`}>
-              Yöneticilerimiz inceleyecek. Durumunu <strong>Bildirimlerim</strong> sayfasından izleyebilirsiniz.
+              Yöneticilerimiz inceleyecek. Durumunu <strong>Raporlarım</strong> sayfasından izleyebilirsiniz.
               Bildirdiğiniz kişi sizin kimliğinizi görmez.
             </p>
             <p className={`text-xs font-mono ${muted}`}>Başvuru no: {done.id.slice(-8).toUpperCase()}</p>

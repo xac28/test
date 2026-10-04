@@ -211,7 +211,7 @@ interface Detail {
     warnings: number; distinctReporters: number; teacher: { id: string; isTrialMode: boolean } | null
   }
   siblings: { id: string; category: string; targetType: string; status: string; priority: string; createdAt: string; reporter: { name: string | null } }[]
-  target: null | { kind: string; id: string; title?: string; slug?: string; isActive?: boolean; status?: string }
+  target: null | { kind: string; id: string; title?: string; slug?: string; isActive?: boolean; status?: string; image?: string | null; content?: string; postId?: string }
   timeline: { id: string; action: string; reason: string | null; actor: string; createdAt: string }[]
 }
 
@@ -272,6 +272,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
   const noteValue = note ?? r.adminNote ?? ""
   const roomLive = target?.kind === "live" && target.isActive
   const workshopLive = target?.kind === "workshop" && target.status === "PUBLISHED"
+  const contentLive = (target?.kind === "post" || target?.kind === "comment") && target.status !== "REMOVED"
 
   return (
     <Drawer
@@ -312,6 +313,15 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
             <Card className="p-4 text-sm space-y-2">
               {evidence.label && <p><span className="text-sage-500">İçerik:</span> {evidence.label}</p>}
               {evidence.teacher && <p><span className="text-sage-500">Eğitmen:</span> {evidence.teacher}</p>}
+              {(evidence.image || evidence.caption || evidence.commentText) && (
+                <div className="space-y-2" data-testid="report-content-evidence">
+                  {evidence.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={evidence.image} alt="Bildirilen fotoğraf" className="max-h-72 rounded-lg border border-rule object-contain bg-sage-50" />
+                  )}
+                  {(evidence.caption || evidence.commentText) && <p className="bg-sage-50 border-l-4 border-accent px-3 py-2 break-words">{evidence.caption ?? evidence.commentText}</p>}
+                </div>
+              )}
               {evidence.message && (
                 <blockquote className="border-l-4 border-accent bg-sage-50 px-3 py-2">
                   <span className="font-semibold">{evidence.message.senderName}: </span>{evidence.message.text}
@@ -320,7 +330,8 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
               )}
               {target && (
                 <p className="text-xs text-sage-500">
-                  Şu an: {target.kind === "live" ? (target.isActive ? "yayın sürüyor" : "yayın sona ermiş") : target.status === "PUBLISHED" ? "atölye yayında" : `atölye ${target.status}`}
+                  Şu an: {target.kind === "post" || target.kind === "comment" ? (target.status === "REMOVED" ? "içerik kaldırılmış" : target.status === "PENDING" ? "onay bekliyor" : "içerik yayında") : target.kind === "live" ? (target.isActive ? "yayın sürüyor" : "yayın sona ermiş") : target.status === "PUBLISHED" ? "atölye yayında" : `atölye ${target.status}`}
+                  {(target.kind === "post" || target.kind === "comment") && <> · <a className="underline" target="_blank" rel="noreferrer" href={`/community/${target.kind === "post" ? target.id : target.postId}`}>sayfayı aç</a></>}
                   {target.kind === "workshop" && target.slug && <> · <a className="underline" target="_blank" rel="noreferrer" href={`/atolyeler/${target.slug}`}>sayfayı aç</a></>}
                 </p>
               )}
@@ -427,6 +438,11 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
                 {target?.kind === "workshop" && (
                   <Button disabled={!workshopLive} data-testid="act-unpublish" onClick={() => act("unpublish_workshop", { title: "Atölyeyi yayından kaldır", description: "Atölye taslağa alınır; eğitmen düzenleyip yeniden yayınlayabilir.", confirmLabel: "Yayından kaldır", label: "Not (isteğe bağlı)", min: 0 })}>
                     <Trash2 size={14} /> {workshopLive ? "Atölyeyi yayından kaldır" : "Atölye yayında değil"}
+                  </Button>
+                )}
+                {(target?.kind === "post" || target?.kind === "comment") && (
+                  <Button disabled={!contentLive} data-testid="act-remove-content" onClick={() => act("remove_content", { title: target.kind === "post" ? "Fotoğrafı kaldır" : "Yorumu kaldır", description: "İçerik herkesin görünümünden kalkar ve sahibine bildirim gider.", confirmLabel: "Kaldır", label: "Not (isteğe bağlı)", min: 0 })}>
+                    <Trash2 size={14} /> {contentLive ? (target.kind === "post" ? "Fotoğrafı kaldır" : "Yorumu kaldır") : "İçerik zaten kaldırılmış"}
                   </Button>
                 )}
                 {isTeacher && !reported!.teacher!.isTrialMode && (

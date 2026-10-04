@@ -1,5 +1,6 @@
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
+import { notify } from "@/lib/notifications"
 import { applyFullBan } from "@/lib/ban-engine"
 import { endLiveRoom } from "@/lib/live-rooms"
 import { decideTrial } from "@/lib/trial-server"
@@ -89,6 +90,16 @@ async function resolveTarget(
         reportedId: sender?.id ?? null,
         evidence: { label: `Sohbet · ${r.title}`, roomId: r.id, message: data.message, reporterSupplied: true, senderKnown: !!sender },
       }
+    }
+    case "POST": {
+      const post = await db.post.findUnique({ where: { id: data.targetId }, include: { author: { select: { id: true, name: true } } } })
+      if (!post || post.status === "REMOVED") return notFound
+      return { ok: true, reportedId: post.authorId, evidence: { label: `Fotoğraf · ${post.author.name ?? ""}`, postId: post.id, caption: post.content.slice(0, 300), image: post.image, status: post.status } }
+    }
+    case "COMMENT": {
+      const c = await db.comment.findUnique({ where: { id: data.targetId }, include: { author: { select: { id: true, name: true } } } })
+      if (!c || c.status === "REMOVED") return notFound
+      return { ok: true, reportedId: c.authorId, evidence: { label: `Yorum · ${c.author.name ?? ""}`, postId: c.postId, commentText: c.content.slice(0, 300), status: c.status } }
     }
   }
   return notFound
@@ -193,10 +204,16 @@ export async function createReport(user: { id: string; name: string | null }, in
 /** Tells the reporter (once) that their report has been dealt with — generic, no internal notes. */
 export async function notifyReporterOnce(reportId: string) {
   const r = await db.report.findUnique({ where: { id: reportId }, include: { reporter: { select: { email: true, name: true } } } })
-  if (!r || r.reporterNotified || !r.reporter.email) return
+  if (!r || r.reporterNotified) return
   const updated = await db.report.updateMany({ where: { id: reportId, reporterNotified: false }, data: { reporterNotified: true } })
   if (updated.count === 0) return
   const dismissed = r.status === "DISMISSED"
+  await notify({
+    userId: r.reporterId, type: "REPORT_UPDATE", href: "/dashboard/reports",
+    title: dismissed ? "Bildirimin incelendi" : "Bildirimin için gerekli işlem yapıldı",
+    body: dismissed ? "Mevcut bilgilerle bir ihlal tespit edilemedi." : "Teşekkürler: bildirdiğin içerik için işlem yapıldı.",
+  })
+  if (!r.reporter.email) return
   sendEmail({
     to: r.reporter.email,
     subject: "AYA: Bildiriminiz değerlendirildi",
@@ -209,6 +226,7 @@ export async function notifyReporterOnce(reportId: string) {
 
 export async function issueWarning(adminId: string, userId: string, message: string, reportId?: string) {
   const w = await db.userWarning.create({ data: { userId, message, reportId: reportId ?? null, issuedById: adminId } })
+  await notify({ userId, type: "WARNING", title: "Yönetimden bir uyarı aldın", body: message.slice(0, 200), href: "/dashboard/reports" })
   await db.auditLog.create({ data: { actorId: adminId, action: "WARN_USER", targetId: userId, reason: message.slice(0, 300) } })
   const u = await db.user.findUnique({ where: { id: userId }, select: { email: true, name: true } })
   if (u?.email) {
@@ -273,6 +291,24 @@ export async function executeReportAction(adminId: string, reportId: string, act
       if (w.status !== "PUBLISHED") return { ok: false, status: 409, error: "Atölye zaten yayında değil." }
       await db.workshop.update({ where: { id: w.id }, data: { status: "DRAFT" } })
       await db.auditLog.create({ data: { actorId: adminId, action: "UNPUBLISH_WORKSHOP", targetId: w.id, reason: cleanNote || "Rapor üzerine yayından kaldırıldı" } })
+      break
+    }
+    case "remove_content": {
+      if (report.targetType === "POST" && report.targetId) {
+        const post = await db.post.findUnique({ where: { id: report.targetId } })
+        if (!post || post.status === "REMOVED") return { ok: false, status: 409, error: "Gönderi zaten kaldırılmış." }
+        await db.post.update({ where: { id: post.id }, data: { status: "REMOVED", removedReason: cleanNote || "Rapor üzerine kaldırıldı", reviewedById: adminId, reviewedAt: new Date() } })
+        await notify({ userId: post.authorId, type: "POST_REMOVED", title: "Fotoğrafın kaldırıldı", body: "Bir bildirim üzerine yapılan inceleme sonucunda fotoğrafın topluluk kurallarına uymadığı için kaldırıldı.", href: "/community/rules" })
+      } else if (report.targetType === "COMMENT" && report.targetId) {
+        const c = await db.comment.findUnique({ where: { id: report.targetId } })
+        if (!c || c.status === "REMOVED") return { ok: false, status: 409, error: "Yorum zaten kaldırılmış." }
+        await db.$transaction([
+          db.comment.update({ where: { id: c.id }, data: { status: "REMOVED", removedById: adminId, removedReason: cleanNote || "Rapor üzerine kaldırıldı" } }),
+          db.post.update({ where: { id: c.postId }, data: { commentCount: { decrement: 1 } } }),
+        ])
+        await notify({ userId: c.authorId, type: "COMMENT_REMOVED", title: "Yorumun kaldırıldı", body: "Bir bildirim üzerine yapılan inceleme sonucunda yorumun topluluk kurallarına uymadığı için kaldırıldı.", href: "/community/rules" })
+      } else return { ok: false, status: 400, error: "Bu raporda kaldırılacak bir içerik yok." }
+      await db.auditLog.create({ data: { actorId: adminId, action: "REMOVE_CONTENT", targetId: report.targetId, reason: cleanNote || "Rapor üzerine kaldırıldı" } })
       break
     }
     default:

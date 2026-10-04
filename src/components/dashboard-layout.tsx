@@ -6,7 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { WarningBanner } from "./warning-banner"
 import { ADMIN_TABS, BADGE_TONE, useAdminBadges } from "./admin/tab-defs"
-import { LogOut, Flag, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert } from "lucide-react"
+import { LogOut, Bell, Flag, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert } from "lucide-react"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
@@ -21,7 +21,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: "Pratiğim", href: "/dashboard", icon: Home },
     { name: "Profilim", href: "/dashboard/profile", icon: Settings },
     { name: "Eğitmen Bul", href: "/teachers", icon: Users },
-    { name: "Bildirimlerim", href: "/dashboard/reports", icon: Flag },
+    { name: "Bildirimler", href: "/dashboard/notifications", icon: Bell },
+    { name: "Raporlarım", href: "/dashboard/reports", icon: Flag },
   ]
 
   const teacherLinks = [
@@ -31,7 +32,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: "Atölyelerim", href: "/teach/workshops", icon: Users },
     { name: "Canlı Yayın", href: "/live/studio", icon: Video },
     { name: "Kazançlar", href: "/teach/earnings", icon: CreditCard },
-    { name: "Bildirimlerim", href: "/dashboard/reports", icon: Flag },
+    { name: "Bildirimler", href: "/dashboard/notifications", icon: Bell },
+    { name: "Raporlarım", href: "/dashboard/reports", icon: Flag },
   ]
 
   const adminMode = pathname.startsWith("/admin")

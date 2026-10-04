@@ -3,11 +3,11 @@
  * Pure and unit-tested; the server glue lives in report-server.ts.
  */
 
-export type TargetType = "TEACHER" | "LIVE_ROOM" | "WORKSHOP" | "BOOKING" | "CHAT_MESSAGE"
+export type TargetType = "TEACHER" | "LIVE_ROOM" | "WORKSHOP" | "BOOKING" | "CHAT_MESSAGE" | "POST" | "COMMENT"
 export type Priority = "LOW" | "NORMAL" | "HIGH" | "URGENT"
 export type ReportStatus = "PENDING" | "REVIEWED" | "RESOLVED" | "DISMISSED"
 
-export const TARGET_TYPES: TargetType[] = ["TEACHER", "LIVE_ROOM", "WORKSHOP", "BOOKING", "CHAT_MESSAGE"]
+export const TARGET_TYPES: TargetType[] = ["TEACHER", "LIVE_ROOM", "WORKSHOP", "BOOKING", "CHAT_MESSAGE", "POST", "COMMENT"]
 
 export const TARGET_LABEL_TR: Record<string, string> = {
   TEACHER: "Eğitmen",
@@ -15,6 +15,8 @@ export const TARGET_LABEL_TR: Record<string, string> = {
   WORKSHOP: "Atölye",
   BOOKING: "Ders",
   CHAT_MESSAGE: "Sohbet mesajı",
+  POST: "Topluluk fotoğrafı",
+  COMMENT: "Yorum",
   USER: "Kullanıcı",
 }
 
@@ -26,16 +28,16 @@ interface CategoryDef {
 }
 
 export const REPORT_CATEGORIES: Record<string, CategoryDef> = {
-  SAFETY: { label: "Güvenlik / zarar riski", hint: "Fiziksel veya psikolojik zarar riski, tehlikeli yönlendirme", base: "HIGH", targets: ["TEACHER", "LIVE_ROOM", "WORKSHOP", "BOOKING", "CHAT_MESSAGE"] },
-  HARASSMENT: { label: "Taciz / uygunsuz davranış", hint: "Hakaret, taciz, ayrımcılık, uygunsuz dil", base: "HIGH", targets: ["TEACHER", "LIVE_ROOM", "BOOKING", "CHAT_MESSAGE"] },
-  INAPPROPRIATE_CONTENT: { label: "Uygunsuz içerik", hint: "Yoga/meditasyonla ilgisiz, müstehcen veya rahatsız edici içerik", base: "HIGH", targets: ["TEACHER", "LIVE_ROOM", "WORKSHOP", "CHAT_MESSAGE"] },
-  FRAUD: { label: "Aldatma / dolandırıcılık", hint: "Sahte bilgi, platform dışına ödeme yönlendirme, yanıltıcı vaatler", base: "HIGH", targets: ["TEACHER", "WORKSHOP", "BOOKING", "CHAT_MESSAGE"] },
+  SAFETY: { label: "Güvenlik / zarar riski", hint: "Fiziksel veya psikolojik zarar riski, tehlikeli yönlendirme", base: "HIGH", targets: ["TEACHER", "LIVE_ROOM", "WORKSHOP", "BOOKING", "CHAT_MESSAGE", "POST", "COMMENT"] },
+  HARASSMENT: { label: "Taciz / uygunsuz davranış", hint: "Hakaret, taciz, ayrımcılık, uygunsuz dil", base: "HIGH", targets: ["TEACHER", "LIVE_ROOM", "BOOKING", "CHAT_MESSAGE", "POST", "COMMENT"] },
+  INAPPROPRIATE_CONTENT: { label: "Uygunsuz içerik", hint: "Yoga/meditasyonla ilgisiz, müstehcen veya rahatsız edici içerik", base: "HIGH", targets: ["TEACHER", "LIVE_ROOM", "WORKSHOP", "CHAT_MESSAGE", "POST", "COMMENT"] },
+  FRAUD: { label: "Aldatma / dolandırıcılık", hint: "Sahte bilgi, platform dışına ödeme yönlendirme, yanıltıcı vaatler", base: "HIGH", targets: ["TEACHER", "WORKSHOP", "BOOKING", "CHAT_MESSAGE", "POST", "COMMENT"] },
   RECORDING_VIOLATION: { label: "Kayıt / paylaşım ihlali", hint: "Dersin izinsiz kaydedilmesi veya paylaşılması", base: "HIGH", targets: ["TEACHER", "LIVE_ROOM", "BOOKING", "CHAT_MESSAGE"] },
   NO_SHOW: { label: "Derse gelmedi / geç kaldı", hint: "Planlanan derse katılmadı veya çok geç katıldı", base: "NORMAL", targets: ["BOOKING", "WORKSHOP"] },
   QUALITY: { label: "Ders kalitesi / yetersiz eğitmen", hint: "Vaat edilenle uyuşmayan veya yetersiz ders", base: "NORMAL", targets: ["TEACHER", "WORKSHOP", "BOOKING", "LIVE_ROOM"] },
-  SPAM: { label: "Spam / reklam", hint: "Tekrarlayan mesajlar, istenmeyen reklam", base: "LOW", targets: ["LIVE_ROOM", "CHAT_MESSAGE", "WORKSHOP"] },
+  SPAM: { label: "Spam / reklam", hint: "Tekrarlayan mesajlar, istenmeyen reklam", base: "LOW", targets: ["LIVE_ROOM", "CHAT_MESSAGE", "WORKSHOP", "POST", "COMMENT"] },
   TECHNICAL: { label: "Teknik sorun", hint: "Görüntü/ses, bağlantı veya platform hatası", base: "LOW", targets: ["LIVE_ROOM", "BOOKING", "WORKSHOP"] },
-  OTHER: { label: "Diğer", hint: "Yukarıdakilere uymayan durumlar", base: "NORMAL", targets: ["TEACHER", "LIVE_ROOM", "WORKSHOP", "BOOKING", "CHAT_MESSAGE"] },
+  OTHER: { label: "Diğer", hint: "Yukarıdakilere uymayan durumlar", base: "NORMAL", targets: ["TEACHER", "LIVE_ROOM", "WORKSHOP", "BOOKING", "CHAT_MESSAGE", "POST", "COMMENT"] },
 }
 
 export const CATEGORY_LABEL_TR = (c: string) => REPORT_CATEGORIES[c]?.label ?? c
@@ -149,11 +151,12 @@ export function withinRateLimit(counts: { lastHour: number; lastDay: number }): 
   return { ok: true }
 }
 
-export type AdminAction = "warn" | "ban" | "revoke_teacher" | "close_room" | "unpublish_workshop"
+export type AdminAction = "warn" | "ban" | "revoke_teacher" | "close_room" | "unpublish_workshop" | "remove_content"
 export const ADMIN_ACTION_LABEL_TR: Record<AdminAction, string> = {
   warn: "Uyarı gönderildi",
   ban: "Kullanıcı yasaklandı",
   revoke_teacher: "Eğitmen onayı kaldırıldı",
   close_room: "Canlı yayın kapatıldı",
   unpublish_workshop: "Atölye yayından kaldırıldı",
+  remove_content: "İçerik kaldırıldı",
 }

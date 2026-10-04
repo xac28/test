@@ -51,6 +51,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       } else if (r.targetType === "WORKSHOP") {
         const w = await db.workshop.findUnique({ where: { id: r.targetId }, select: { id: true, slug: true, title: true, status: true } })
         target = w && { kind: "workshop", ...w }
+      } else if (r.targetType === "POST") {
+        const post = await db.post.findUnique({ where: { id: r.targetId }, select: { id: true, status: true, image: true, content: true } })
+        target = post && { kind: "post", ...post }
+      } else if (r.targetType === "COMMENT") {
+        const c = await db.comment.findUnique({ where: { id: r.targetId }, select: { id: true, status: true, content: true, postId: true } })
+        target = c && { kind: "comment", ...c }
       }
     }
 

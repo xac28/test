@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import {
-  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen,
+  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images,
 } from "lucide-react"
 
-export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number }
+export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number; pendingPosts: number }
 
 export interface TabDef {
   id: string
@@ -18,6 +18,7 @@ export interface TabDef {
 export const ADMIN_TABS: TabDef[] = [
   { id: "overview", label: "Genel Bakış", icon: Activity, group: "Genel" },
   { id: "reports", label: "Raporlar", icon: Flag, group: "Moderasyon", badge: (b) => (b.reports ? { value: b.reports, tone: b.urgentReports ? "red" : "amber" } : null) },
+  { id: "community", label: "Fotoğraflar", icon: Images, group: "Moderasyon", badge: (b) => (b.pendingPosts ? { value: b.pendingPosts, tone: "amber" } : null) },
   { id: "users", label: "Kullanıcılar", icon: Users, group: "Moderasyon" },
   { id: "security", label: "Güvenlik", icon: ShieldAlert, group: "Moderasyon" },
   { id: "audit", label: "Denetim Kayıtları", icon: History, group: "Moderasyon" },

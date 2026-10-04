@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { NotificationBell } from '@/components/notification-bell';
 
 /** AYA wordmark: set in the display serif with wide tracking. */
 export function Wordmark({ className = '' }: { className?: string }) {
@@ -56,6 +57,7 @@ export default function Navbar() {
     { href: '/live', label: t.nav.live, live: liveCount > 0 },
     { href: '/teachers', label: t.nav.teachers },
     { href: '/icerikler', label: t.nav.articles },
+    { href: '/community', label: locale === 'tr' ? 'Topluluk' : 'Community' },
     { href: '/pricing', label: t.nav.plans },
   ];
 
@@ -109,6 +111,8 @@ export default function Navbar() {
           {status === 'loading' ? (
             <div className="w-24 h-9 shimmer rounded-md" />
           ) : session?.user ? (
+            <div className="flex items-center gap-1">
+            <NotificationBell />
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen((o) => !o)}
@@ -144,6 +148,7 @@ export default function Navbar() {
                   </button>
                 </div>
               )}
+            </div>
             </div>
           ) : (
             <div className="hidden sm:flex items-center gap-5">

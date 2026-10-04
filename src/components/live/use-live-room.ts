@@ -1,5 +1,6 @@
 "use client"
 
+import { findContact, scanText } from "@/lib/profanity"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   ConnectionState,
@@ -205,6 +206,8 @@ export function useLiveRoom(opts: { hostIdentity?: string; isHost: boolean }) {
       if (!room || room.state !== ConnectionState.Connected) return "Bağlantı yok"
       const text = sanitizeChatText(raw)
       if (!text) return null
+      // the same filter the community uses: insults and contact details never reach the room
+      if (!isHost && (!scanText(text).clean || findContact(text))) return "Mesajın topluluk kurallarına aykırı bir ifade ya da iletişim bilgisi içeriyor."
       if (!settings.chatEnabled && !isHost) return "Sohbet yayıncı tarafından kapatıldı"
       const gate = canSendNow(lastSent.current, Date.now(), settings.slowModeSec, isHost)
       if (!gate.ok) return `Yavaş mod: ${gate.waitSec} sn bekleyin`

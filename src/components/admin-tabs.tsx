@@ -10,6 +10,7 @@ import { AdminTrials } from "./admin-trials"
 import { ADMIN_TABS, ADMIN_TAB_IDS, BADGE_TONE, refreshAdminBadges, useAdminBadges } from "./admin/tab-defs"
 import { OverviewTab } from "./admin/overview-tab"
 import { ReportsTab } from "./admin/reports-tab"
+import { CommunityTab } from "./admin/community-tab"
 import { UsersTab, UserDrawer } from "./admin/users-tab"
 import { BookingsTab } from "./admin/bookings-tab"
 import { WorkshopsTab } from "./admin/workshops-tab"
@@ -63,6 +64,7 @@ export function AdminTabs({ pendingApplications, recentActions, financials, tria
       <div key={tab} className="animate-fade-up">
         {tab === "overview" && <OverviewTab goTo={goTo} />}
         {tab === "reports" && <ReportsTab onChanged={changed} onOpenUser={setUserId} />}
+        {tab === "community" && <CommunityTab onChanged={changed} onOpenUser={setUserId} />}
         {tab === "users" && <UsersTab onOpenUser={setUserId} refreshKey={usersRefresh} />}
         {tab === "security" && <SecurityTab onOpenUser={setUserId} />}
         {tab === "audit" && <AuditTab />}

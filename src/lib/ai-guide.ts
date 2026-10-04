@@ -251,8 +251,8 @@ function composeNavigation(message: string, data: GuideData, intent: Intent): Gu
     case "report":
       return {
         intent,
-        reply: "Bir sorun mu yaşadın? Canlı yayında “Yayını bildir” ya da bir mesajın yanındaki bayrağa, atölye ve eğitmen sayfalarında “Bildir” düğmesine, ders odasında “Sorun bildir”e basabilirsin. Yöneticiler inceler; bildirdiğin kişi kimliğini görmez. Durumu **Bildirimlerim**'den izlersin.",
-        links: data.signedIn ? [{ label: "Bildirimlerim", href: "/dashboard/reports" }] : [join],
+        reply: "Bir sorun mu yaşadın? Canlı yayında “Yayını bildir” ya da bir mesajın yanındaki bayrağa, atölye ve eğitmen sayfalarında “Bildir” düğmesine, ders odasında “Sorun bildir”e basabilirsin. Yöneticiler inceler; bildirdiğin kişi kimliğini görmez. Durumu **Raporlarım**'den izlersin.",
+        links: data.signedIn ? [{ label: "Raporlarım", href: "/dashboard/reports" }] : [join],
       }
     case "account":
       return {

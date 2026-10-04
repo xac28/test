@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     // Validate file type (mobile clients report some types differently — normalise first)
     const mime = normalizeMime(file.type)
-    const allowedTypes = type === "avatar"
+    const allowedTypes = type === "avatar" || type === "post"
       ? ["image/jpeg", "image/png", "image/webp"]
       : type === "video"
       ? ["video/mp4", "video/webm", "video/ogg", "video/quicktime"]
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     const safeOrigName = path.basename(file.name).replace(/[^a-zA-Z0-9._-]/g, "_")
 
     // Determine directory
-    const folder = type === "avatar" ? "avatars" : type === "video" ? "videos" : "certificates"
+    const folder = type === "avatar" ? "avatars" : type === "post" ? "posts" : type === "video" ? "videos" : "certificates"
     const uploadsDir = path.join(process.cwd(), "public", "uploads", folder)
     await mkdir(uploadsDir, { recursive: true })
 
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     const ext = mimeExt[mime] || path.extname(safeOrigName)
     
     // Extension whitelist kontrolü
-    const safeExtensions = type === "avatar" 
+    const safeExtensions = type === "avatar" || type === "post"
       ? [".jpg", ".jpeg", ".png", ".webp"]
       : type === "video"
       ? [".mp4", ".webm", ".ogg", ".mov"]
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid file extension" }, { status: 400 })
     }
 
-    const prefix = type === "avatar" ? "avatar" : type === "video" ? "video" : "cert"
+    const prefix = type === "avatar" ? "avatar" : type === "post" ? "post" : type === "video" ? "video" : "cert"
     const filename = `${prefix}-${user.id}-${Date.now()}${ext.toLowerCase()}`
     const filepath = path.join(uploadsDir, filename)
 

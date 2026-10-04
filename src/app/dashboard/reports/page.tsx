@@ -45,7 +45,7 @@ export default function MyReportsPage() {
     <div className="space-y-10 max-w-3xl">
       <header>
         <p className="eyebrow mb-2">Güvenlik</p>
-        <h1 className="font-display text-4xl text-ink">Bildirimlerim</h1>
+        <h1 className="font-display text-4xl text-ink">Raporlarım</h1>
         <p className="text-sage-600 mt-2">Gönderdiğiniz bildirimlerin durumu ve yönetimden aldığınız uyarılar.</p>
       </header>
 

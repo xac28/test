@@ -94,6 +94,8 @@ model User {
   workshopEnrollments  WorkshopEnrollment[]
   articles             Article[]
   warnings             UserWarning[]        @relation("Warned")
+  notifications        Notification[]       @relation("Notified")
+  moderationEvents     ModerationEvent[]    @relation("Moderated")
 }
 
 model Conversation {
@@ -124,6 +126,12 @@ model Message {
   createdAt      DateTime     @default(now())
 }
 
+enum ContentStatus {
+  PENDING   // photo of a newcomer, waiting for an admin
+  VISIBLE
+  REMOVED   // taken down (by the author, the filter or an admin)
+}
+
 model Post {
   id        String    @id @default(cuid())
   title     String?   @db.VarChar(255)
@@ -134,7 +142,19 @@ model Post {
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   likes     Like[]
   comments  Comment[]
+
+  status        ContentStatus @default(VISIBLE)
+  removedReason String?       @db.VarChar(300)
+  reviewedById  String?
+  reviewedAt    DateTime?
+  likeCount     Int           @default(0)
+  commentCount  Int           @default(0)
+
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  @@index([status, createdAt])
+  @@index([authorId, createdAt])
 }
 
 model Comment {
@@ -144,7 +164,15 @@ model Comment {
   authorId  String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  status        ContentStatus @default(VISIBLE)
+  removedReason String?       @db.VarChar(300)
+  removedById   String?
+
   createdAt DateTime @default(now())
+
+  @@index([postId, status, createdAt])
+  @@index([authorId, createdAt])
 }
 
 model Like {
@@ -156,6 +184,60 @@ model Like {
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
+  @@index([userId])
+}
+
+// In-app notifications (likes, comments, moderation outcomes, warnings, report updates)
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation("Notified", fields: [userId], references: [id], onDelete: Cascade)
+  type      String    @db.VarChar(32)  // POST_LIKE | POST_COMMENT | POST_APPROVED | POST_REMOVED | COMMENT_REMOVED | WARNING | REPORT_UPDATE | MUTED | SYSTEM
+  title     String    @db.VarChar(160)
+  body      String?   @db.VarChar(400)
+  href      String?   @db.VarChar(255)
+  actorId   String?   // who caused it (never shown for moderation events)
+  groupKey  String?   @db.VarChar(80) // likes on one post collapse into a single notification
+  count     Int       @default(1)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, groupKey])
+}
+
+// What the automatic moderation did (blocked insults, spam, …) — feeds the strike system and the admin overview
+model ModerationEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation("Moderated", fields: [userId], references: [id], onDelete: Cascade)
+  kind       String   @db.VarChar(32)  // PROFANITY | SPAM | CONTACT_INFO | LINK | FLOOD | DUPLICATE
+  surface    String   @db.VarChar(24)  // POST | COMMENT | MESSAGE | LIVE_CHAT
+  excerpt    String?  @db.VarChar(160) // masked: the offending word is starred
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// Extra blocked words added by the admins (on top of the built-in list)
+model BlockedWord {
+  id        String   @id @default(cuid())
+  word      String   @unique @db.VarChar(60)
+  addedById String
+  createdAt DateTime @default(now())
+}
+
+// A temporary "cool-down" after repeated violations: no posting or commenting until `until`
+model CommunityMute {
+  id        String   @id @default(cuid())
+  userId    String
+  until     DateTime
+  reason    String   @db.VarChar(200)
+  createdAt DateTime @default(now())
+
+  @@index([userId, until])
 }
 
 model Account {

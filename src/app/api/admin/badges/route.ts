@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 export async function GET(req: Request) {
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
-  const [applications, trials, payouts, reports, urgentReports, liveNow, pendingPosts] = await Promise.all([
+  const [applications, trials, payouts, reports, urgentReports, liveNow, pendingPosts, openSupport, aiUnknown, reviewReports] = await Promise.all([
     db.teacherApplication.count({ where: { status: "PENDING" } }),
     db.teacher.count({ where: { isTrialMode: true } }),
     db.payoutRequest.count({ where: { status: "PENDING" } }),
@@ -17,6 +17,9 @@ export async function GET(req: Request) {
     db.report.count({ where: { status: { in: OPEN_STATUSES }, priority: "URGENT" } }),
     db.liveRoom.count({ where: { isActive: true } }),
     db.post.count({ where: { status: "PENDING" } }),
+    db.supportTicket.count({ where: { status: "OPEN", awaitingStaff: true } }),
+    db.aiInteraction.count({ where: { kind: "unknown", taught: false, dismissed: false } }),
+    db.report.count({ where: { targetType: "REVIEW", status: { in: OPEN_STATUSES } } }),
   ])
-  return NextResponse.json({ applications, trials, payouts, reports, urgentReports, liveNow, pendingPosts })
+  return NextResponse.json({ applications, trials, payouts, reports, urgentReports, liveNow, pendingPosts, openSupport, aiUnknown, reviewReports })
 }

@@ -17,6 +17,14 @@ export async function GET(req: Request) {
   const { page, size, skip } = pageOf(url, 30)
   const where: any = {}
   if (action) where.action = action
+  // "prefix" groups related actions ("SUPPORT" → SUPPORT_REPLY, SUPPORT_CLOSE …); "range" limits the period; "actor" is a user id
+  const prefix = (url.searchParams.get("prefix") || "").replace(/[^A-Z_]/g, "").slice(0, 30)
+  if (prefix && !action) where.action = { startsWith: prefix }
+  const spans: Record<string, number> = { "24h": 86_400_000, "7d": 7 * 86_400_000, "30d": 30 * 86_400_000 }
+  const range = url.searchParams.get("range") || ""
+  if (spans[range]) where.createdAt = { gte: new Date(Date.now() - spans[range]) }
+  const actorId = url.searchParams.get("actor")
+  if (actorId) where.actorId = actorId
   if (q) where.OR = [{ reason: { contains: q } }, { targetId: q }, { actor: { name: { contains: q } } }]
   const [rows, total, actions] = await Promise.all([
     db.auditLog.findMany({ where, orderBy: { createdAt: "desc" }, skip: csv ? 0 : skip, take: csv ? CSV_LIMIT : size, include: { actor: { select: { name: true, email: true } } } }),
@@ -27,7 +35,7 @@ export async function GET(req: Request) {
     return csvResponse("denetim-kayitlari", toCsv(["Zaman", "Yönetici", "İşlem", "Hedef", "Ayrıntı"], rows.map((r) => [r.createdAt, r.actor?.name ?? "Sistem", r.action, r.targetId, r.reason])))
   }
   return NextResponse.json({
-    logs: rows.map((r) => ({ id: r.id, action: r.action, targetId: r.targetId, reason: r.reason, createdAt: r.createdAt, actor: r.actor?.name ?? "Sistem" })),
+    logs: rows.map((r) => ({ id: r.id, action: r.action, targetId: r.targetId, reason: r.reason, createdAt: r.createdAt, actor: r.actor?.name ?? "Sistem", actorId: r.actorId, actorEmail: r.actor?.email ?? null })),
     total, page, pageSize: size,
     actions: actions.map((a) => ({ action: a.action, count: a._count._all })),
   })

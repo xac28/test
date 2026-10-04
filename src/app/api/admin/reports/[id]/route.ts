@@ -57,6 +57,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       } else if (r.targetType === "COMMENT") {
         const c = await db.comment.findUnique({ where: { id: r.targetId }, select: { id: true, status: true, content: true, postId: true } })
         target = c && { kind: "comment", ...c }
+      } else if (r.targetType === "REVIEW") {
+        const rv = await db.review.findUnique({ where: { id: r.targetId }, select: { id: true, status: true, comment: true, rating: true } })
+        target = rv && { kind: "review", id: rv.id, status: rv.status, content: rv.comment ?? "" }
       }
     }
 

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { MessageCircle, X, Send, ChevronRight } from "lucide-react"
+import { MessageCircle, X, Send, ChevronRight, ThumbsUp, ThumbsDown, LifeBuoy, Sparkles } from "lucide-react"
+import { SupportChat } from "@/components/support-chat"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -16,6 +17,14 @@ interface Message {
   links?: GuideLink[]
   suggestions?: string[]
   timestamp?: Date
+  /** the answer can be rated; `feedback` holds the visitor's rating once given */
+  interactionId?: string | null
+  askFeedback?: boolean
+  feedback?: "up" | "down"
+  /** the guide did not know this one and recorded it */
+  learning?: boolean
+  /** the question this answer belongs to (handed to the support team on request) */
+  question?: string
 }
 
 const QUICK_PROMPTS = [
@@ -47,6 +56,8 @@ export function AiAssistant() {
   const [loading, setLoading] = useState(false)
   const [hint, setHint] = useState(false)
   const [showQuickPrompts, setShowQuickPrompts] = useState(true)
+  const [mode, setMode] = useState<"guide" | "support">("guide")
+  const [supportCtx, setSupportCtx] = useState<{ source: "USER" | "AI_UNHELPFUL" | "AI_REQUEST"; context: string }>({ source: "USER", context: "" })
   const [typingText, setTypingText] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -70,7 +81,7 @@ export function AiAssistant() {
   }, [])
 
   // Typing animation for AI responses
-  const typeMessage = (fullText: string, teachers?: any[], links?: GuideLink[], suggestions?: string[]) => {
+  const typeMessage = (fullText: string, teachers?: any[], links?: GuideLink[], suggestions?: string[], extra: Partial<Message> = {}) => {
     setIsTyping(true)
     setTypingText("")
     let i = 0
@@ -82,7 +93,7 @@ export function AiAssistant() {
         clearInterval(interval)
         setIsTyping(false)
         setTypingText("")
-        setMessages(prev => [...prev, { role: "ai", text: fullText, teachers, links, suggestions, timestamp: new Date() }])
+        setMessages(prev => [...prev, { role: "ai", text: fullText, teachers, links, suggestions, timestamp: new Date(), ...extra }])
       }
     }, 12) // Fast but visible typing speed
   }
@@ -109,12 +120,29 @@ export function AiAssistant() {
         data.reply || (res.status === 429 ? "Çok hızlı yazıyorsun 🙂 Birkaç saniye bekleyip tekrar dene." : "Şu an yardımcı olamıyorum, lütfen biraz sonra tekrar dene."),
         data.teachers,
         data.links,
-        data.suggestions
+        data.suggestions,
+        { interactionId: data.interactionId, askFeedback: !!data.askFeedback, learning: !!data.learning, question: userMsg },
       )
+      // "canlı destek" → the chat opens right after the answer
+      if (data.action === "support") openSupport("AI_REQUEST", lastQuestion())
     } catch {
       setLoading(false)
       typeMessage("Bağlantı hatası oluştu. Lütfen tekrar deneyin.")
     }
+  }
+
+  const lastQuestion = () => [...messages].reverse().find((m) => m.role === "user" && !/canli|canlı|destek|yetkili|temsilci/i.test(m.text))?.text ?? ""
+
+  const openSupport = (source: "USER" | "AI_UNHELPFUL" | "AI_REQUEST", context = "") => {
+    setSupportCtx({ source, context })
+    setMode("support")
+  }
+
+  const rate = async (index: number, up: boolean) => {
+    const m = messages[index]
+    if (!m?.interactionId || m.feedback) return
+    setMessages((prev) => prev.map((x, i) => (i === index ? { ...x, feedback: up ? "up" : "down" } : x)))
+    fetch("/api/ai/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: m.interactionId, helpful: up }) }).catch(() => {})
   }
 
   const formatTime = (date?: Date) => {
@@ -154,13 +182,23 @@ export function AiAssistant() {
 
       {isOpen && (
         <div role="dialog" aria-label="AYA yoga rehberi" className="fixed bottom-20 right-5 z-[90] w-[380px] max-w-[calc(100vw-40px)] max-h-[min(600px,calc(100vh-120px))] bg-paper rounded-2xl shadow-2xl border border-rule flex flex-col overflow-hidden animate-scale-in">
-          <div className="px-5 py-4 flex items-center gap-3 flex-shrink-0 bg-ink text-cream">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-display text-xl leading-none">AYA Rehber</h3>
-              <p className="text-cream/60 text-xs mt-1">Eğitmen ve yoga stili önerileri</p>
+          <div className="px-5 pt-4 pb-3 flex-shrink-0 bg-ink text-cream">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-xl leading-none">{mode === "guide" ? "AYA Rehber" : "Canlı destek"}</h3>
+                <p className="text-cream/60 text-xs mt-1">{mode === "guide" ? "Sorularını yanıtlar, doğru sayfaya götürür" : "Ekibimizle yaz, buradan yanıtlasınlar"}</p>
+              </div>
+              <button onClick={() => setIsOpen(false)} aria-label="Kapat" className="p-1.5 rounded-md hover:bg-white/10"><X size={16} /></button>
             </div>
-            <button onClick={() => setIsOpen(false)} aria-label="Kapat" className="p-1.5 rounded-md hover:bg-white/10"><X size={16} /></button>
+            <div className="mt-3 grid grid-cols-2 gap-1 p-1 bg-white/10 rounded-lg text-xs font-semibold" role="tablist">
+              <button role="tab" aria-selected={mode === "guide"} onClick={() => setMode("guide")} data-testid="mode-guide" className={`py-1.5 rounded-md inline-flex items-center justify-center gap-1.5 transition ${mode === "guide" ? "bg-cream text-ink" : "text-cream/80 hover:text-cream"}`}><Sparkles size={13} /> Rehber</button>
+              <button role="tab" aria-selected={mode === "support"} onClick={() => openSupport("USER", "")} data-testid="mode-support" className={`py-1.5 rounded-md inline-flex items-center justify-center gap-1.5 transition ${mode === "support" ? "bg-cream text-ink" : "text-cream/80 hover:text-cream"}`}><LifeBuoy size={13} /> Canlı destek</button>
+            </div>
           </div>
+
+          {mode === "support" ? (
+            <SupportChat key={supportCtx.source + supportCtx.context} className="flex-1 min-h-0" source={supportCtx.source} context={supportCtx.context} />
+          ) : (<>
 
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0" role="log" aria-live="polite">
             {messages.map((msg, i) => (
@@ -190,6 +228,9 @@ export function AiAssistant() {
                       ))}
                     </div>
                   )}
+                  {msg.learning && (
+                    <p data-testid="ai-learning" className="mt-2 text-xs text-sage-600 flex items-start gap-1.5"><Sparkles size={12} className="mt-0.5 shrink-0" /> Sorun kaydedildi; ekibimiz cevabı eklediğinde öğrenmiş olacağım.</p>
+                  )}
                   {msg.links && msg.links.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {msg.links.map((l, k) => (
@@ -203,6 +244,24 @@ export function AiAssistant() {
                           {l.label} <ChevronRight size={12} />
                         </Link>
                       ))}
+                    </div>
+                  )}
+                  {msg.askFeedback && i > 0 && (
+                    <div className="mt-3 pt-2 border-t border-rule/70 text-xs text-sage-600" data-testid="ai-feedback">
+                      {!msg.feedback ? (
+                        <div className="flex items-center gap-2">
+                          <span>Yardımcı oldu mu?</span>
+                          <button onClick={() => rate(i, true)} aria-label="Evet, yardımcı oldu" data-testid="ai-helpful" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-rule bg-paper hover:border-ink hover:text-ink"><ThumbsUp size={12} /> Evet</button>
+                          <button onClick={() => rate(i, false)} aria-label="Hayır, yardımcı olmadı" data-testid="ai-unhelpful" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-rule bg-paper hover:border-ink hover:text-ink"><ThumbsDown size={12} /> Hayır</button>
+                        </div>
+                      ) : msg.feedback === "up" ? (
+                        <p data-testid="ai-thanks">Teşekkürler, sevindim! 🙏</p>
+                      ) : (
+                        <div data-testid="ai-escalate" className="space-y-2">
+                          <p>Üzgünüm, yardımcı olamadım. Bunu not aldım; ekibimiz cevabı geliştirecek.</p>
+                          <button onClick={() => openSupport("AI_UNHELPFUL", msg.question || "")} data-testid="ai-to-support" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-ink text-cream hover:bg-sage-800"><LifeBuoy size={12} /> Canlı destekle konuş</button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -261,6 +320,7 @@ export function AiAssistant() {
               </button>
             </div>
           </div>
+          </>)}
         </div>
       )}
     </>

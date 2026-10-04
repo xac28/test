@@ -47,7 +47,7 @@ export async function login(page: Page, email: string, password = PASSWORD) {
 export async function newSession(browser: Browser, email: string): Promise<{ ctx: BrowserContext; page: Page }> {
   // every simulated visitor gets its own address: the API rate-limits per IP and all browsers here come from localhost
   const ip = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`
-  const ctx = await browser.newContext({ permissions: ["camera", "microphone"], viewport: { width: 1440, height: 900 }, extraHTTPHeaders: { "x-forwarded-for": ip } })
+  const ctx = await browser.newContext({ permissions: ["camera", "microphone"], viewport: { width: 1440, height: 900 }, extraHTTPHeaders: { "x-forwarded-for": ip }, ...(process.env.AYA_RECORD_DIR ? { recordVideo: { dir: process.env.AYA_RECORD_DIR, size: { width: 1280, height: 800 } } } : {}) })
   const page = await ctx.newPage()
   await login(page, email)
   return { ctx, page }

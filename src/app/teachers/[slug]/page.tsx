@@ -13,6 +13,7 @@ import { styleLabel } from '@/lib/constants';
 import { TeacherRecordedVideos } from '@/components/teacher-recorded-videos';
 import { MessageTeacherButton } from '@/components/message-teacher-button';
 import { ReportButton } from '@/components/report-dialog';
+import { TeacherReviews } from '@/components/teacher-reviews';
 
 export default function TeacherProfilePage({ params }: { params: { slug: string } }) {
   const { slug } = params;
@@ -81,7 +82,7 @@ export default function TeacherProfilePage({ params }: { params: { slug: string 
                         {teacher.yearsExperience} {t.card.yearsExp}
                       </div>
                       <div className="text-ink/60">
-                        {teacher.studentsCount} students
+                        {teacher.studentsCount} {locale === 'tr' ? 'öğrenci' : 'students'}
                       </div>
                     </div>
                     <div className="mt-4 flex items-center flex-wrap">
@@ -92,33 +93,17 @@ export default function TeacherProfilePage({ params }: { params: { slug: string 
                 </div>
               </div>
 
-              {/* Video intro */}
-              <div className="bg-cream rounded-3xl p-6 lg:p-8 border border-sage-100">
-                <h2 className="font-display text-2xl text-ink mb-4">{t.profile.intro}</h2>
-                <div className="aspect-video rounded-2xl bg-gradient-to-br from-sage-700 via-sage-600 to-clay-500 relative overflow-hidden flex items-center justify-center group cursor-pointer">
-                  {/* Faux video poster */}
-                  {!isUpload && (
-                    <Image
-                      src={teacher.avatar}
-                      alt=""
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 66vw"
-                      className="object-cover opacity-40 group-hover:opacity-30 transition-opacity"
-                    />
+              {/* Video intro: only when the teacher really has one */}
+              {teacher.videoIntroUrl && (
+                <div className="bg-cream rounded-3xl p-6 lg:p-8 border border-sage-100">
+                  <h2 className="font-display text-2xl text-ink mb-4">{t.profile.intro}</h2>
+                  {/\.(mp4|webm|ogg|mov)(\?|$)/i.test(teacher.videoIntroUrl) || teacher.videoIntroUrl.startsWith('/uploads/') ? (
+                    <video src={teacher.videoIntroUrl} controls preload="metadata" className="w-full aspect-video rounded-2xl bg-black" data-testid="intro-video" />
+                  ) : (
+                    <a href={teacher.videoIntroUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 font-semibold">{locale === 'tr' ? 'Tanıtım videosunu izle' : 'Watch the introduction'}</a>
                   )}
-                  <div className="relative z-10 text-center">
-                    <div className="w-20 h-20 rounded-full bg-cream/95 flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-2xl">
-                      <svg className="w-7 h-7 text-sage-700 ml-1" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </div>
-                    <p className="text-cream/90 font-display italic text-lg">60-second introduction</p>
-                  </div>
-                  <div className="absolute bottom-4 right-4 bg-ink/60 backdrop-blur-sm rounded-full px-3 py-1 text-xs text-cream">
-                    0:58
-                  </div>
                 </div>
-              </div>
+              )}
 
               {/* About */}
               <div className="bg-cream rounded-3xl p-6 lg:p-8 border border-sage-100">
@@ -128,12 +113,14 @@ export default function TeacherProfilePage({ params }: { params: { slug: string 
                 </p>
               </div>
 
+              <TeacherReviews teacherId={slug} />
+
               {/* Recorded Sessions Component */}
               <TeacherRecordedVideos teacherId={slug} />
 
               {/* Details grid */}
               <div className="grid sm:grid-cols-3 gap-4">
-                <div className="bg-cream rounded-3xl p-5 border border-sage-100">
+                {teacher.styles.length > 0 && <div className="bg-cream rounded-3xl p-5 border border-sage-100">
                   <h3 className="text-xs uppercase tracking-wide text-ink/50 mb-3">{t.profile.teaches}</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {teacher.styles.map((s) => (
@@ -142,25 +129,25 @@ export default function TeacherProfilePage({ params }: { params: { slug: string 
                       </span>
                     ))}
                   </div>
-                </div>
+                </div>}
 
-                <div className="bg-cream rounded-3xl p-5 border border-sage-100">
+                {teacher.languages.length > 0 && <div className="bg-cream rounded-3xl p-5 border border-sage-100">
                   <h3 className="text-xs uppercase tracking-wide text-ink/50 mb-3">{t.profile.speaks}</h3>
                   <div className="space-y-1">
                     {teacher.languages.map((l) => (
                       <div key={l} className="text-sm text-ink/80">{l}</div>
                     ))}
                   </div>
-                </div>
+                </div>}
 
-                <div className="bg-cream rounded-3xl p-5 border border-sage-100">
+                {teacher.certifications.length > 0 && <div className="bg-cream rounded-3xl p-5 border border-sage-100">
                   <h3 className="text-xs uppercase tracking-wide text-ink/50 mb-3">{t.profile.certifications}</h3>
                   <div className="space-y-1">
                     {teacher.certifications.map((c) => (
                       <div key={c} className="text-sm text-ink/80">· {c}</div>
                     ))}
                   </div>
-                </div>
+                </div>}
               </div>
             </div>
 

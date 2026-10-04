@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Bell, CheckCheck, Heart, Image as ImageIcon, MessageCircle, ShieldAlert, Flag, VolumeX } from "lucide-react"
+import { Bell, CheckCheck, Heart, Image as ImageIcon, MessageCircle, LifeBuoy, ShieldAlert, Flag, VolumeX } from "lucide-react"
 
 export interface NotificationItem {
   id: string
@@ -28,6 +28,7 @@ export function NotificationIcon({ type }: { type: string }) {
     case "POST_REMOVED": case "COMMENT_REMOVED": return <ShieldAlert size={16} className={`${cls} text-clay-600`} />
     case "WARNING": return <ShieldAlert size={16} className={`${cls} text-amber-600`} />
     case "REPORT_UPDATE": return <Flag size={16} className={`${cls} text-sage-600`} />
+    case "SUPPORT_REPLY": return <LifeBuoy size={16} className={`${cls} text-sage-700`} />
     case "MUTED": return <VolumeX size={16} className={`${cls} text-clay-600`} />
     default: return <Bell size={16} className={`${cls} text-sage-500`} />
   }

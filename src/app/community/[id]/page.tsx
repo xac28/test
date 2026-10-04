@@ -8,7 +8,7 @@ import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
 import { ReportDialog } from "@/components/report-dialog"
 import { timeAgo } from "@/components/notification-bell"
-import { Avatar, CommunityComment, CommunityPost, LikeButton, ModeratedField, liveWarning, useAuthGate } from "@/components/community/parts"
+import { Avatar, SafePhoto, CommunityComment, CommunityPost, LikeButton, ModeratedField, liveWarning, useAuthGate } from "@/components/community/parts"
 
 export default function PostPage() {
   const { id } = useParams<{ id: string }>()
@@ -95,10 +95,7 @@ export default function PostPage() {
             </header>
             {post.status === "PENDING" && <p className="mb-4 text-sm bg-amber-50 text-amber-800 border border-amber-200 rounded-md px-4 py-3">Bu fotoğraf yönetici onayı bekliyor; yalnızca sen görebilirsin.</p>}
             {post.status === "REMOVED" && <p className="mb-4 text-sm bg-red-50 text-red-800 border border-red-200 rounded-md px-4 py-3">Yayından kaldırıldı{post.removedReason ? `: ${post.removedReason}` : "."} <Link href="/community/rules" className="underline">Kurallar</Link></p>}
-            {post.image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.image} alt={post.title || post.content.slice(0, 80)} className="w-full rounded-xl border border-rule bg-sage-100 max-h-[40rem] object-contain" />
-            )}
+            {post.image && <SafePhoto src={post.image} alt={post.title || post.content.slice(0, 80)} className="w-full rounded-xl border border-rule bg-sage-100 max-h-[40rem] object-contain" />}
             {post.title && <h1 className="font-display text-3xl mt-5">{post.title}</h1>}
             <p className="mt-3 text-sage-800 whitespace-pre-line break-words">{post.content}</p>
             {visible && (

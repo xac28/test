@@ -6,6 +6,7 @@ import { RATE_LIMIT_AUTH } from "@/lib/rate-limit"
 import { normalizeEmail, isValidEmail, validatePassword } from "@/lib/auth-utils"
 import { checkBanEvasion, extractIp, logUserIp } from "@/lib/ban-engine"
 import { termsAcceptanceData } from "@/lib/terms"
+import { logEvent } from "@/lib/event-log"
 
 /**
  * POST /api/auth/register
@@ -166,6 +167,7 @@ export async function POST(req: Request) {
 
     // IP logla (yeni kullanıcı)
     await logUserIp(user.id, ip, userAgent)
+    logEvent({ type: "AUTH_REGISTER", message: `Yeni üye (web): ${email}`, userId: user.id, ip })
 
     return NextResponse.json({
       success: true,

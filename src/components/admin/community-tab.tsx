@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Ban, CheckCircle2, ImageIcon, MessageCircle, ShieldCheck, Trash2, Undo2, VolumeX } from "lucide-react"
+import { SafePhoto } from "@/components/community/parts"
 import { KIND_LABEL_TR } from "@/lib/profanity"
 import {
   Button, Card, Empty, ErrorNote, Pager, Pill, SearchBox, SectionTitle, Segmented, Spinner, Stat, Table,
@@ -103,8 +104,7 @@ function PhotosSection({ onChanged, onOpenUser }: { onChanged: () => void; onOpe
             {data.posts.map((p) => (
               <li key={p.id} data-testid="admin-photo" className="bg-paper border border-rule rounded-xl overflow-hidden flex flex-col">
                 {p.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <a href={p.image} target="_blank" rel="noreferrer" className="block bg-sage-100"><img src={p.image} alt={p.content.slice(0, 60)} loading="lazy" className="w-full h-52 object-cover" /></a>
+                  <a href={p.image} target="_blank" rel="noreferrer" className="block bg-sage-100"><SafePhoto src={p.image} alt={p.content.slice(0, 60)} className="w-full h-52 object-cover" /></a>
                 )}
                 <div className="p-4 flex-1 flex flex-col gap-3">
                   <div className="flex flex-wrap items-center gap-1.5">

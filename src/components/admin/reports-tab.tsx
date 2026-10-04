@@ -272,7 +272,8 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
   const noteValue = note ?? r.adminNote ?? ""
   const roomLive = target?.kind === "live" && target.isActive
   const workshopLive = target?.kind === "workshop" && target.status === "PUBLISHED"
-  const contentLive = (target?.kind === "post" || target?.kind === "comment") && target.status !== "REMOVED"
+  const isContent = target?.kind === "post" || target?.kind === "comment" || target?.kind === "review"
+  const contentLive = isContent && target!.status !== "REMOVED"
 
   return (
     <Drawer
@@ -330,7 +331,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
               )}
               {target && (
                 <p className="text-xs text-sage-500">
-                  Şu an: {target.kind === "post" || target.kind === "comment" ? (target.status === "REMOVED" ? "içerik kaldırılmış" : target.status === "PENDING" ? "onay bekliyor" : "içerik yayında") : target.kind === "live" ? (target.isActive ? "yayın sürüyor" : "yayın sona ermiş") : target.status === "PUBLISHED" ? "atölye yayında" : `atölye ${target.status}`}
+                  Şu an: {target.kind === "post" || target.kind === "comment" || target.kind === "review" ? (target.status === "REMOVED" ? "içerik kaldırılmış" : target.status === "PENDING" ? "onay bekliyor" : "içerik yayında") : target.kind === "live" ? (target.isActive ? "yayın sürüyor" : "yayın sona ermiş") : target.status === "PUBLISHED" ? "atölye yayında" : `atölye ${target.status}`}
                   {(target.kind === "post" || target.kind === "comment") && <> · <a className="underline" target="_blank" rel="noreferrer" href={`/community/${target.kind === "post" ? target.id : target.postId}`}>sayfayı aç</a></>}
                   {target.kind === "workshop" && target.slug && <> · <a className="underline" target="_blank" rel="noreferrer" href={`/atolyeler/${target.slug}`}>sayfayı aç</a></>}
                 </p>
@@ -440,9 +441,9 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
                     <Trash2 size={14} /> {workshopLive ? "Atölyeyi yayından kaldır" : "Atölye yayında değil"}
                   </Button>
                 )}
-                {(target?.kind === "post" || target?.kind === "comment") && (
-                  <Button disabled={!contentLive} data-testid="act-remove-content" onClick={() => act("remove_content", { title: target.kind === "post" ? "Fotoğrafı kaldır" : "Yorumu kaldır", description: "İçerik herkesin görünümünden kalkar ve sahibine bildirim gider.", confirmLabel: "Kaldır", label: "Not (isteğe bağlı)", min: 0 })}>
-                    <Trash2 size={14} /> {contentLive ? (target.kind === "post" ? "Fotoğrafı kaldır" : "Yorumu kaldır") : "İçerik zaten kaldırılmış"}
+                {isContent && (
+                  <Button disabled={!contentLive} data-testid="act-remove-content" onClick={() => act("remove_content", { title: target!.kind === "post" ? "Fotoğrafı kaldır" : target!.kind === "review" ? "Değerlendirmeyi kaldır" : "Yorumu kaldır", description: "İçerik herkesin görünümünden kalkar ve sahibine bildirim gider.", confirmLabel: "Kaldır", label: "Not (isteğe bağlı)", min: 0 })}>
+                    <Trash2 size={14} /> {contentLive ? (target!.kind === "post" ? "Fotoğrafı kaldır" : target!.kind === "review" ? "Değerlendirmeyi kaldır" : "Yorumu kaldır") : "İçerik zaten kaldırılmış"}
                   </Button>
                 )}
                 {isTeacher && !reported!.teacher!.isTrialMode && (

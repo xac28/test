@@ -1,3 +1,4 @@
+import { logEvent } from "@/lib/event-log"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
@@ -141,6 +142,8 @@ export async function POST(req: Request) {
           ...termsAcceptanceData(),
         },
       })
+
+      logEvent({ type: "AUTH_REGISTER", message: `Yeni üye (mobil): ${email}`, userId: user.id })
 
       // Auto-admin check
       const adminEmail = process.env.ADMIN_EMAIL

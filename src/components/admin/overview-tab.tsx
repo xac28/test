@@ -2,6 +2,8 @@
 
 import { AlertTriangle, CheckCircle2, ChevronRight, XCircle } from "lucide-react"
 import { Card, ErrorNote, Pill, SectionTitle, Spinner, Stat, ago, api, fmtMoney, useLoader } from "./ui"
+import { useAdminBadges } from "./tab-defs"
+import { auditLabel } from "@/lib/audit-labels"
 
 interface Resp {
   queue: { urgentReports: number; openReports: number; oldestOpenReportAt: string | null; pendingApplications: number; trialTeachers: number; pendingPayouts: number; pendingPayoutAmount: number }
@@ -28,6 +30,7 @@ function Bars({ data, color }: { data: { day: string; count: number }[]; color: 
 
 export function OverviewTab({ goTo }: { goTo: (tab: string) => void }) {
   const { data, error, reload } = useLoader<Resp>(() => api("/api/admin/overview"), [])
+  const badges = useAdminBadges()
   if (error) return <ErrorNote message={error} onRetry={reload} />
   if (!data) return <Spinner />
   const { queue: q, totals: t } = data
@@ -37,6 +40,9 @@ export function OverviewTab({ goTo }: { goTo: (tab: string) => void }) {
     { tab: "reports", label: "Açık raporlar", value: q.openReports, tone: "amber", show: true, hint: q.oldestOpenReportAt ? `en eskisi ${ago(q.oldestOpenReportAt)}` : "bekleyen yok" },
     { tab: "applications", label: "Eğitmen başvuruları", value: q.pendingApplications, tone: "amber", show: true, hint: "inceleme bekliyor" },
     { tab: "trials", label: "Deneme odası", value: q.trialTeachers, tone: "amber", show: true, hint: "onaysız eğitmen" },
+    { tab: "support", label: "Canlı destek", value: badges?.openSupport ?? 0, tone: "red", show: true, hint: "yanıt bekleyen görüşme" },
+    { tab: "community", label: "Onay bekleyen fotoğraf", value: badges?.pendingPosts ?? 0, tone: "amber", show: true, hint: "topluluk paylaşımı" },
+    { tab: "ai", label: "Rehberin bilmedikleri", value: badges?.aiUnknown ?? 0, tone: "amber", show: true, hint: "öğretilmeyi bekliyor" },
     { tab: "payouts", label: "Ödeme talepleri", value: q.pendingPayouts, tone: "amber", show: true, hint: q.pendingPayouts ? fmtMoney(q.pendingPayoutAmount) : "bekleyen yok" },
   ]
 
@@ -46,7 +52,7 @@ export function OverviewTab({ goTo }: { goTo: (tab: string) => void }) {
 
       <section>
         <h3 className="text-xs font-bold uppercase tracking-widest text-sage-500 mb-3">Bekleyen işler</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {items.map((i) => (
             <button key={i.label} onClick={() => goTo(i.tab)} data-testid={`queue-${i.tab}-${i.label === "Acil raporlar" ? "urgent" : "all"}`} className={`text-left rounded-xl border p-4 transition hover:shadow-md ${i.value > 0 ? (i.tone === "red" ? "border-red-300 bg-red-50" : "border-amber-200 bg-amber-50/60") : "border-rule bg-paper"} ${i.show ? "" : "hidden"}`}>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-sage-500">{i.label}</p>
@@ -98,7 +104,7 @@ export function OverviewTab({ goTo }: { goTo: (tab: string) => void }) {
           <Card className="divide-y divide-rule">
             {data.recentAudit.length === 0 ? <p className="p-4 text-sm text-sage-500">Henüz kayıt yok.</p> : data.recentAudit.map((a) => (
               <div key={a.id} className="p-3.5 text-sm">
-                <div className="flex items-center gap-2"><Pill>{a.action}</Pill><span className="text-xs text-sage-500 ml-auto">{ago(a.createdAt)}</span></div>
+                <div className="flex items-center gap-2"><Pill title={a.action}>{auditLabel(a.action)}</Pill><span className="text-xs text-sage-500 ml-auto">{ago(a.createdAt)}</span></div>
                 <p className="mt-1"><span className="font-medium">{a.actor}</span>{a.reason && <span className="text-sage-500"> · {a.reason.slice(0, 90)}</span>}</p>
               </div>
             ))}

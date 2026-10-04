@@ -2,7 +2,7 @@ import { db } from "@/lib/db"
 
 export type NotificationType =
   | "POST_LIKE" | "POST_COMMENT" | "POST_APPROVED" | "POST_REMOVED" | "COMMENT_REMOVED"
-  | "WARNING" | "REPORT_UPDATE" | "MUTED" | "SYSTEM"
+  | "WARNING" | "REPORT_UPDATE" | "MUTED" | "SUPPORT_REPLY" | "SYSTEM"
 
 export interface NotifyInput {
   userId: string

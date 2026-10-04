@@ -32,6 +32,20 @@ export function liveWarning(text: string): string | null {
   return null
 }
 
+/** A photo that degrades to a calm placeholder when the file is missing (deleted upload, broken link). */
+export function SafePhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) {
+    return (
+      <div role="img" aria-label="Görsel yüklenemedi" data-testid="photo-missing" className={`flex items-center justify-center bg-sage-100 text-sage-500 text-xs min-h-[10rem] ${className ?? ""}`}>
+        Görsel yüklenemedi
+      </div>
+    )
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} className={className} />
+}
+
 export function Avatar({ author, size = 36 }: { author: CommunityAuthor; size?: number }) {
   const initial = (author.name || "A").trim()[0]?.toUpperCase()
   return author.image ? (
@@ -138,8 +152,7 @@ export function PostCard({ post, onChange, onRemoved }: { post: CommunityPost; o
 
       {post.image && (
         <Link href={`/community/${post.id}`} className="block bg-sage-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.image} alt={post.title || post.content.slice(0, 80)} loading="lazy" className="w-full max-h-[34rem] object-cover" />
+          <SafePhoto src={post.image} alt={post.title || post.content.slice(0, 80)} className="w-full max-h-[34rem] object-cover" />
         </Link>
       )}
 

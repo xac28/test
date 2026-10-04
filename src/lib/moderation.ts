@@ -4,7 +4,7 @@ import { notify, notifyAdminsInApp } from "@/lib/notifications"
 import { notifyAdmins } from "@/lib/report-server"
 import { sanitizeReportText } from "@/lib/reports"
 
-export type Surface = "POST" | "COMMENT" | "MESSAGE" | "LIVE_CHAT"
+export type Surface = "POST" | "COMMENT" | "MESSAGE" | "LIVE_CHAT" | "REVIEW"
 
 /** Violations in the last hour that earn a short mute, and in the last day that earn a long one + an official warning. */
 export const HOURLY_STRIKES_FOR_MUTE = 3

@@ -96,6 +96,7 @@ model User {
   warnings             UserWarning[]        @relation("Warned")
   notifications        Notification[]       @relation("Notified")
   moderationEvents     ModerationEvent[]    @relation("Moderated")
+  supportTickets       SupportTicket[]      @relation("SupportUser")
 }
 
 model Conversation {
@@ -388,6 +389,14 @@ model Review {
   rating      Int
   comment     String?  @db.Text
   createdAt   DateTime @default(now())
+
+  // moderation: a removed review no longer counts or shows
+  status        ContentStatus @default(VISIBLE)
+  removedReason String?       @db.VarChar(300)
+  removedById   String?
+  removedAt     DateTime?
+
+  @@index([status])
 }
 
 model Availability {
@@ -707,4 +716,102 @@ model Article {
   updatedAt   DateTime      @updatedAt
 
   @@index([status, publishedAt])
+}
+
+
+// ── AYA Rehber: learning, feedback, live support ───────────────────────────
+
+// An answer an admin taught the guide. `keys` is a JSON array of ASCII-folded key phrases.
+model AiTaughtAnswer {
+  id          String   @id @default(cuid())
+  question    String   @db.VarChar(300)
+  keys        String   @db.Text
+  answer      String   @db.Text
+  linkLabel   String?  @db.VarChar(60)
+  linkHref    String?  @db.VarChar(200)
+  active      Boolean  @default(true)
+  hits        Int      @default(0)
+  helpful     Int      @default(0)
+  unhelpful   Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
+}
+
+// Every question the guide was asked (anonymised text), how it was answered and whether it helped.
+model AiInteraction {
+  id         String    @id @default(cuid())
+  userId     String?
+  message    String    @db.VarChar(500)
+  norm       String    @db.VarChar(500)
+  intent     String    @db.VarChar(40)
+  kind       String    @db.VarChar(20) // taught | knowledge | navigation | unknown | crisis | support
+  matchedId  String?
+  helpful    Boolean?
+  taught     Boolean   @default(false) // an admin has since added an answer for this question
+  dismissed  Boolean   @default(false) // an admin decided it needs no answer
+  createdAt  DateTime  @default(now())
+  feedbackAt DateTime?
+
+  @@index([kind, taught, dismissed])
+  @@index([helpful])
+  @@index([createdAt])
+  @@index([norm])
+}
+
+model SupportTicket {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation("SupportUser", fields: [userId], references: [id], onDelete: Cascade)
+  subject        String           @db.VarChar(200)
+  source         String           @db.VarChar(20) // USER | AI_UNHELPFUL | AI_REQUEST
+  status         String           @default("OPEN") @db.VarChar(10) // OPEN | CLOSED
+  assignedToId   String?
+  priority       String           @default("NORMAL") @db.VarChar(10)
+  awaitingStaff  Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  lastMessageAt  DateTime         @default(now())
+  lastStaffReplyAt DateTime?
+  firstReplyAt   DateTime?
+  userReadAt     DateTime?
+  staffReadAt    DateTime?
+  closedAt       DateTime?
+  closedById     String?
+  rating         Int?
+  ratingComment  String?          @db.VarChar(300)
+  messages       SupportMessage[]
+
+  @@index([status, awaitingStaff, lastMessageAt])
+  @@index([userId, status])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId  String?
+  role      String        @db.VarChar(8) // USER | STAFF | SYSTEM | NOTE (internal, staff only)
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+// Structured system activity (sign-ins, uploads, errors, …) for the admin log viewer.
+model EventLog {
+  id        String   @id @default(cuid())
+  type      String   @db.VarChar(40)
+  level     String   @default("info") @db.VarChar(8) // info | warn | error
+  message   String   @db.VarChar(400)
+  userId    String?
+  ip        String?  @db.VarChar(64)
+  meta      String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([level, createdAt])
+  @@index([userId])
 }

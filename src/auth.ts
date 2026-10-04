@@ -1,3 +1,4 @@
+import { logEvent } from "@/lib/event-log";
 import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { db } from "@/lib/db"
@@ -25,7 +26,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
         rememberMe: { label: "Remember Me", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        const ip = request?.headers?.get?.("x-forwarded-for")?.split(",")[0].trim() || request?.headers?.get?.("x-real-ip") || null;
         if (!credentials?.email || !credentials?.password) return null;
         const email = (credentials.email as string).toLowerCase();
         
@@ -33,11 +35,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email }
         });
 
-        if (!user || !user.password) return null;
+        if (!user || !user.password) {
+          logEvent({ type: "AUTH_FAIL", level: "warn", message: `Giriş başarısız (kullanıcı yok): ${email}`, ip })
+          return null;
+        }
 
         // 🛡️ Banned user kontrolü — login'de engelle
         if (user.banned) {
           console.log(`[AUTH] 🚨 Banned user login attempt: ${email}`)
+          logEvent({ type: "SECURITY", level: "warn", message: `Yasaklı kullanıcı giriş denedi: ${email}`, userId: user.id, ip })
           return null; // NextAuth "Invalid credentials" döner
         }
 
@@ -46,7 +52,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.password
         );
 
+        if (!passwordsMatch) logEvent({ type: "AUTH_FAIL", level: "warn", message: `Giriş başarısız (yanlış şifre): ${email}`, userId: user.id, ip })
         if (passwordsMatch) {
+          logEvent({ type: "AUTH_LOGIN", message: `Giriş yapıldı: ${email}`, userId: user.id, ip })
           // Pass rememberMe flag through user object to jwt callback
           return { ...user, rememberMe: credentials.rememberMe === "true" };
         }

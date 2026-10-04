@@ -1,3 +1,4 @@
+import { logEvent } from "@/lib/event-log"
 import { NextResponse } from "next/server"
 import { termsGate } from "@/lib/terms"
 import { writeFile, mkdir } from "fs/promises"
@@ -104,6 +105,7 @@ export async function POST(req: Request) {
       })
     }
 
+    logEvent({ type: "UPLOAD", message: `Yükleme: ${type} (${Math.round(bytes.byteLength / 1024)} KB)`, userId: user.id, meta: { url: publicUrl, mime } })
     return NextResponse.json({ url: publicUrl, filename })
   } catch (error: any) {
     console.error("[UPLOAD_ERROR]", error)

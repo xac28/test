@@ -5,8 +5,9 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { WarningBanner } from "./warning-banner"
+import { NotificationBell } from "./notification-bell"
 import { ADMIN_TABS, BADGE_TONE, useAdminBadges } from "./admin/tab-defs"
-import { LogOut, Bell, Flag, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert } from "lucide-react"
+import { LogOut, Bell, LifeBuoy, Flag, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert } from "lucide-react"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
@@ -23,6 +24,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: "Eğitmen Bul", href: "/teachers", icon: Users },
     { name: "Bildirimler", href: "/dashboard/notifications", icon: Bell },
     { name: "Raporlarım", href: "/dashboard/reports", icon: Flag },
+    { name: "Canlı Destek", href: "/dashboard/support", icon: LifeBuoy },
   ]
 
   const teacherLinks = [
@@ -34,6 +36,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: "Kazançlar", href: "/teach/earnings", icon: CreditCard },
     { name: "Bildirimler", href: "/dashboard/notifications", icon: Bell },
     { name: "Raporlarım", href: "/dashboard/reports", icon: Flag },
+    { name: "Canlı Destek", href: "/dashboard/support", icon: LifeBuoy },
   ]
 
   const adminMode = pathname.startsWith("/admin")
@@ -156,18 +159,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* Mobile Header */}
-        <header className="h-16 glass-card border-b border-sage-100/50 flex items-center justify-between px-6 md:hidden sticky top-0 z-10 shadow-sm">
-          <button onClick={() => setMobileOpen(true)} className="text-sage-700 p-1">
+        <header className="h-16 md:h-14 glass-card border-b border-sage-100/50 flex items-center justify-between md:justify-end gap-4 px-6 md:px-10 sticky top-0 z-30 shadow-sm">
+          <button onClick={() => setMobileOpen(true)} aria-label="Menüyü aç" className="text-sage-700 p-1 md:hidden">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="3" y1="6" x2="21" y2="6" />
               <line x1="3" y1="12" x2="15" y2="12" />
               <line x1="3" y1="18" x2="18" y2="18" />
             </svg>
           </button>
-          <Link href="/" className="font-display text-xl tracking-widest text-sage-900 btn-press">
+          <Link href="/" className="font-display text-xl tracking-widest text-sage-900 btn-press md:hidden">
             AYA
           </Link>
-          <div className="w-8" />
+          <Link href="/" className="hidden md:inline text-sm text-sage-600 hover:text-ink">Siteye dön</Link>
+          <NotificationBell />
         </header>
         
         <div className="flex-1 p-6 md:p-10 overflow-y-auto texture-overlay relative">

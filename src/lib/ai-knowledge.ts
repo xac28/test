@@ -185,7 +185,7 @@ export const KNOWLEDGE: KnowledgeEntry[] = [
   E("workshop_how", ["atolye nasil", "atolyeye nasil katilirim", "atolye kaydi", "yer ayirtmak", "atolye ucreti", "atolye nedir"], "**Atölyeler**, küçük gruplarla canlı ya da kayıtlı özel çalışmalardır. Atölye sayfasından yerini ayırırsın; ücretliyse eğitmen ödemeni onaylayınca katılımın kesinleşir ve canlı yayına/videoya erişirsin.", { links: [{ label: "Atölyeler", href: "/atolyeler" }], next: ["Ödeme yöntemleri neler?"] }),
   E("live_how", ["canli yayin nasil", "yayini nasil izlerim", "yayina nasil girerim", "canli yayin nedir", "yayin ucretli mi"], "**Canlı yayınlar** `Canlı Yayın` sayfasında listelenir; üye olup giriş yaptıktan sonra izleyebilir, sohbete katılabilirsin. Atölyeye bağlı yayınlar yalnızca o atölyenin onaylı katılımcılarına açıktır.", { links: [{ label: "Canlı yayınlar", href: "/live" }], next: ["Yayında kalite nasıl değişir?"] }),
   E("gamification", ["rozet", "puan", "seri", "gunluk seri", "basari", "sıralama", "siralama"], "Panelinde **günlük seri, puan ve rozetler** ilerlemeni gösterir; her tamamladığın dersle seri ve puan artar. Rozetleri açmak için düzenli pratik yap.", { links: [{ label: "Panelim", href: "/dashboard" }] }),
-  E("contact_support", ["destek", "iletisim", "yetkili ile konusmak", "sikayetim var", "bize ulasin", "mail atmak", "canli destek", "insan ile konusmak"], "Bir yetkiliye ulaşmak için ders odasındaki ya da sayfadaki **Bildir/Sorun bildir** düğmesini kullan; mesajın yöneticilere iletilir ve **Raporlarım**'den takip edersin. Ben yardımcı olamadığımda en hızlı yol budur.", { links: [{ label: "Raporlarım", href: "/dashboard/reports" }] }),
+  E("contact_support", ["iletisim", "bize ulasin", "mail atmak", "sikayetim var", "nasil ulasirim"], "Bize ulaşmanın en hızlı yolu **canlı destek**: bana *canlı destek* yaz, ekibimize bağlayayım. Bir içeriği ya da kişiyi bildirmek istiyorsan ders odasındaki **Sorun bildir** ya da sayfadaki **Bildir** düğmesini kullan; durumu **Raporlarım**'da görürsün.", { links: [{ label: "Raporlarım", href: "/dashboard/reports" }], next: ["Canlı destekle konuş"] }),
 
 
   // ───────────── more small talk & everyday questions ─────────────
@@ -273,7 +273,8 @@ export function fold(text: string): string {
     .trim()
 }
 
-const PREP = KNOWLEDGE.map((e) => ({ e, keys: e.keys.map((k) => fold(k).split(" ").filter(Boolean)) }))
+const prep = (list: KnowledgeEntry[]) => list.map((e) => ({ e, keys: e.keys.map((k) => fold(k).split(" ").filter(Boolean)) }))
+const PREP = prep(KNOWLEDGE)
 
 /** Chat shorthand people really type. */
 const SLANG: Record<string, string> = {
@@ -288,10 +289,19 @@ export interface Match {
 
 /** Best entry for a message, or null. A phrase scores 3 per word; an entry scores its best phrase plus a little for extra hits. */
 export function matchKnowledge(message: string, minScore = 3): Match | null {
+  return matchIn(PREP, message, minScore)
+}
+
+/** Same matcher over entries taught by the admins (built per request from the database). */
+export function matchTaught(message: string, entries: KnowledgeEntry[], minScore = 3): Match | null {
+  return entries.length ? matchIn(prep(entries), message, minScore) : null
+}
+
+function matchIn(table: ReturnType<typeof prep>, message: string, minScore: number): Match | null {
   const words = fold(message).split(" ").map((w) => SLANG[w] ?? w).flatMap((w) => (w.includes("-") ? [w, ...w.split("-")] : [w])).filter(Boolean)
   if (!words.length) return null
   let best: Match | null = null
-  for (const { e, keys } of PREP) {
+  for (const { e, keys } of table) {
     if (e.shortOnly && words.length > 2) continue
     let top = 0
     let hits = 0

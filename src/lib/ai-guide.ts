@@ -8,7 +8,7 @@ import { CRISIS_REPLY, isCrisis, matchKnowledge } from "@/lib/ai-knowledge"
 
 export type Intent =
   | "greeting" | "teachers" | "workshops" | "live" | "articles" | "pricing" | "become_teacher"
-  | "recordings" | "payouts" | "report" | "account" | "booking" | "terms" | "thanks" | "unknown"
+  | "recordings" | "payouts" | "report" | "account" | "booking" | "terms" | "thanks" | "support" | "unknown"
 
 export interface GuideLink {
   label: string
@@ -28,10 +28,23 @@ export function normalize(text: string): string {
 
 const has = (n: string, words: string[]) => words.some((w) => n.includes(w))
 
+const HUMAN_PHRASES = [
+  "canli destek", "canliya bagla", "canli yetkili", "yetkili ile", "yetkiliyle", "yetkili biri", "yetkiliye", "bir insanla", "insanla konus", "insan ile", "gercek biri", "gercek bir insan", "biriyle konus", "biri ile konus",
+  "temsilci", "musteri hizmet", "musteri temsil", "operator", "destek ekibi", "destek istiyorum", "destege bagla", "destek talebi", "sizi arayin", "sizinle konusmak", "yetkililere ulas", "yetkili lazim",
+  "live support", "live chat", "human", "real person", "talk to someone", "talk to a person", "customer service", "customer support", "support agent", "speak to an agent", "contact support",
+]
+/** Does the visitor ask to talk to a person? (The feedback buttons and "bağlan" chips land here as well.) */
+export function wantsHuman(raw: string): boolean {
+  const n = normalize(raw)
+  if (/^destek$/.test(n)) return true
+  return has(n, HUMAN_PHRASES)
+}
+
 /** Order matters: the more specific intents win. */
 export function detectIntent(raw: string): Intent {
   const n = normalize(raw)
   if (!n) return "unknown"
+  if (wantsHuman(raw)) return "support"
   if (has(n, ["egitmen ol", "ogretmen ol", "ders vermek", "ders vermek istiyorum", "hoca ol", "egitmen basvuru", "teacher application", "become a teacher", "teach on", "i want to teach"])) return "become_teacher"
   if (has(n, ["sikayet", "bildir", "rahatsiz", "taciz", "dolandir", "report", "abuse", "harass", "guvenlik sorun"])) return "report"
   if (has(n, ["kayit indir", "kaydi indir", "ders kayd", "indir", "recording", "download", "tekrar izle", "30 gun"])) return "recordings"
@@ -115,7 +128,11 @@ export const STYLE_LABEL_TR: Record<StyleId, string> = {
 }
 
 export interface GuideReply {
-  intent: Intent | "knowledge" | "crisis"
+  intent: Intent | "knowledge" | "crisis" | "taught"
+  /** the widget opens the live-support chat */
+  action?: "support"
+  /** teach the visitor that this was a gap and has been recorded */
+  learning?: boolean
   reply: string
   links: GuideLink[]
   teachers?: GuideTeacher[]
@@ -141,11 +158,21 @@ const STRONG: Intent[] = ["become_teacher", "report", "recordings", "payouts", "
 /** A knowledge hit this specific (a whole phrase matched) outranks a navigation intent. */
 const SPECIFIC = 8
 
-export const DEFAULT_SUGGESTIONS = ["Yoga nedir?", "Bel ağrım için ne yapayım?", "Canlı yayın var mı?", "Üye olmak istiyorum"]
+export const DEFAULT_SUGGESTIONS = ["Canlı destekle konuş", "Yoga nedir?", "Bel ağrım için ne yapayım?", "Üye olmak istiyorum"]
 
 export function composeReply(message: string, data: GuideData): GuideReply {
   const joinLink: GuideLink = { label: "Ücretsiz üye ol", href: "/login?mode=register" }
   if (isCrisis(message)) return { intent: "crisis", reply: CRISIS_REPLY, links: [], suggestions: ["Kısa bir nefes egzersizi"] }
+  if (wantsHuman(message)) {
+    return {
+      intent: "support",
+      action: "support",
+      reply: data.signedIn
+        ? "Seni **canlı desteğe** bağlıyorum. Ekibimiz yazdıklarını görür ve buradan yanıtlar; bir yanıt geldiğinde zil simgesinde de haber alırsın."
+        : "Canlı destek için önce **giriş yapman** gerekiyor; böylece yanıtı hesabına iletebiliriz. Üye değilsen kayıt ücretsiz.",
+      links: data.signedIn ? [] : [{ label: "Giriş yap", href: "/login?callbackUrl=%2F" }, joinLink],
+    }
+  }
 
   const navIntent = detectIntent(message)
   const k = matchKnowledge(message)
@@ -274,7 +301,8 @@ function composeNavigation(message: string, data: GuideData, intent: Intent): Gu
       void n
       return {
         intent: "unknown",
-        reply: "Bunu tam anlayamadım. Yoga, nefes, meditasyon, duruşlar, uyku/stres/ağrı gibi konular ya da AYA (eğitmenler, atölyeler, canlı yayın, üyelik, ödeme, kayıtlar) hakkında sorabilirsin. Biraz farklı yazarsan tekrar deneyeyim.",
+        learning: true,
+        reply: "Bunu henüz bilmiyorum ama **öğreneceğim**: sorunu ekibime ilettim, cevap eklendiğinde bir dahaki sefere yanıtlayabileceğim. Şimdi yardıma ihtiyacın varsa **canlı destek** yazman yeterli; ya da yoga, nefes, meditasyon ve AYA (eğitmenler, atölyeler, ödeme, kayıtlar) hakkında farklı bir soru sorabilirsin.",
         links: [{ label: "Eğitmenler", href: "/teachers" }, { label: "Atölyeler", href: "/atolyeler" }, { label: "Canlı yayınlar", href: "/live" }],
         suggestions: DEFAULT_SUGGESTIONS,
       }

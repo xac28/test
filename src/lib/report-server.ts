@@ -101,6 +101,14 @@ async function resolveTarget(
       if (!c || c.status === "REMOVED") return notFound
       return { ok: true, reportedId: c.authorId, evidence: { label: `Yorum · ${c.author.name ?? ""}`, postId: c.postId, commentText: c.content.slice(0, 300), status: c.status } }
     }
+    case "REVIEW": {
+      const rv = await db.review.findUnique({ where: { id: data.targetId }, include: { booking: { include: { student: { select: { id: true, name: true } }, teacher: { select: { userId: true } } } } } })
+      if (!rv || rv.status === "REMOVED") return notFound
+      return {
+        ok: true, reportedId: rv.booking.studentId,
+        evidence: { label: `Değerlendirme · ${rv.booking.student.name ?? ""} (${rv.rating}★)`, reviewId: rv.id, commentText: (rv.comment ?? "(yorum yok)").slice(0, 300), rating: rv.rating, teacherId: rv.booking.teacherId, status: rv.status },
+      }
+    }
   }
   return notFound
 }
@@ -307,6 +315,11 @@ export async function executeReportAction(adminId: string, reportId: string, act
           db.post.update({ where: { id: c.postId }, data: { commentCount: { decrement: 1 } } }),
         ])
         await notify({ userId: c.authorId, type: "COMMENT_REMOVED", title: "Yorumun kaldırıldı", body: "Bir bildirim üzerine yapılan inceleme sonucunda yorumun topluluk kurallarına uymadığı için kaldırıldı.", href: "/community/rules" })
+      } else if (report.targetType === "REVIEW" && report.targetId) {
+        const rv = await db.review.findUnique({ where: { id: report.targetId }, include: { booking: { select: { studentId: true } } } })
+        if (!rv || rv.status === "REMOVED") return { ok: false, status: 409, error: "Değerlendirme zaten kaldırılmış." }
+        await db.review.update({ where: { id: rv.id }, data: { status: "REMOVED", removedReason: cleanNote || "Rapor üzerine kaldırıldı", removedById: adminId, removedAt: new Date() } })
+        await notify({ userId: rv.booking.studentId, type: "COMMENT_REMOVED", title: "Değerlendirmen kaldırıldı", body: "Bir bildirim üzerine yapılan inceleme sonucunda değerlendirmen topluluk kurallarına uymadığı için kaldırıldı.", href: "/community/rules" })
       } else return { ok: false, status: 400, error: "Bu raporda kaldırılacak bir içerik yok." }
       await db.auditLog.create({ data: { actorId: adminId, action: "REMOVE_CONTENT", targetId: report.targetId, reason: cleanNote || "Rapor üzerine kaldırıldı" } })
       break

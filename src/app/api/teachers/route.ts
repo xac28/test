@@ -34,7 +34,7 @@ export async function GET() {
       const completedSessions = t.bookings.length
       
       // Calculate real average rating from reviews
-      const reviews = t.bookings.filter(b => b.review).map(b => b.review!)
+      const reviews = t.bookings.filter(b => b.review && b.review.status === "VISIBLE").map(b => b.review!)
       const avgRating = reviews.length > 0
         ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10) / 10
         : 5.0

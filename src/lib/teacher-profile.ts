@@ -57,7 +57,7 @@ export async function getDbTeacherProfile(idOrSlug: string): Promise<Teacher | n
   try {
     specialties = t.specialties ? JSON.parse(t.specialties) : []
   } catch {}
-  const reviews = t.bookings.filter((b) => b.review).map((b) => b.review!)
+  const reviews = t.bookings.filter((b) => b.review && b.review.status === "VISIBLE").map((b) => b.review!)
   const rating = reviews.length ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10 : 5
   const name = t.user.name || `${t.user.firstName ?? ""} ${t.user.lastName ?? ""}`.trim() || "Eğitmen"
   const bio = t.bio || "AYA'da ders veren sertifikalı yoga eğitmeni."

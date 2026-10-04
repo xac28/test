@@ -75,7 +75,14 @@ describe("teacher videos (what the mobile screen calls)", () => {
   it("create → list → delete, owner only", async () => {
     const { user } = await makeTeacher()
     const other = (await makeTeacher()).user
-    const created = await json("/api/teacher/videos", user, "POST", { title: "Sabah akışı", videoUrl: "/uploads/videos/x.mp4", description: "d", isPublic: true })
+    const uploaded = await (await up(user, form(MP4, "clip.mp4", "video/mp4", "video"))).json()
+    // links are validated: only the teacher's own uploads and https links are accepted
+    for (const bad of ["javascript:alert(1)", "data:text/html,x", "http://example.com/a.mp4", "/uploads/videos/video-someoneelse-1.mp4", uploaded.url.replace(user.id, other.id), "/etc/passwd", ""]) {
+      expect((await json("/api/teacher/videos", user, "POST", { title: "Zararlı", videoUrl: bad })).status, bad).toBe(400)
+    }
+    expect((await json("/api/teacher/videos", user, "POST", { title: "aptal video", videoUrl: uploaded.url })).status).toBe(422)
+    expect((await json("/api/teacher/videos", user, "POST", { title: "Dış bağlantı", videoUrl: "https://example.com/ders.mp4" })).status).toBe(200)
+    const created = await json("/api/teacher/videos", user, "POST", { title: "Sabah akışı", videoUrl: uploaded.url, description: "d", isPublic: true })
     expect(created.status).toBe(200)
     const { video } = await created.json()
 

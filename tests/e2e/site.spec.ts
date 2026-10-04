@@ -304,6 +304,8 @@ test.describe("workshops", () => {
       await form.getByTestId("create-workshop").click()
       await t.page.waitForLoadState("networkidle")
     }
+    // the directory lists the 100 soonest workshops: leftovers of earlier runs must not push this one off the page
+    await db.workshop.updateMany({ where: { status: "PUBLISHED" }, data: { status: "DRAFT" } })
     const freeTitle = `Ücretsiz Atölye ${Date.now()}`
     await fill(freeTitle, { price: "0", capacity: "1" })
     await expect(t.page.getByTestId("managed-workshop").filter({ hasText: freeTitle })).toBeVisible({ timeout: 20_000 })

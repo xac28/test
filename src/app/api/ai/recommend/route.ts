@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     }
 
     const out = composeReply(message, data)
-    return NextResponse.json({ intent: out.intent, reply: out.reply, links: out.links, teachers: out.teachers ?? [] })
+    return NextResponse.json({ intent: out.intent, reply: out.reply, links: out.links, teachers: out.teachers ?? [], suggestions: out.suggestions ?? [] })
   } catch (error) {
     console.error("[AI_ERROR]", error)
     return NextResponse.json({ error: "Internal error" }, { status: 500 })

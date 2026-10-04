@@ -26,7 +26,7 @@ describe("detectIntent", () => {
     ["Şu an yayında kim var", "live"],
     ["Atölyeleri göster", "workshops"],
     ["workshop var mı", "workshops"],
-    ["nefes teknikleri yazıları", "articles"],
+    ["nefes üzerine yazılar", "articles"],
     ["Paket fiyatları nedir", "pricing"],
     ["Ders kaydımı nasıl indiririm?", "recordings"],
     ["ödeme talebi nasıl oluştururum", "payouts"],
@@ -37,7 +37,7 @@ describe("detectIntent", () => {
     ["stresim çok, uyku problemi", "teachers"],
     ["Sözleşmeyi okumak istiyorum", "terms"],
     ["merhaba", "greeting"],
-    ["teşekkürler", "thanks"],
+    ["tesekkurler", "thanks"],
     ["asdf qwer", "unknown"],
     ["", "unknown"],
   ]

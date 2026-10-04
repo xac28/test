@@ -4,6 +4,8 @@
  * (Pure and unit-tested; the data lookups live in the API route.)
  */
 
+import { CRISIS_REPLY, isCrisis, matchKnowledge } from "@/lib/ai-knowledge"
+
 export type Intent =
   | "greeting" | "teachers" | "workshops" | "live" | "articles" | "pricing" | "become_teacher"
   | "recordings" | "payouts" | "report" | "account" | "booking" | "terms" | "thanks" | "unknown"
@@ -84,8 +86,8 @@ export interface GuideTeacher {
   href: string
 }
 
-export function rankTeachers(all: GuideTeacher[], message: string, limit = 3): { teachers: GuideTeacher[]; matched: StyleId[] } {
-  const styles = detectStyles(message)
+export function rankTeachers(all: GuideTeacher[], message: string, limit = 3, forceStyles?: StyleId[]): { teachers: GuideTeacher[]; matched: StyleId[] } {
+  const styles = forceStyles?.length ? forceStyles : detectStyles(message)
   let pool = all
   if (styles.length) {
     const hit = all.filter((t) => {
@@ -113,10 +115,12 @@ export const STYLE_LABEL_TR: Record<StyleId, string> = {
 }
 
 export interface GuideReply {
-  intent: Intent
+  intent: Intent | "knowledge" | "crisis"
   reply: string
   links: GuideLink[]
   teachers?: GuideTeacher[]
+  /** follow-up questions to offer as chips */
+  suggestions?: string[]
 }
 
 export interface GuideData {
@@ -132,8 +136,39 @@ const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : ""
 
 /** Compose the answer (a pure function of the intent and the data the route looked up). */
+/** Navigation intents that are explicit enough to beat a general knowledge answer. */
+const STRONG: Intent[] = ["become_teacher", "report", "recordings", "payouts", "pricing", "account", "terms", "live", "workshops", "articles", "booking"]
+/** A knowledge hit this specific (a whole phrase matched) outranks a navigation intent. */
+const SPECIFIC = 8
+
+export const DEFAULT_SUGGESTIONS = ["Yoga nedir?", "Bel ağrım için ne yapayım?", "Canlı yayın var mı?", "Üye olmak istiyorum"]
+
 export function composeReply(message: string, data: GuideData): GuideReply {
-  const intent = detectIntent(message)
+  const joinLink: GuideLink = { label: "Ücretsiz üye ol", href: "/login?mode=register" }
+  if (isCrisis(message)) return { intent: "crisis", reply: CRISIS_REPLY, links: [], suggestions: ["Kısa bir nefes egzersizi"] }
+
+  const navIntent = detectIntent(message)
+  const k = matchKnowledge(message)
+  if (k && (k.score >= SPECIFIC || !STRONG.includes(navIntent))) {
+    const e = k.entry
+    const ranked = e.teachersFor?.length ? rankTeachers(data.teachers, message, 3, e.teachersFor) : null
+    const links = [...(e.links ?? [])]
+    if (ranked?.teachers.length) {
+      links.push({ label: "Tüm eğitmenler", href: "/teachers" })
+      if (!data.signedIn) links.push(joinLink)
+    }
+    return {
+      intent: ranked?.teachers.length ? "teachers" : "knowledge",
+      reply: e.answer + (ranked?.teachers.length ? "\n\nSana uygun eğitmenler:" : ""),
+      links,
+      teachers: ranked?.teachers,
+      suggestions: e.next,
+    }
+  }
+  return composeNavigation(message, data, navIntent)
+}
+
+function composeNavigation(message: string, data: GuideData, intent: Intent): GuideReply {
   const n = normalize(message)
   const join: GuideLink = { label: "Ücretsiz üye ol", href: "/login?mode=register" }
   const withJoin = (links: GuideLink[]) => (data.signedIn ? links : [...links, join])
@@ -239,8 +274,9 @@ export function composeReply(message: string, data: GuideData): GuideReply {
       void n
       return {
         intent: "unknown",
-        reply: "Tam anlayamadım ama şunlarda yardımcı olabilirim: **eğitmen önerisi**, **atölyeler**, **canlı yayınlar**, **yazılar**, **fiyatlar**, **kayıt/üyelik**, **eğitmen olmak**. Örneğin “bel ağrım için hangi yoga?” diye sorabilirsin.",
+        reply: "Bunu tam anlayamadım. Yoga, nefes, meditasyon, duruşlar, uyku/stres/ağrı gibi konular ya da AYA (eğitmenler, atölyeler, canlı yayın, üyelik, ödeme, kayıtlar) hakkında sorabilirsin. Biraz farklı yazarsan tekrar deneyeyim.",
         links: [{ label: "Eğitmenler", href: "/teachers" }, { label: "Atölyeler", href: "/atolyeler" }, { label: "Canlı yayınlar", href: "/live" }],
+        suggestions: DEFAULT_SUGGESTIONS,
       }
     }
   }

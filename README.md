@@ -42,6 +42,8 @@ npm run typecheck        # tsc
 
 - Otomatik IP engeli yerel/özel ağ adreslerine (127.x, 10.x, 192.168.x, 172.16–31.x, IPv6 yerel) uygulanmaz; bir proxy arkasında herkesi kilitlemesin diye. Yönetici kendi IP'sini engelleyemez.
 - Yönetici API'leri ortak `requireAdmin` ile korunur (oturum çerezi ya da mobil Bearer): giriş yoksa 401, yönetici değilse 403.
+- Görseller: `public/photos/{hero,studio,meditation,join,breath}.jpg` önce kullanılır, yoksa stok fotoğraf, o da yüklenmezse renkli zemin. Mevcut dosyalar `node scripts/render-photos/render.js` ile three.js'ten üretilmiş özgün illüstrasyonlardır; kendi fotoğraflarını aynı adlarla üzerine kopyalayabilirsin.
+- AYA Rehber (`/api/ai/recommend`): model/ağ gerektirmez. `src/lib/ai-guide.ts` niyet ve yönlendirme, `src/lib/ai-knowledge.ts` sohbet + yoga/nefes/meditasyon/platform bilgi tabanıdır (yeni cevap eklemek için bir `E(...)` satırı yeter; testler `tests/unit/ai-*.test.ts`).
 - Kayıtlar `storage/recordings/` altında (özel klasör, statik sunulmaz). `POST /api/cron/cleanup-recordings` (CRON_SECRET ile) süresi dolanları siler — günde bir çağırın.
 - Yüklenen dosyalar `public/uploads/` altına yazılır ve `next start` altında da `/uploads/*` rotasıyla sunulur.
 - Tasarım belirteçleri `tailwind.config.js` içindedir (`sage` = sıcak taş/mürekkep nötrleri, `clay` = terrakota vurgu, `cream` = kâğıt).

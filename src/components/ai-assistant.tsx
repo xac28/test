@@ -14,6 +14,7 @@ interface Message {
   text: string
   teachers?: any[]
   links?: GuideLink[]
+  suggestions?: string[]
   timestamp?: Date
 }
 
@@ -69,7 +70,7 @@ export function AiAssistant() {
   }, [])
 
   // Typing animation for AI responses
-  const typeMessage = (fullText: string, teachers?: any[], links?: GuideLink[]) => {
+  const typeMessage = (fullText: string, teachers?: any[], links?: GuideLink[], suggestions?: string[]) => {
     setIsTyping(true)
     setTypingText("")
     let i = 0
@@ -81,7 +82,7 @@ export function AiAssistant() {
         clearInterval(interval)
         setIsTyping(false)
         setTypingText("")
-        setMessages(prev => [...prev, { role: "ai", text: fullText, teachers, links, timestamp: new Date() }])
+        setMessages(prev => [...prev, { role: "ai", text: fullText, teachers, links, suggestions, timestamp: new Date() }])
       }
     }, 12) // Fast but visible typing speed
   }
@@ -105,9 +106,10 @@ export function AiAssistant() {
       const data = await res.json().catch(() => ({}))
       setLoading(false)
       typeMessage(
-        data.reply || "Şu an size yardımcı olamıyorum, lütfen tekrar deneyin.",
+        data.reply || (res.status === 429 ? "Çok hızlı yazıyorsun 🙂 Birkaç saniye bekleyip tekrar dene." : "Şu an yardımcı olamıyorum, lütfen biraz sonra tekrar dene."),
         data.teachers,
-        data.links
+        data.links,
+        data.suggestions
       )
     } catch {
       setLoading(false)
@@ -176,6 +178,15 @@ export function AiAssistant() {
                           </div>
                           <ChevronRight size={14} className="text-sage-400 group-hover:translate-x-0.5 transition" />
                         </Link>
+                      ))}
+                    </div>
+                  )}
+                  {i === messages.length - 1 && !loading && !isTyping && msg.suggestions && msg.suggestions.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5" data-testid="ai-suggestions">
+                      {msg.suggestions.map((q) => (
+                        <button key={q} onClick={() => handleSend(q)} className="px-2.5 py-1 rounded-full text-xs border border-rule bg-paper text-sage-700 hover:border-ink hover:text-ink transition">
+                          {q}
+                        </button>
                       ))}
                     </div>
                   )}

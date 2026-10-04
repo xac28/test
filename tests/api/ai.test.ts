@@ -80,6 +80,54 @@ describe("AYA Rehber API", () => {
   })
 })
 
+describe("AYA Rehber: free chat", () => {
+  const say = async (q: string) => (await ask(q)).json()
+
+  it("answers small talk and simple yoga questions without a model or network", async () => {
+    const cases: [string, RegExp][] = [
+      ["nasılsın", /İyiyim/],
+      ["sen kimsin", /AYA Rehber/],
+      ["Yoga nedir?", /asana|pranayama/],
+      ["hatha ile vinyasa farkı nedir", /Hatha|Vinyasa/],
+      ["haftada kaç gün yoga yapmalıyım", /2-3 gün/],
+      ["aç karnına yoga yapılır mı", /aç karnına|ac karnina|2-3 saat/i],
+      ["4-7-8 nefesi nasıl yapılır", /7 saniye/],
+      ["çocuk duruşu nasıl yapılır", /Çocuk duruşu/],
+      ["meditasyona nasıl başlarım", /5 dakika/],
+      ["iyi geceler", /İyi geceler/],
+      ["teşekkürler", /Rica ederim/],
+      ["what is yoga", /Yoga\*\* combines|postures/],
+    ]
+    for (const [q, re] of cases) {
+      const r = await say(q)
+      expect(r.reply, q).toMatch(re)
+      expect(r.suggestions, q).toBeInstanceOf(Array)
+    }
+  })
+
+  it("adds suggestion chips and teachers for complaints, plus a health disclaimer", async () => {
+    const r = await say("belim ağrıyor ne yapmalıyım")
+    expect(r.intent).toBe("teachers")
+    expect(r.reply).toMatch(/tıbbi tavsiye/)
+    expect(r.suggestions.length).toBeGreaterThan(0)
+    for (const t of r.teachers) expect(t.href).toMatch(/^\/teachers\//)
+  })
+
+  it("handles distress with emergency information and no sales links", async () => {
+    const r = await say("intihar etmek istiyorum")
+    expect(r.intent).toBe("crisis")
+    expect(r.reply).toContain("112")
+    expect(r.links).toEqual([])
+    expect(r.teachers).toEqual([])
+  })
+
+  it("politely declines unrelated topics and never echoes markup", async () => {
+    expect((await say("bitcoin ne olur")).reply).toMatch(/yardımcı olamam/)
+    const r = await say("<script>alert(1)</script> merhaba nasılsın")
+    expect(r.reply).not.toContain("<script")
+  })
+})
+
 describe("database teacher profiles", () => {
   it("returns a bookable profile with real, future, free slots only", async () => {
     const { user, teacher } = await makeTeacher()

@@ -8,6 +8,7 @@ import { Flag, Heart, Loader2, MessageCircle, Trash2 } from "lucide-react"
 import { ReportDialog } from "@/components/report-dialog"
 import { CONTACT_LABEL_TR, KIND_LABEL_TR, findContact, findSpamShape, scanText } from "@/lib/profanity"
 import { timeAgo } from "@/components/notification-bell"
+import { Portrait } from "@/components/person-avatar"
 
 export interface CommunityAuthor { id: string; name: string | null; image: string | null; isTeacher: boolean }
 export interface CommunityPost {
@@ -47,13 +48,7 @@ export function SafePhoto({ src, alt, className }: { src: string; alt: string; c
 }
 
 export function Avatar({ author, size = 36 }: { author: CommunityAuthor; size?: number }) {
-  const initial = (author.name || "A").trim()[0]?.toUpperCase()
-  return author.image ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={author.image} alt="" width={size} height={size} style={{ width: size, height: size }} className="rounded-full object-cover shrink-0" />
-  ) : (
-    <span style={{ width: size, height: size }} className="rounded-full bg-ink text-cream text-xs font-semibold flex items-center justify-center shrink-0" aria-hidden>{initial}</span>
-  )
+  return <Portrait src={author.image} name={author.name} seed={author.id} size={size} />
 }
 
 /** Sends the visitor to log in (and back) or to accept the terms; returns true when the user is not allowed to continue. */

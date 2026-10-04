@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LanguagePicker from '@/components/LanguagePicker';
@@ -39,7 +38,6 @@ export default function TeacherProfilePage({ params }: { params: { slug: string 
       </>
     );
   }
-  const isUpload = teacher.avatar.startsWith('/uploads/') || !teacher.avatar;
 
   return (
     <>
@@ -63,7 +61,7 @@ export default function TeacherProfilePage({ params }: { params: { slug: string 
               <div className="bg-cream rounded-3xl p-6 lg:p-8 border border-sage-100">
                 <div className="flex flex-col sm:flex-row gap-6">
                   <div className="relative w-32 h-32 rounded-3xl overflow-hidden flex-shrink-0">
-                    {isUpload ? <Cover src={teacher.avatar || null} alt={teacher.name} label={teacher.name[0]} className="absolute inset-0 [&_span]:text-5xl" /> : <Image src={teacher.avatar} alt={teacher.name} fill sizes="128px" className="object-cover" />}
+                    <Cover src={teacher.avatar || null} alt={teacher.name} person={teacher.name} className="absolute inset-0" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2 text-sm text-ink/60">

@@ -2,11 +2,20 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { ArrowRight, Check, Radio, Video, CalendarCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Radio, Video, CalendarCheck, Sparkles, Compass, Users } from 'lucide-react';
+import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ArticleCard, ArticleCardData, Cover, LiveNowCard, SectionHead, WorkshopCard, WorkshopCardData, useL } from '@/components/editorial';
-import { Aurora, Marquee, MeditationScene, PhotoBackdrop, Reveal, Stagger, StaggerItem } from '@/components/motion';
+import dynamic from 'next/dynamic';
+import { Aurora, Marquee, PhotoBackdrop, Reveal, Stagger, StaggerItem } from '@/components/motion';
+import { FaqList } from '@/components/marketing';
+import { PoseCard } from '@/components/poses/pose-library';
+import { POSE_BY_SLUG, poseImage } from '@/lib/yoga-poses';
+import { STYLES, TONE_CLASS } from '@/lib/yoga-styles';
+
+const YogiScene = dynamic(() => import('@/components/three/yogi-scene').then((m) => m.YogiScene), { ssr: false, loading: () => <div className="absolute inset-0" aria-hidden /> });
+const HERO_POSES = ['kolay-oturus', 'dag-durusu', 'savasci-2', 'agac', 'ayakta-yukari-uzanis'];
 import { PHOTOS } from '@/lib/photos';
 
 export interface HomeData {
@@ -20,6 +29,7 @@ export default function HomeView({ data }: { data: HomeData }) {
   const L = useL();
   const { status } = useSession();
   const visitor = status === 'unauthenticated';
+  const [heroPose, setHeroPose] = useState(HERO_POSES[0]);
 
   return (
     <>
@@ -27,56 +37,55 @@ export default function HomeView({ data }: { data: HomeData }) {
       <main>
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="relative overflow-hidden border-b border-rule">
-          <div className="absolute inset-0 bg-gradient-to-b from-cream via-cream to-sage-100" aria-hidden />
-          <PhotoBackdrop sources={PHOTOS.hero} opacity={0.22} />
-          <div className="absolute inset-0 bg-gradient-to-r from-cream via-cream/85 to-cream/30" aria-hidden />
+          <div className="absolute inset-0 bg-gradient-to-br from-clay-50 via-cream to-teal-50" aria-hidden />
+          <PhotoBackdrop sources={PHOTOS.hero} opacity={0.12} />
           <Aurora />
-          <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-14 pb-14 lg:pt-20 lg:pb-20 grid lg:grid-cols-12 gap-6 lg:gap-10 items-center">
-            <div className="lg:col-span-7">
+          <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-14 lg:pt-16 lg:pb-20 grid lg:grid-cols-12 gap-6 lg:gap-10 items-center">
+            <div className="lg:col-span-6">
               <p className="eyebrow mb-6 animate-fade-up" style={{ animationDelay: '0.05s', opacity: 0 }}>{L('Yoga · Nefes · Meditasyon', 'Yoga · Breath · Meditation')}</p>
-              <h1 className="font-display font-light text-[3.1rem] sm:text-7xl lg:text-[5.4rem] leading-[0.98] tracking-tight animate-fade-up" style={{ animationDelay: '0.15s', opacity: 0 }}>
+              <h1 className="font-display font-light text-[3.1rem] sm:text-7xl lg:text-[5.2rem] leading-[0.98] tracking-tight animate-fade-up" style={{ animationDelay: '0.15s', opacity: 0 }}>
                 {L('Nefes, beden ve zihin için', 'A live school for breath,')}{' '}
-                <em className="italic text-clay-500">{L('canlı bir okul.', 'body and mind.')}</em>
+                <em className="italic text-gradient pr-1">{L('canlı bir okul.', 'body and mind.')}</em>
               </h1>
-              <p className="mt-8 text-lg text-sage-600 max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
+              <p className="mt-7 text-lg text-sage-600 max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
                 {L(
                   'Sertifikalı eğitmenlerle birebir dersler, herkese açık canlı yayınlar ve küçük gruplarla atölyeler. Evinizden, kendi temponuzla.',
                   'One-to-one lessons with certified teachers, open live broadcasts and small-group workshops. From home, at your own pace.'
                 )}
               </p>
-              <div className="mt-10 flex flex-wrap items-center gap-4 animate-fade-up" style={{ animationDelay: '0.45s', opacity: 0 }}>
+              <div className="mt-9 flex flex-wrap items-center gap-4 animate-fade-up" style={{ animationDelay: '0.45s', opacity: 0 }}>
                 {visitor ? (
-                  <Link href="/login?mode=register" data-testid="hero-join" className="cta pulse-cta inline-flex items-center gap-2 bg-accent text-white px-8 py-4 text-base font-semibold hover:bg-accent-dark rounded-md">
+                  <Link href="/login?mode=register" data-testid="hero-join" className="btn-cta pulse-cta text-base">
                     {L('Ücretsiz üye ol', 'Join for free')} <ArrowRight size={18} />
                   </Link>
                 ) : (
-                  <Link href="/atolyeler" className="cta inline-flex items-center gap-2 bg-ink text-cream px-8 py-4 text-base font-semibold hover:bg-sage-800 rounded-md">
+                  <Link href="/atolyeler" className="btn-cta text-base">
                     {L('Atölyelere göz at', 'Browse workshops')} <ArrowRight size={18} />
                   </Link>
                 )}
-                {visitor && (
-                  <Link href="/atolyeler" className="cta inline-flex items-center gap-2 border border-ink/80 px-7 py-4 text-base font-semibold hover:bg-ink hover:text-cream transition-colors rounded-md">
-                    {L('Atölyelere göz at', 'Browse workshops')}
-                  </Link>
+                {visitor ? (
+                  <Link href="/nasil-calisir" className="btn-ghost text-base">{L('Nasıl çalışır?', 'How it works')}</Link>
+                ) : (
+                  <Link href="/teachers" className="btn-ghost text-base">{L('Eğitmen bul', 'Find a teacher')}</Link>
                 )}
-                <Link href="/teachers" className="link-grow px-1 py-3.5 text-sm font-semibold">
-                  {L('Eğitmen bul', 'Find a teacher')}
-                </Link>
               </div>
-              <ul className="mt-10 flex flex-wrap gap-x-7 gap-y-2 text-sm text-sage-700 animate-fade-up" style={{ animationDelay: '0.6s', opacity: 0 }}>
+              <ul className="mt-9 flex flex-wrap gap-x-7 gap-y-2 text-sm text-sage-700 animate-fade-up" style={{ animationDelay: '0.6s', opacity: 0 }}>
                 {[L('İlk deneme dersi yarı fiyat', 'First trial lesson half price'), L('Canlı yayın ve sohbet', 'Live streams and chat'), L('Dersin kaydı 30 gün indirilebilir', 'Lesson recordings for 30 days')].map((t) => (
-                  <li key={t} className="flex items-center gap-2"><Check size={15} className="text-clay-500" /> {t}</li>
+                  <li key={t} className="flex items-center gap-2"><Check size={15} className="text-teal-500" /> {t}</li>
                 ))}
               </ul>
             </div>
-            <div className="lg:col-span-5">
-              <div className="relative h-[380px] sm:h-[460px] lg:h-[540px] -mx-4 lg:mx-0">
-                <MeditationScene variant="figure" className="absolute inset-0" />
+            <div className="lg:col-span-6">
+              <div className="relative h-[420px] sm:h-[520px] lg:h-[600px]">
+                <YogiScene poses={HERO_POSES} className="absolute inset-0" label={setHeroPose} />
+                <Link href={`/pozlar/${heroPose}`} data-testid="hero-pose-chip" className="absolute left-1/2 -translate-x-1/2 bottom-2 inline-flex items-center gap-2 bg-paper/90 backdrop-blur border border-rule shadow-md rounded-full pl-4 pr-3 py-2 text-sm font-medium hover:border-ink transition">
+                  <span className="w-2 h-2 rounded-full bg-clay-500 animate-pulse" aria-hidden /> {POSE_BY_SLUG[heroPose]?.name} <span className="text-sage-500 italic hidden sm:inline">{POSE_BY_SLUG[heroPose]?.sanskrit}</span> <ArrowRight size={14} />
+                </Link>
               </div>
               {data.live ? (
                 <LiveNowCard id={data.live.id} title={data.live.title} teacher={data.live.teacher} viewers={data.live.viewers} />
               ) : (
-                <div className="bg-sage-900 text-cream/70 px-5 py-4 text-sm rounded-md">
+                <div className="mt-3 bg-teal-900 text-cream/80 px-5 py-4 text-sm rounded-2xl">
                   {L('Şu anda canlı yayın yok.', 'Nobody is live right now.')}{' '}
                   <Link href="/live" className="text-cream underline underline-offset-4">{L('Yayın takvimine bak', 'See live')}</Link>
                 </div>
@@ -96,10 +105,44 @@ export default function HomeView({ data }: { data: HomeData }) {
           />
         </div>
 
+        {/* ── Styles ───────────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-24" data-testid="home-styles">
+          <SectionHead num="01" label={L('Yoga stilleri', 'Yoga styles')} title={L('Sana hangi yoga uygun?', 'Which yoga is right for you?')} href="/yoga-stilleri" linkLabel={L('Tüm stiller', 'All styles')} />
+          <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {STYLES.map((st) => (
+              <StaggerItem key={st.slug}>
+                <Link href={`/yoga-stilleri/${st.slug}`} className="group relative block rounded-3xl overflow-hidden card-lift border border-rule">
+                  <div className={`aspect-[5/4] bg-gradient-to-br ${TONE_CLASS[st.tone]} relative`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={poseImage(st.cover)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" aria-hidden />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <h3 className="font-display text-4xl">{st.name}</h3>
+                      <p className="text-sm text-white/85 mt-1 line-clamp-2">{st.tagline}</p>
+                    </div>
+                  </div>
+                </Link>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </section>
+
+        {/* ── Pose library teaser ──────────────────────────────── */}
+        <section className="mt-24 surface-mint border-y border-rule" data-testid="home-poses">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20">
+            <SectionHead num="02" label={L('Poz kütüphanesi', 'Pose library')} title={L('Her pozu adım adım, 3B olarak öğren', 'Learn every pose step by step, in 3D')} href="/pozlar" linkLabel={L('Tüm pozlar', 'All poses')} />
+            <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              {['savasci-2', 'agac', 'asagi-bakan-kopek', 'kolay-oturus'].map((slug) => (
+                <StaggerItem key={slug}><PoseCard slug={slug} /></StaggerItem>
+              ))}
+            </Stagger>
+          </div>
+        </section>
+
         {/* ── 01 Workshops ─────────────────────────────────────── */}
         <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-24">
           <SectionHead
-            num="01"
+            num="03"
             label={L('Atölyeler', 'Workshops')}
             title={L('Küçük gruplarla, canlı ya da kayıtlı atölyeler', 'Small-group workshops, live or recorded')}
             href="/atolyeler"
@@ -119,7 +162,7 @@ export default function HomeView({ data }: { data: HomeData }) {
         {/* ── 02 One-to-one ────────────────────────────────────── */}
         <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28">
           <SectionHead
-            num="02"
+            num="04"
             label={L('Birebir dersler', 'One-to-one lessons')}
             title={L('Size göre bir eğitmen, size göre bir saat', 'A teacher and a time that fit you')}
             href="/teachers"
@@ -147,7 +190,7 @@ export default function HomeView({ data }: { data: HomeData }) {
           <div className="absolute inset-0 bg-gradient-to-r from-stage via-stage/90 to-stage/40" aria-hidden />
           <div className="relative max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6">
-              <p className="eyebrow !text-cream/50 mb-4"><span className="text-accent">03</span> — {L('Canlı yayın', 'Live broadcast')}</p>
+              <p className="eyebrow !text-cream/50 mb-4"><span className="text-accent">05</span> — {L('Canlı yayın', 'Live broadcast')}</p>
               <h2 className="font-display text-4xl md:text-5xl leading-[1.05]">
                 {L('Evinizden bir stüdyoya dönüşen yayın deneyimi', 'A broadcast studio that fits in your living room')}
               </h2>
@@ -183,7 +226,7 @@ export default function HomeView({ data }: { data: HomeData }) {
         {data.articles.length > 0 && (
           <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28">
             <SectionHead
-              num="04"
+              num="06"
               label={L('İçerikler', 'Journal')}
               title={L('Nefes, beden ve zihin üzerine yazılar', 'Writing on breath, body and mind')}
               href="/icerikler"
@@ -200,12 +243,12 @@ export default function HomeView({ data }: { data: HomeData }) {
         {/* ── Teachers ─────────────────────────────────────────── */}
         {data.teachers.length > 0 && (
           <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28">
-            <SectionHead num="05" label={L('Eğitmenler', 'Teachers')} title={L('Pratiğinize eşlik edecek eğitmenler', 'Teachers who will guide your practice')} href="/teachers" linkLabel={L('Tüm eğitmenler', 'All teachers')} />
+            <SectionHead num="07" label={L('Eğitmenler', 'Teachers')} title={L('Pratiğinize eşlik edecek eğitmenler', 'Teachers who will guide your practice')} href="/teachers" linkLabel={L('Tüm eğitmenler', 'All teachers')} />
             <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {data.teachers.map((t) => (
                 <StaggerItem key={t.id}>
                   <Link href={`/teachers/${t.id}`} className="group block lift">
-                    <Cover src={t.image} tone="sage" label={t.name[0]} className="aspect-square mb-4" />
+                    <Cover src={t.image} tone="sage" label={t.name[0]} person={t.name} className="aspect-square mb-4" />
                     <h3 className="font-display text-xl group-hover:underline underline-offset-4 decoration-1">{t.name}</h3>
                     <p className="text-sm text-sage-600 line-clamp-2 mt-1">{t.specialties.slice(0, 3).join(' · ') || t.bio}</p>
                   </Link>
@@ -214,6 +257,19 @@ export default function HomeView({ data }: { data: HomeData }) {
             </Stagger>
           </section>
         )}
+
+        {/* ── FAQ teaser ───────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28" data-testid="home-faq">
+          <SectionHead num="08" label={L('Sık sorulanlar', 'FAQ')} title={L('Aklına takılanlar', 'Questions you might have')} href="/sss" linkLabel={L('Tüm sorular', 'All questions')} />
+          <FaqList
+            items={[
+              { q: L('AYA ücretsiz mi?', 'Is AYA free?'), a: L('Üyelik ve canlı yayınları izlemek ücretsiz. Birebir ders ve atölyeler eğitmenin belirlediği ücretle yapılır; ilk deneme dersi yarı fiyatına.', 'Membership and watching broadcasts are free. One-to-one lessons and workshops are priced by the teacher; your first trial lesson is half price.') },
+              { q: L('Hiç yoga yapmadıysam?', 'What if I have never done yoga?'), a: L('Sorun değil. “Yoga stilleri” ve “Poz kütüphanesi” sayfalarından başla; eğitmenlerin seviye etiketlerine göre başlangıç dostu dersleri seç.', 'No problem. Start with the yoga styles and pose library pages, then choose beginner-friendly lessons using the teachers’ level tags.') },
+              { q: L('Eğitmenler nasıl seçiliyor?', 'How are teachers vetted?'), a: L('Her eğitmen başvuru ve kimlik/sertifika incelemesinden geçer. Eğitmenlerin platform dışına yönlendirme yapması yasaktır ve otomatik denetlenir.', 'Every teacher goes through an application and credential review. Steering students off the platform is forbidden and monitored automatically.') },
+              { q: L('Dersler kaydediliyor mu?', 'Are lessons recorded?'), a: L('İstersen birebir dersi kaydedip 30 gün boyunca indirebilirsin.', 'If you like, you can record a one-to-one lesson and download it for 30 days.') },
+            ]}
+          />
+        </section>
 
         {/* ── Join ─────────────────────────────────────────────── */}
         <section className="relative overflow-hidden mt-28 bg-sage-900 text-cream" data-testid="join-band">
@@ -231,11 +287,11 @@ export default function HomeView({ data }: { data: HomeData }) {
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-4">
                 {visitor || status === 'loading' ? (
-                  <Link href="/login?mode=register" data-testid="join-band-cta" className="cta inline-flex items-center gap-2 bg-accent text-white px-8 py-4 text-base font-semibold hover:bg-accent-dark rounded-md">
+                  <Link href="/login?mode=register" data-testid="join-band-cta" className="btn-cta !px-8 !py-4 !text-base">
                     {L('Ücretsiz üye ol', 'Join for free')} <ArrowRight size={18} />
                   </Link>
                 ) : (
-                  <Link href="/dashboard" className="cta inline-flex items-center gap-2 bg-accent text-white px-8 py-4 text-base font-semibold hover:bg-accent-dark rounded-md">
+                  <Link href="/dashboard" className="btn-cta !px-8 !py-4 !text-base">
                     {L('Panele git', 'Go to dashboard')} <ArrowRight size={18} />
                   </Link>
                 )}
@@ -273,7 +329,7 @@ export default function HomeView({ data }: { data: HomeData }) {
                 <h2 className="font-display text-3xl md:text-4xl leading-[1.08]">{L('Bilginizi paylaşın; atölyenizi ve yayınınızı AYA’da açın.', 'Share what you know; host your workshops and broadcasts on AYA.')}</h2>
               </div>
               <div className="md:col-span-4 md:text-right">
-                <Link href="/become-teacher" className="cta inline-flex items-center gap-2 bg-ink text-cream px-7 py-3.5 text-sm font-semibold hover:bg-sage-800 rounded-md">
+                <Link href="/become-teacher" className="btn-deep">
                   {L('Eğitmen olarak başvur', 'Apply to teach')} <ArrowRight size={16} />
                 </Link>
               </div>

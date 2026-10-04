@@ -204,7 +204,7 @@ function LoginContent() {
               <button
                 type="submit"
                 disabled={loading || (mode === "register" && !acceptTerms)}
-                className="w-full bg-ink hover:bg-sage-800 text-cream py-3.5 rounded-md text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="btn-cta w-full !py-3.5 !text-sm disabled:opacity-50 disabled:hover:translate-y-0"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : mode === "login" ? "Giriş Yap" : "Kayıt Ol"}
               </button>

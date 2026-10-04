@@ -22,7 +22,7 @@ export default function TeacherCard({ teacher }: { teacher: Teacher }) {
   return (
     <article className="group" data-testid="teacher-card">
       <Link href={`/teachers/${teacher.slug}`} className="block" aria-label={teacher.name}>
-        <Cover src={teacher.avatar} alt={teacher.name} tone="sage" label={teacher.name[0]} className="aspect-[4/5] mb-4" />
+        <Cover src={teacher.avatar} alt={teacher.name} tone="sage" label={teacher.name[0]} person={teacher.name} className="aspect-[4/5] mb-4" />
       </Link>
 
       <div className="flex items-start justify-between gap-3">

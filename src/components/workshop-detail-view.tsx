@@ -111,7 +111,7 @@ export default function WorkshopDetailView({
             </div>
 
             <div className="mt-14 pt-8 border-t border-rule flex items-center gap-4">
-              <Cover src={w.teacher.image} tone="sage" label={(w.teacher.name || 'E')[0]} className="w-16 h-16 rounded-full shrink-0 [&_span]:text-2xl" />
+              <Cover src={w.teacher.image} tone="sage" label={(w.teacher.name || 'E')[0]} person={w.teacher.name || 'Eğitmen'} className="w-16 h-16 rounded-full shrink-0 [&_span]:text-2xl" />
               <div>
                 <p className="eyebrow mb-1">{L('Eğitmen', 'Teacher')}</p>
                 <Link href={`/teachers/${w.teacher.id}`} className="font-display text-2xl hover:underline underline-offset-4 decoration-1">{w.teacher.name}</Link>

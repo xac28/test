@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { ArrowRight, ArrowUpRight, Radio, Users } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { PersonAvatar } from '@/components/person-avatar';
 import { formatPriceTR, WorkshopState } from '@/lib/workshops';
 
 /** Pick a string by language: L('Merhaba', 'Hello'). */
@@ -31,12 +32,15 @@ export function Cover({
   className = '',
   tone = 'sage',
   label,
+  person,
 }: {
   src?: string | null;
   alt?: string;
   className?: string;
   tone?: 'sage' | 'clay' | 'ink';
   label?: string;
+  /** a person's name: without a photo an illustrated portrait is shown instead of the initial */
+  person?: string | null;
 }) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -56,7 +60,10 @@ export function Cover({
           <circle key={r} cx="50" cy="54" r={r} fill="none" stroke="currentColor" strokeWidth="0.35" />
         ))}
       </svg>
-      {label && (
+      {person && (!src || failed) && (
+        <PersonAvatar name={person} size="full" rounded={false} className="absolute inset-0" />
+      )}
+      {label && !person && (
         <span className="absolute inset-0 flex items-center justify-center font-display text-7xl select-none opacity-80" aria-hidden>
           {label}
         </span>

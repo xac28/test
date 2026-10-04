@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield, ChevronDown, Sparkles, PersonStanding, Compass, HelpCircle, Info, GraduationCap } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { NotificationBell } from '@/components/notification-bell';
+import { Portrait } from '@/components/person-avatar';
 
 /** AYA wordmark: set in the display serif with wide tracking. */
 export function Wordmark({ className = '' }: { className?: string }) {
@@ -20,6 +21,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
+  const [exploreOpen, setExploreOpen] = useState(false);
+  const exploreRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const role = session?.user?.role;
@@ -41,7 +44,16 @@ export default function Navbar() {
     };
   }, []);
 
-  useEffect(() => setMobileOpen(false), [pathname]);
+  useEffect(() => { setMobileOpen(false); setExploreOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    if (!exploreOpen) return;
+    const close = (e: MouseEvent) => { if (exploreRef.current && !exploreRef.current.contains(e.target as Node)) setExploreOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setExploreOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
+  }, [exploreOpen]);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -61,8 +73,17 @@ export default function Navbar() {
     { href: '/pricing', label: t.nav.plans },
   ];
 
+  const exploreLinks = [
+    { href: '/yoga-stilleri', icon: Sparkles, label: locale === 'tr' ? 'Yoga stilleri' : 'Yoga styles', hint: locale === 'tr' ? 'Hatha, Vinyasa, Yin…' : 'Hatha, Vinyasa, Yin…' },
+    { href: '/pozlar', icon: PersonStanding, label: locale === 'tr' ? 'Poz kütüphanesi' : 'Pose library', hint: locale === 'tr' ? '3B döndürülebilir pozlar' : 'Rotatable 3D poses' },
+    { href: '/nasil-calisir', icon: Compass, label: locale === 'tr' ? 'Nasıl çalışır?' : 'How it works', hint: locale === 'tr' ? 'İlk derse dört adım' : 'Four steps to your first class' },
+    { href: '/sss', icon: HelpCircle, label: locale === 'tr' ? 'Sık sorulan sorular' : 'FAQ', hint: locale === 'tr' ? 'Merak edilenler' : 'Common questions' },
+    { href: '/ogretmenler-icin', icon: GraduationCap, label: locale === 'tr' ? 'Eğitmenler için' : 'For teachers', hint: locale === 'tr' ? 'AYA\'da ders ver' : 'Teach on AYA' },
+    { href: '/hakkimizda', icon: Info, label: locale === 'tr' ? 'Hakkımızda' : 'About', hint: locale === 'tr' ? 'Değerlerimiz' : 'Our values' },
+  ];
+  const exploreActive = exploreLinks.some((l) => pathname === l.href || pathname.startsWith(l.href + '/'));
+
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
-  const initial = (session?.user?.name || session?.user?.email || 'A').trim()[0]?.toUpperCase();
 
   return (
     <header className="sticky top-0 z-50 bg-cream border-b border-rule">
@@ -71,7 +92,7 @@ export default function Navbar() {
           <Wordmark />
         </Link>
 
-        <nav aria-label="Ana menü" className="hidden lg:flex items-center gap-8 flex-1">
+        <nav aria-label="Ana menü" className="hidden lg:flex items-center gap-6 xl:gap-8 flex-1">
           {navLinks.map((l) => (
             <Link
               key={l.href}
@@ -89,6 +110,27 @@ export default function Navbar() {
               )}
             </Link>
           ))}
+          <div className="relative" ref={exploreRef}>
+            <button
+              onClick={() => setExploreOpen((o) => !o)}
+              aria-haspopup="menu"
+              aria-expanded={exploreOpen}
+              data-testid="explore-button"
+              className={`inline-flex items-center gap-1 text-[0.9rem] font-medium py-1 transition-colors ${exploreActive || exploreOpen ? 'text-ink' : 'text-sage-600 hover:text-ink'}`}
+            >
+              {locale === 'tr' ? 'Keşfet' : 'Explore'} <ChevronDown size={15} className={`transition-transform ${exploreOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {exploreOpen && (
+              <div role="menu" data-testid="explore-menu" className="absolute left-1/2 -translate-x-1/2 mt-3 w-[22rem] bg-paper border border-rule rounded-2xl shadow-xl p-2 z-50">
+                {exploreLinks.map((l) => (
+                  <Link key={l.href} href={l.href} role="menuitem" className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-clay-50 group">
+                    <span className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center group-hover:bg-clay-100 group-hover:text-clay-600 transition-colors"><l.icon size={18} /></span>
+                    <span><span className="block text-sm font-semibold text-ink">{l.label}</span><span className="block text-xs text-sage-500">{l.hint}</span></span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="flex items-center gap-4">
@@ -121,12 +163,7 @@ export default function Navbar() {
                 data-testid="profile-menu-button"
                 className="flex items-center gap-2.5 py-1 pl-1 pr-3 border border-rule hover:border-ink rounded-full transition-colors"
               >
-                {session.user.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={session.user.image} alt="" className="w-7 h-7 rounded-full object-cover" />
-                ) : (
-                  <span className="w-7 h-7 rounded-full bg-ink text-cream text-xs font-semibold flex items-center justify-center">{initial}</span>
-                )}
+                <Portrait src={session.user.image} name={session.user.name} seed={session.user.id} size={28} />
                 <span className="text-xs font-medium hidden sm:inline max-w-[110px] truncate">{session.user.name}</span>
               </button>
               {profileOpen && (
@@ -177,6 +214,12 @@ export default function Navbar() {
               <Link key={l.href} href={l.href} className="py-3.5 border-b border-rule text-lg font-display flex items-center gap-2">
                 {l.label}
                 {l.live && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
+              </Link>
+            ))}
+            <p className="eyebrow pt-5 pb-1">{locale === 'tr' ? 'Keşfet' : 'Explore'}</p>
+            {exploreLinks.map((l) => (
+              <Link key={l.href} href={l.href} className="py-3 border-b border-rule flex items-center gap-3 text-sage-800">
+                <l.icon size={17} className="text-clay-500" /> {l.label}
               </Link>
             ))}
             <div className="flex items-center justify-between pt-4">

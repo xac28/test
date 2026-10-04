@@ -31,6 +31,9 @@ module.exports = {
           700: '#8b4f37',
         },
         cream: '#faf6f0',
+        // live broadcast UI (dark "stage")
+        stage: { DEFAULT: '#0e0f0d', 2: '#18191a', 3: '#232522' },
+        accent: { DEFAULT: '#c2410c', dark: '#9a3412' },
         ink: '#1a1f1a',
       },
       animation: {

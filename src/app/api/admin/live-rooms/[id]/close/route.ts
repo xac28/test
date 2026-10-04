@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { endLiveRoom } from "@/lib/live-rooms"
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -11,10 +12,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const { id } = await params
 
-    const room = await db.liveRoom.update({
-      where: { id },
-      data: { isActive: false, endedAt: new Date() }
-    })
+    // Marks it ended AND disconnects everybody still in the LiveKit room
+    await endLiveRoom(id)
+    const room = await db.liveRoom.findUnique({ where: { id } })
 
     return NextResponse.json({ success: true, room })
   } catch (error: any) {

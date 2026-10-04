@@ -3,6 +3,24 @@ import { createLiveKitToken } from "@/lib/livekit"
 import { NextResponse } from "next/server"
 import { termsGate } from "@/lib/terms"
 import { resolveUser } from "@/lib/auth-utils"
+import { createLiveKitRoom, endLiveRoom } from "@/lib/live-rooms"
+
+async function teacherFor(user: { id: string; role: string }) {
+  let teacher = await db.teacher.findUnique({ where: { userId: user.id } })
+  if (!teacher && user.role === "ADMIN") {
+    teacher = await db.teacher.create({
+      data: { userId: user.id, bio: "Admin Test Profile", hourlyRate: 0, isTrialMode: false },
+    })
+  }
+  return teacher
+}
+
+function hostToken(roomName: string, user: { id: string; name: string | null }) {
+  return createLiveKitToken(roomName, user.name || "Teacher", true, {
+    identity: user.id,
+    metadata: JSON.stringify({ role: "host" }),
+  })
+}
 
 // POST /api/room/instant — Teacher starts an instant live session
 export async function POST(req: Request) {
@@ -19,62 +37,67 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only teachers can start live sessions" }, { status: 403 })
     }
 
-    let teacher = await db.teacher.findUnique({
-      where: { userId: user.id },
-    })
-
+    const teacher = await teacherFor(user)
     if (!teacher) {
-      if (user.role === "ADMIN") {
-        teacher = await db.teacher.create({
-          data: {
-            userId: user.id,
-            bio: "Admin Test Profile",
-            hourlyRate: 0,
-            isTrialMode: false,
-          }
-        })
-      } else {
-        return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 })
-      }
+      return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 })
     }
 
-    const { title } = await req.json()
+    const body = await req.json().catch(() => ({}))
+    const title = String(body.title || "").trim().slice(0, 120) || "Canlı Yoga Dersi"
     const roomName = `live-${teacher.id}-${Date.now()}`
     const livekitUrl = process.env.LIVEKIT_URL || "ws://localhost:7880"
 
-    // Close any existing active rooms by this teacher
-    await db.liveRoom.updateMany({
-      where: { teacherId: teacher.id, isActive: true },
-      data: { isActive: false, endedAt: new Date() }
-    })
+    // Close any existing active rooms by this teacher (and disconnect their viewers)
+    const previous = await db.liveRoom.findMany({ where: { teacherId: teacher.id, isActive: true }, select: { id: true } })
+    for (const p of previous) await endLiveRoom(p.id).catch(() => {})
 
-    // Create new live room record
     const liveRoom = await db.liveRoom.create({
-      data: {
-        teacherId: teacher.id,
-        roomName,
-        title: title || "Live Yoga Session",
-        isActive: true,
-      }
+      data: { teacherId: teacher.id, roomName, title, isActive: true },
     })
-
-    // Generate teacher token with admin privileges
-    const token = await createLiveKitToken(
-      roomName,
-      user.name || "Teacher",
-      true // isTeacher = admin privileges
-    )
+    await createLiveKitRoom(roomName, title)
 
     return NextResponse.json({
       roomUrl: livekitUrl,
       roomName,
-      token,
+      token: await hostToken(roomName, user),
       liveRoomId: liveRoom.id,
+      title,
       role: "teacher",
     })
   } catch (error: any) {
     console.error("[INSTANT_ROOM_ERROR]", error)
     return NextResponse.json({ error: error.message || "Internal error" }, { status: 500 })
+  }
+}
+
+// GET /api/room/instant — resume: fresh host token for the teacher's currently active room (if any)
+export async function GET(req: Request) {
+  try {
+    const user = await resolveUser(req)
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (user.role !== "TEACHER" && user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+    const teacher = await db.teacher.findUnique({ where: { userId: user.id } })
+    if (!teacher) return NextResponse.json({ active: null })
+
+    const room = await db.liveRoom.findFirst({ where: { teacherId: teacher.id, isActive: true }, orderBy: { createdAt: "desc" } })
+    if (!room) return NextResponse.json({ active: null })
+
+    return NextResponse.json({
+      active: {
+        roomUrl: process.env.LIVEKIT_URL || "ws://localhost:7880",
+        roomName: room.roomName,
+        liveRoomId: room.id,
+        title: room.title,
+        startedAt: room.createdAt,
+        token: await hostToken(room.roomName, user),
+        role: "teacher",
+      },
+    })
+  } catch (error: any) {
+    console.error("[INSTANT_ROOM_RESUME_ERROR]", error)
+    return NextResponse.json({ error: "Internal error" }, { status: 500 })
   }
 }
 
@@ -85,9 +108,6 @@ export async function DELETE(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const termsBlock = termsGate(user)
-    if (termsBlock) return termsBlock
 
     const { liveRoomId } = await req.json()
 
@@ -110,10 +130,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Forbidden — you can only close your own rooms" }, { status: 403 })
     }
 
-    await db.liveRoom.update({
-      where: { id: liveRoomId },
-      data: { isActive: false, endedAt: new Date() }
-    })
+    await endLiveRoom(liveRoomId)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

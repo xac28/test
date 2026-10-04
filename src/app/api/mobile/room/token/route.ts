@@ -48,7 +48,8 @@ export async function POST(req: Request) {
     const token = await createLiveKitToken(
       roomName,
       user.name || "MobileUser",
-      isTeacher
+      isTeacher,
+      { identity: user.id }
     )
 
     return NextResponse.json({

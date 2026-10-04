@@ -16,23 +16,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const role = session?.user?.role || "STUDENT"
 
   const studentLinks = [
-    { name: "My Practice", href: "/dashboard", icon: Home },
-    { name: "My Profile", href: "/dashboard/profile", icon: Settings },
-    { name: "Find Teachers", href: "/teachers", icon: Users },
+    { name: "Pratiğim", href: "/dashboard", icon: Home },
+    { name: "Profilim", href: "/dashboard/profile", icon: Settings },
+    { name: "Eğitmen Bul", href: "/teachers", icon: Users },
   ]
 
   const teacherLinks = [
-    { name: "Dashboard", href: "/teach", icon: Home },
-    { name: "My Classes", href: "/teach/bookings", icon: Calendar },
-    { name: "Availability", href: "/teach/availability", icon: Calendar },
-    { name: "Earnings", href: "/teach/earnings", icon: CreditCard },
-    { name: "Live Room", href: "/room", icon: Video },
+    { name: "Panel", href: "/teach", icon: Home },
+    { name: "Derslerim", href: "/teach/bookings", icon: Calendar },
+    { name: "Müsaitlik", href: "/teach/availability", icon: Calendar },
+    { name: "Atölyelerim", href: "/teach/workshops", icon: Users },
+    { name: "Canlı Yayın", href: "/live/studio", icon: Video },
+    { name: "Kazançlar", href: "/teach/earnings", icon: CreditCard },
   ]
 
   const adminLinks = [
     { name: "Genel Bakış", href: "/admin?tab=overview", icon: Activity },
     { name: "Başvurular", href: "/admin?tab=applications", icon: FileText },
     { name: "Ödeme Talepleri", href: "/admin?tab=payouts", icon: CreditCard },
+    { name: "İçerikler", href: "/admin?tab=articles", icon: FileText },
     { name: "Canlı Odalar", href: "/admin?tab=rooms", icon: Video },
     { name: "Kullanıcılar", href: "/admin?tab=users", icon: Users },
     { name: "Güvenlik ve Kayıtlar", href: "/admin?tab=reports", icon: ShieldAlert },
@@ -51,7 +53,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               AYA
             </Link>
             <p className="text-sage-500 text-xs font-medium tracking-widest uppercase mt-1">
-              {pathname.startsWith("/admin") ? "Yönetim Paneli" : pathname.startsWith("/teach") ? "Teacher Portal" : "Student Hub"}
+              {pathname.startsWith("/admin") ? "Yönetim Paneli" : pathname.startsWith("/teach") ? "Eğitmen Paneli" : "Öğrenci Paneli"}
             </p>
           </div>
         )}
@@ -105,7 +107,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           className={`flex items-center gap-3 ${collapsed ? "justify-center px-3" : "px-4"} py-3 rounded-xl w-full text-sage-400 hover:bg-red-500/10 hover:text-red-400 transition-all btn-press`}
         >
           <LogOut size={20} className="flex-shrink-0" />
-          {!collapsed && <span className="font-medium text-sm">{pathname.startsWith("/admin") ? "Çıkış Yap" : "Logout"}</span>}
+          {!collapsed && <span className="font-medium text-sm">Çıkış Yap</span>}
         </button>
       </div>
     </>

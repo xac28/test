@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AdminApplicationsTable } from "./admin-applications"
 import { AdminPayouts } from "./admin-payouts"
+import { AdminArticles } from "./admin-articles"
 import { 
   Users, 
   FileText, 
@@ -123,6 +124,7 @@ export function AdminTabs({
     { id: "trials", label: "Deneme Odaları", icon: PlaySquare, badge: trialTeachers?.length, badgeColor: "bg-amber-500" },
     { id: "financials", label: "Finans", icon: DollarSign },
     { id: "payouts", label: "Ödeme Talepleri", icon: Wallet, badge: pendingPayoutCount, badgeColor: "bg-orange-500" },
+    { id: "articles", label: "İçerikler", icon: FileText },
     { id: "rooms", label: "Canlı Oturumlar", icon: Video, badge: (activeRooms?.length || 0) + (activeBookings?.length || 0) },
     { id: "users", label: "Kullanıcılar", icon: Users },
     { id: "reports", label: "Raporlar ve Güvenlik", icon: ShieldAlert, badge: reports?.filter((r:any) => r.status === 'PENDING').length, badgeColor: "bg-red-500" },
@@ -337,6 +339,13 @@ export function AdminTabs({
         {activeTab === "payouts" && (
           <div className="animate-fade-up">
             <AdminPayouts onChange={() => router.refresh()} />
+          </div>
+        )}
+
+        {/* ARTICLES TAB */}
+        {activeTab === "articles" && (
+          <div className="animate-fade-up">
+            <AdminArticles />
           </div>
         )}
 

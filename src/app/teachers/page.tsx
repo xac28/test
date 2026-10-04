@@ -107,80 +107,45 @@ export default function TeachersPage() {
       <LanguagePicker />
       <Navbar />
 
-      <section className="relative bg-sage-900 pt-24 pb-20 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <svg className="absolute left-0 top-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="0.5">
-            <path d="M0,100 C30,60 70,40 100,0 L100,100 Z" fill="currentColor" opacity="0.2"/>
-            <path d="M20,100 C50,50 80,30 100,0 L100,100 Z" fill="currentColor" opacity="0.4"/>
-          </svg>
-        </div>
-        <div className="absolute top-20 right-20 w-64 h-64 bg-sage-500/20 rounded-full blur-3xl" />
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-sage-200 mb-6 border border-white/10">
-            Global Instructors
-          </div>
-          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl text-white mb-4 leading-tight">
-            Find Your <span className="italic text-sage-300">Guide</span>
+      <section className="border-b border-rule">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-16 pb-12">
+          <p className="eyebrow mb-4">{locale === 'tr' ? 'Eğitmenler' : 'Teachers'}</p>
+          <h1 className="font-display font-light text-5xl md:text-7xl leading-[1.0] max-w-4xl">
+            {locale === 'tr' ? 'Size uygun' : 'Find the'} <em className="italic text-clay-500">{locale === 'tr' ? 'eğitmeni bulun.' : 'right guide.'}</em>
           </h1>
-          <p className="text-sage-300 text-lg md:text-xl max-w-2xl font-light">
-            {filtered.length} {t.filters.results} waiting to practice with you.
+          <p className="mt-6 text-lg text-sage-600" data-testid="teacher-count">
+            {filtered.length} {t.filters.results}
           </p>
         </div>
       </section>
 
-      <section className="sticky top-20 z-40 bg-white/80 backdrop-blur-xl border-b border-sage-200/60 shadow-sm py-4">
+      <section className="sticky top-16 z-40 bg-cream border-b border-rule py-4">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="flex flex-wrap items-center gap-4 md:gap-8">
-            {/* Style filter */}
-            <div className="flex items-center gap-3">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-sage-400 hidden md:block">{t.filters.style}</label>
-              <select
-                value={filters.style ?? ''}
-                onChange={(e) => setFilters({ ...filters, style: (e.target.value || null) as YogaStyle | null })}
-                className="bg-white border border-sage-200 hover:border-sage-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-sage-800 focus:outline-none focus:ring-2 focus:ring-sage-500/20 cursor-pointer shadow-sm transition-all"
-              >
-                <option value="">All Styles</option>
-                {YOGA_STYLES.map((s) => (
-                  <option key={s.id} value={s.id}>{s[locale]}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Level filter */}
-            <div className="flex items-center gap-3">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-sage-400 hidden md:block">{t.filters.level}</label>
-              <select
-                value={filters.level ?? ''}
-                onChange={(e) => setFilters({ ...filters, level: (e.target.value || null) as Level | null })}
-                className="bg-white border border-sage-200 hover:border-sage-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-sage-800 focus:outline-none focus:ring-2 focus:ring-sage-500/20 cursor-pointer shadow-sm transition-all"
-              >
-                <option value="">All Levels</option>
-                <option value="beginner">{t.filters.levels.beginner}</option>
-                <option value="intermediate">{t.filters.levels.intermediate}</option>
-                <option value="advanced">{t.filters.levels.advanced}</option>
-              </select>
-            </div>
-
-            {/* Experience filter */}
-            <div className="flex items-center gap-3">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-sage-400 hidden md:block">{t.filters.experience}</label>
-              <select
-                value={filters.exp ?? ''}
-                onChange={(e) => setFilters({ ...filters, exp: (e.target.value || null) as ExperienceBucket | null })}
-                className="bg-white border border-sage-200 hover:border-sage-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-sage-800 focus:outline-none focus:ring-2 focus:ring-sage-500/20 cursor-pointer shadow-sm transition-all"
-              >
-                <option value="">Any Experience</option>
-                <option value="lt2">{t.filters.experiences.lt2}</option>
-                <option value="2to5">{t.filters.experiences['2to5']}</option>
-                <option value="5to10">{t.filters.experiences['5to10']}</option>
-                <option value="10plus">{t.filters.experiences['10plus']}</option>
-              </select>
-            </div>
+            {([
+              [t.filters.style, filters.style ?? '', (v: string) => setFilters({ ...filters, style: (v || null) as YogaStyle | null }),
+                [['', locale === 'tr' ? 'Tüm stiller' : 'All styles'], ...YOGA_STYLES.map((s) => [s.id, s[locale]] as [string, string])]],
+              [t.filters.level, filters.level ?? '', (v: string) => setFilters({ ...filters, level: (v || null) as Level | null }),
+                [['', locale === 'tr' ? 'Tüm seviyeler' : 'All levels'], ['beginner', t.filters.levels.beginner], ['intermediate', t.filters.levels.intermediate], ['advanced', t.filters.levels.advanced]]],
+              [t.filters.experience, filters.exp ?? '', (v: string) => setFilters({ ...filters, exp: (v || null) as ExperienceBucket | null }),
+                [['', locale === 'tr' ? 'Her deneyim' : 'Any experience'], ['lt2', t.filters.experiences.lt2], ['2to5', t.filters.experiences['2to5']], ['5to10', t.filters.experiences['5to10']], ['10plus', t.filters.experiences['10plus']]]],
+            ] as [string, string, (v: string) => void, [string, string][]][]).map(([label, value, onChange, options]) => (
+              <label key={label} className="flex items-center gap-3">
+                <span className="eyebrow hidden md:block">{label}</span>
+                <select
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  className="bg-paper border border-rule hover:border-ink rounded-md px-3 py-2 text-sm font-medium focus:outline-none cursor-pointer"
+                >
+                  {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </label>
+            ))}
 
             {hasActiveFilters && (
               <button
                 onClick={() => setFilters({ style: null, level: null, exp: null })}
-                className="ml-auto text-xs font-bold uppercase tracking-wider text-sage-500 hover:text-sage-900 bg-sage-50 hover:bg-sage-100 px-4 py-2.5 rounded-xl transition-colors"
+                className="ml-auto text-sm font-semibold underline underline-offset-4 hover:text-clay-600"
               >
                 {t.filters.clear}
               </button>
@@ -189,27 +154,14 @@ export default function TeachersPage() {
         </div>
       </section>
 
-      <section className="py-12 bg-cream min-h-[60vh]">
+      <section className="py-14 min-h-[60vh]">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
-          {/* DB teachers section */}
-          {dbTeachers.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                </span>
-                <span className="text-sm font-medium text-sage-600">Verified Teachers</span>
-              </div>
-            </div>
-          )}
-
           {filtered.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-ink/60 font-display text-xl italic">No teachers match your filters.</p>
+            <div className="border border-dashed border-rule py-24 text-center">
+              <p className="font-display text-3xl">{locale === 'tr' ? 'Filtrelerinize uyan eğitmen yok' : 'No teachers match your filters'}</p>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
               {filtered.map((teacher) => (
                 <TeacherCard key={teacher.id} teacher={teacher} />
               ))}

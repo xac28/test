@@ -13,6 +13,7 @@ interface Broadcast {
   startedAt: string
   viewerCount: number
   teacher: { id: string; name: string | null; image: string | null }
+  workshop: { slug: string; title: string } | null
 }
 
 function since(iso: string, now: number) {
@@ -57,15 +58,15 @@ export default function LiveDirectoryPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-[70vh] bg-cream">
+      <main className="min-h-[70vh]">
         <div className="max-w-6xl mx-auto px-6 lg:px-12 py-12">
           <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
             <div>
-              <p className="text-xs font-bold tracking-[0.2em] uppercase text-accent mb-2">Şimdi yayında</p>
-              <h1 className="font-display text-5xl text-ink">Canlı yayınlar</h1>
+              <p className="eyebrow !text-accent mb-3">Şimdi yayında</p>
+              <h1 className="font-display font-light text-5xl md:text-6xl text-ink">Canlı yayınlar</h1>
             </div>
             {isTeacher && (
-              <Link href="/live/studio" className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white px-5 py-2.5 rounded-full text-sm font-semibold">
+              <Link href="/live/studio" className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white px-5 py-2.5 rounded-md text-sm font-semibold">
                 <Video size={16} /> Yayın stüdyosu
               </Link>
             )}
@@ -98,7 +99,7 @@ export default function LiveDirectoryPage() {
               {list.map((b) => (
                 <li key={b.id}>
                   <Link href={`/live/${b.id}`} data-testid="broadcast-card" className="group block">
-                    <div className="relative aspect-video rounded-xl overflow-hidden bg-stage flex items-center justify-center">
+                    <div className="relative aspect-video overflow-hidden bg-stage flex items-center justify-center">
                       {b.teacher.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={b.teacher.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition duration-500" />
@@ -113,7 +114,10 @@ export default function LiveDirectoryPage() {
                       </span>
                     </div>
                     <div className="mt-3">
-                      <h2 className="font-display text-xl text-ink leading-snug group-hover:text-accent transition-colors">{b.title}</h2>
+                      {b.workshop && (
+                        <p className="eyebrow !text-clay-600 mb-1">Atölye · yalnızca kayıtlı katılımcılar</p>
+                      )}
+                      <h2 className="font-display text-xl text-ink leading-snug group-hover:underline underline-offset-4 decoration-1">{b.title}</h2>
                       <p className="text-sm text-ink/70">{b.teacher.name}</p>
                       <p className="text-xs text-ink/50 mt-0.5">{since(b.startedAt, now)}</p>
                     </div>

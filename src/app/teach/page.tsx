@@ -35,7 +35,7 @@ export default async function TeachDashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
         <div className="glass-card p-10 rounded-3xl text-center max-w-md w-full border border-sage-100">
-          <p className="text-sage-600 text-lg mb-6">Teacher profile not found.</p>
+          <p className="text-sage-600 text-lg mb-6">Eğitmen profili bulunamadı.</p>
           <Link href="/become-teacher" className="bg-sage-600 text-white px-8 py-3 rounded-full btn-press inline-block font-medium w-full text-center hover:bg-sage-700 transition">Apply to Teach</Link>
         </div>
       </div>
@@ -108,10 +108,10 @@ export default async function TeachDashboardPage() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div>
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-sage-200 mb-4 border border-white/10">
-              <ShieldCheck size={14} className="text-green-400" /> Instructor Portal
+              <ShieldCheck size={14} className="text-green-400" /> Eğitmen Paneli
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display text-white mb-2 leading-tight">Welcome back,<br/><span className="text-sage-200 italic">{session.user.name || "Teacher"}</span></h1>
-            <p className="text-sage-400 max-w-md">Manage your classes, track earnings, and engage with your students globally.</p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display text-white mb-2 leading-tight">Tekrar hoş geldiniz,<br/><span className="text-sage-200 italic">{session.user.name || "Teacher"}</span></h1>
+            <p className="text-sage-400 max-w-md">Derslerinizi yönetin, kazancınızı takip edin ve öğrencilerinizle buluşun.</p>
           </div>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default async function TeachDashboardPage() {
             </div>
           </div>
           <p className="text-4xl lg:text-5xl font-display text-sage-900 animate-count">${netEarnings.toFixed(2)}</p>
-          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Net Earnings</p>
+          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Net kazanç</p>
         </div>
         <div className="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-sage-200/60 card-hover bg-gradient-to-b from-white to-sage-50/30 group">
           <div className="flex items-center gap-3 mb-6">
@@ -162,7 +162,7 @@ export default async function TeachDashboardPage() {
             </div>
           </div>
           <p className="text-4xl lg:text-5xl font-display text-sage-900 animate-count" style={{ animationDelay: '100ms' }}>{totalCompleted}</p>
-          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Total Sessions</p>
+          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Toplam ders</p>
         </div>
         <div className="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-sage-200/60 card-hover bg-gradient-to-b from-white to-sage-50/30 group">
           <div className="flex items-center gap-3 mb-6">
@@ -171,7 +171,7 @@ export default async function TeachDashboardPage() {
             </div>
           </div>
           <p className="text-4xl lg:text-5xl font-display text-sage-900 animate-count" style={{ animationDelay: '200ms' }}>{uniqueStudents.length}</p>
-          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Students</p>
+          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Öğrenci</p>
         </div>
         <div className="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-sage-200/60 card-hover bg-gradient-to-b from-white to-sage-50/30 group">
           <div className="flex items-center gap-3 mb-6">
@@ -180,7 +180,7 @@ export default async function TeachDashboardPage() {
             </div>
           </div>
           <p className="text-4xl lg:text-5xl font-display text-sage-900 animate-count" style={{ animationDelay: '300ms' }}>{(teacher.commissionRate * 100).toFixed(0)}%</p>
-          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Commission</p>
+          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Komisyon</p>
         </div>
       </div>
 
@@ -192,9 +192,9 @@ export default async function TeachDashboardPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-display text-sage-900 flex items-center gap-3">
-              <Calendar className="text-indigo-500" size={28} /> Upcoming Classes
+              <Calendar className="text-indigo-500" size={28} /> Yaklaşan Dersler
             </h2>
-            <p className="text-sage-500 text-sm mt-1">Your scheduled live sessions with students.</p>
+            <p className="text-sage-500 text-sm mt-1">Öğrencilerinizle planlanmış canlı dersler.</p>
           </div>
         </div>
         {upcomingBookings.length === 0 ? (
@@ -202,7 +202,7 @@ export default async function TeachDashboardPage() {
             <div className="w-20 h-20 bg-sage-100 text-sage-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
               <Calendar size={32} />
             </div>
-            <p className="text-sage-500 text-lg">No upcoming classes. Students can book you through your profile.</p>
+            <p className="text-sage-500 text-lg">Yaklaşan ders yok. Öğrenciler profiliniz üzerinden randevu alabilir.</p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 stagger-children">
@@ -257,7 +257,7 @@ export default async function TeachDashboardPage() {
                             : 'bg-sage-800 text-white hover:bg-sage-900 shadow-md shadow-sage-800/20'
                         }`}
                       >
-                        {isNow ? <><PlayCircle size={18}/> Start Live Class</> : "Open Class Room"}
+                        {isNow ? <><PlayCircle size={18}/> Canlı dersi başlat</> : "Ders odasını aç"}
                       </Link>
                     ) : (
                       <div className="text-center w-full bg-orange-50 text-orange-700 px-4 py-3.5 rounded-xl text-xs font-bold border border-orange-100/50 uppercase tracking-wider flex items-center justify-center gap-2">
@@ -277,7 +277,7 @@ export default async function TeachDashboardPage() {
         <section className="pt-8 border-t border-sage-200/60">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3">
-              <History className="text-sage-500" size={24} /> Recent Sessions
+              <History className="text-sage-500" size={24} /> Son Dersler
             </h2>
           </div>
           <div className="glass-card rounded-3xl shadow-sm border border-sage-200/60 overflow-hidden">

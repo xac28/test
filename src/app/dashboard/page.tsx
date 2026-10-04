@@ -64,10 +64,10 @@ export default async function DashboardPage() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div>
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-sage-200 mb-4 border border-white/10">
-              <Sparkles size={14} className="text-amber-400" /> Student Dashboard
+              <Sparkles size={14} className="text-amber-400" /> Öğrenci Paneli
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display text-white mb-2 leading-tight">Welcome back,<br/><span className="text-sage-200 italic">{session.user.name || "Student"}</span></h1>
-            <p className="text-sage-400 max-w-md">Your personalized space to track your progress, manage bookings, and continue your journey.</p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display text-white mb-2 leading-tight">Tekrar hoş geldiniz,<br/><span className="text-sage-200 italic">{session.user.name || "Student"}</span></h1>
+            <p className="text-sage-400 max-w-md">İlerlemenizi takip edin, derslerinizi yönetin ve yolculuğunuza devam edin.</p>
           </div>
           
           <div className="flex items-center gap-4 sm:gap-6 bg-white/5 backdrop-blur-xl p-4 rounded-3xl border border-white/10">
@@ -76,7 +76,7 @@ export default async function DashboardPage() {
                 <Flame size={24} />
               </div>
               <p className="text-2xl font-display text-white animate-count">{user?.currentStreak || 0}</p>
-              <p className="text-[10px] text-sage-400 uppercase tracking-widest font-bold">Day Streak</p>
+              <p className="text-[10px] text-sage-400 uppercase tracking-widest font-bold">Günlük seri</p>
             </div>
             <div className="w-px h-16 bg-white/10"></div>
             <div className="text-center px-4">
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
                 <Trophy size={24} />
               </div>
               <p className="text-2xl font-display text-white animate-count" style={{ animationDelay: '100ms' }}>{user?.points || 0}</p>
-              <p className="text-[10px] text-sage-400 uppercase tracking-widest font-bold">Points</p>
+              <p className="text-[10px] text-sage-400 uppercase tracking-widest font-bold">Puan</p>
             </div>
             <div className="w-px h-16 bg-white/10 hidden sm:block"></div>
             <div className="text-center px-4 hidden sm:block">
@@ -92,7 +92,7 @@ export default async function DashboardPage() {
                 <PlayCircle size={24} />
               </div>
               <p className="text-2xl font-display text-white animate-count" style={{ animationDelay: '200ms' }}>{totalSessions}</p>
-              <p className="text-[10px] text-sage-400 uppercase tracking-widest font-bold">Sessions</p>
+              <p className="text-[10px] text-sage-400 uppercase tracking-widest font-bold">Ders</p>
             </div>
           </div>
         </div>
@@ -106,9 +106,9 @@ export default async function DashboardPage() {
         <div className="relative z-10 flex items-center justify-between mb-8">
           <div>
             <h2 className="font-display text-3xl text-sage-900 flex items-center gap-3">
-              <Award className="text-amber-500" size={28} /> Achievement Badges
+              <Award className="text-amber-500" size={28} /> Başarı Rozetleri
             </h2>
-            <p className="text-sage-500 text-sm mt-1">Unlock badges by maintaining streaks and completing sessions.</p>
+            <p className="text-sage-500 text-sm mt-1">Seri tutarak ve ders tamamlayarak rozetlerin kilidini açın.</p>
           </div>
         </div>
         <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -141,9 +141,9 @@ export default async function DashboardPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-display text-sage-900 flex items-center gap-3">
-              <Calendar className="text-indigo-500" size={28} /> Upcoming Practices
+              <Calendar className="text-indigo-500" size={28} /> Yaklaşan Dersler
             </h2>
-            <p className="text-sage-500 text-sm mt-1">Your scheduled live 1-on-1 sessions.</p>
+            <p className="text-sage-500 text-sm mt-1">Planlanmış birebir canlı dersleriniz.</p>
           </div>
           <Link href="/teachers" className="hidden sm:flex bg-white border border-sage-200 text-sage-700 hover:text-sage-900 hover:border-sage-300 px-5 py-2.5 rounded-xl text-sm font-bold items-center gap-2 transition-all shadow-sm btn-press">
             Find More Teachers <ArrowRight size={16} />
@@ -155,7 +155,7 @@ export default async function DashboardPage() {
             <div className="w-20 h-20 bg-sage-100 text-sage-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
               <Zap size={32} />
             </div>
-            <h3 className="text-2xl font-display text-sage-900 mb-2">Your mat is waiting.</h3>
+            <h3 className="text-2xl font-display text-sage-900 mb-2">Matınız sizi bekliyor.</h3>
             <p className="text-sage-500 mb-8 max-w-sm mx-auto">Book your first session with a certified teacher to start your personalized journey.</p>
             <Link href="/teachers" className="inline-flex items-center gap-2 bg-sage-900 text-white px-8 py-3.5 rounded-xl hover:bg-sage-800 transition-all font-bold shadow-lg shadow-sage-900/20 btn-press">
               Browse Teachers <ArrowRight size={18} />
@@ -183,7 +183,7 @@ export default async function DashboardPage() {
                       </div>
                       <div>
                         <h3 className="font-bold text-sage-900 text-lg group-hover:text-sage-700 transition-colors">{booking.teacher.user.name}</h3>
-                        <p className="text-xs font-bold uppercase tracking-widest text-sage-500 mt-0.5">Yoga Practice</p>
+                        <p className="text-xs font-bold uppercase tracking-widest text-sage-500 mt-0.5">Yoga dersi</p>
                       </div>
                     </div>
                     {isNow && (
@@ -214,7 +214,7 @@ export default async function DashboardPage() {
                             : 'bg-sage-800 text-white hover:bg-sage-900 shadow-md shadow-sage-800/20'
                         }`}
                       >
-                        {isNow ? <><PlayCircle size={18}/> Join Live Practice</> : "Enter Waiting Room"}
+                        {isNow ? <><PlayCircle size={18}/> Canlı derse katıl</> : "Bekleme odasına gir"}
                       </Link>
                     ) : (
                       <div className="text-center w-full bg-orange-50 text-orange-700 px-4 py-3.5 rounded-xl text-xs font-bold border border-orange-100/50 uppercase tracking-wider flex items-center justify-center gap-2">

@@ -21,7 +21,7 @@ export default function PrivacyPage() {
             <p>We use the information we collect to operate our platform, process transactions, verify teacher credentials, provide customer support, and communicate with you about your account.</p>
 
             <h2 className="text-2xl font-display text-sage-800 mt-8 mb-4">3. Camera and Microphone Data</h2>
-            <p>During live sessions, audio and video data is processed in real-time through our secure LiveKit servers. We do not record or store your private sessions without explicit consent from all parties.</p>
+            <p>During live sessions, audio and video data is processed in real-time through our secure LiveKit servers. We do not record lessons on our own. A teacher may start an official recording during a lesson; everyone in the room is shown a notice while it runs. Recordings are stored privately, can be downloaded only by that lesson's teacher and student, and are permanently deleted after 30 days.</p>
 
             <h2 className="text-2xl font-display text-sage-800 mt-8 mb-4">4. Third-Party Services</h2>
             <p>We use third-party services like Stripe for payment processing and Google for authentication. These services have their own privacy policies.</p>

@@ -30,11 +30,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   ]
 
   const adminLinks = [
-    { name: "Overview", href: "/admin?tab=overview", icon: Activity },
-    { name: "Applications", href: "/admin?tab=applications", icon: FileText },
-    { name: "Live Rooms", href: "/admin?tab=rooms", icon: Video },
-    { name: "Users", href: "/admin?tab=users", icon: Users },
-    { name: "Security & Logs", href: "/admin?tab=reports", icon: ShieldAlert },
+    { name: "Genel Bakış", href: "/admin?tab=overview", icon: Activity },
+    { name: "Başvurular", href: "/admin?tab=applications", icon: FileText },
+    { name: "Ödeme Talepleri", href: "/admin?tab=payouts", icon: CreditCard },
+    { name: "Canlı Odalar", href: "/admin?tab=rooms", icon: Video },
+    { name: "Kullanıcılar", href: "/admin?tab=users", icon: Users },
+    { name: "Güvenlik ve Kayıtlar", href: "/admin?tab=reports", icon: ShieldAlert },
   ]
 
   let links = studentLinks
@@ -50,7 +51,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               NAMASTE
             </Link>
             <p className="text-sage-500 text-xs font-medium tracking-widest uppercase mt-1">
-              {pathname.startsWith("/admin") ? "Admin Panel" : pathname.startsWith("/teach") ? "Teacher Portal" : "Student Hub"}
+              {pathname.startsWith("/admin") ? "Yönetim Paneli" : pathname.startsWith("/teach") ? "Teacher Portal" : "Student Hub"}
             </p>
           </div>
         )}
@@ -100,11 +101,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
         <button 
           onClick={() => signOut({ callbackUrl: '/' })}
-          title={collapsed ? "Logout" : undefined}
+          title={collapsed ? "Çıkış" : undefined}
           className={`flex items-center gap-3 ${collapsed ? "justify-center px-3" : "px-4"} py-3 rounded-xl w-full text-sage-400 hover:bg-red-500/10 hover:text-red-400 transition-all btn-press`}
         >
           <LogOut size={20} className="flex-shrink-0" />
-          {!collapsed && <span className="font-medium text-sm">Logout</span>}
+          {!collapsed && <span className="font-medium text-sm">{pathname.startsWith("/admin") ? "Çıkış Yap" : "Logout"}</span>}
         </button>
       </div>
     </>

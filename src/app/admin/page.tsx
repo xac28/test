@@ -88,6 +88,8 @@ export default async function AdminDashboardPage() {
     take: 50,
   })
 
+  const pendingPayoutCount = await db.payoutRequest.count({ where: { status: "PENDING" } })
+
   const trialTeachers = await db.teacher.findMany({
     where: { isTrialMode: true },
     include: { user: true },
@@ -102,21 +104,21 @@ export default async function AdminDashboardPage() {
           <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 22h20L12 2z"/></svg>
         </div>
         <div className="relative z-10">
-          <p className="text-sage-300 text-sm font-bold tracking-widest uppercase mb-2">Control Center</p>
-          <h1 className="text-4xl font-display text-white mb-2">Admin Dashboard</h1>
-          <p className="text-sage-400 max-w-lg">Manage platform users, review teacher applications, monitor live rooms, and oversee financial operations in real-time.</p>
+          <p className="text-sage-300 text-sm font-bold tracking-widest uppercase mb-2">Yönetim Merkezi</p>
+          <h1 className="text-4xl font-display text-white mb-2">Yönetim Paneli</h1>
+          <p className="text-sage-400 max-w-lg">Kullanıcıları yönetin, öğretmen başvurularını inceleyin, canlı odaları izleyin ve ödeme taleplerini anlık olarak onaylayın.</p>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 stagger-children">
         {[
-          { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-          { label: "Teachers", value: stats.totalTeachers, icon: BookOpen, color: "text-indigo-500", bg: "bg-indigo-500/10" },
-          { label: "Trial Rooms", value: trialTeachers.length, icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10", alert: trialTeachers.length > 0 },
-          { label: "Bookings", value: stats.totalBookings, icon: Calendar, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-          { label: "Pending Apps", value: stats.pendingApps, icon: FileText, color: "text-orange-500", bg: "bg-orange-500/10", alert: stats.pendingApps > 0 },
-          { label: "Live Rooms", value: stats.activeLiveRooms, icon: Video, color: "text-red-500", bg: "bg-red-500/10", alert: stats.activeLiveRooms > 0 },
+          { label: "Kullanıcı", value: stats.totalUsers, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+          { label: "Öğretmen", value: stats.totalTeachers, icon: BookOpen, color: "text-indigo-500", bg: "bg-indigo-500/10" },
+          { label: "Deneme Odası", value: trialTeachers.length, icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10", alert: trialTeachers.length > 0 },
+          { label: "Rezervasyon", value: stats.totalBookings, icon: Calendar, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          { label: "Bekleyen Başvuru", value: stats.pendingApps, icon: FileText, color: "text-orange-500", bg: "bg-orange-500/10", alert: stats.pendingApps > 0 },
+          { label: "Canlı Oda", value: stats.activeLiveRooms, icon: Video, color: "text-red-500", bg: "bg-red-500/10", alert: stats.activeLiveRooms > 0 },
         ].map((stat, i) => {
           const Icon = stat.icon
           return (
@@ -143,6 +145,7 @@ export default async function AdminDashboardPage() {
           reports={JSON.parse(JSON.stringify(reports))}
           logs={JSON.parse(JSON.stringify(logs))}
           trialTeachers={JSON.parse(JSON.stringify(trialTeachers))}
+          pendingPayoutCount={pendingPayoutCount}
         />
       </div>
     </div>

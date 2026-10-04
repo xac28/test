@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AdminApplicationsTable } from "./admin-applications"
+import { AdminPayouts } from "./admin-payouts"
 import { 
   Users, 
   FileText, 
@@ -18,7 +19,8 @@ import {
   TrendingUp,
   Search,
   Filter,
-  Calendar
+  Calendar,
+  Wallet
 } from "lucide-react"
 
 export function AdminTabs({ 
@@ -30,13 +32,15 @@ export function AdminTabs({
   financials,
   reports,
   logs,
-  trialTeachers
+  trialTeachers,
+  pendingPayoutCount
 }: any) {
   const router = useRouter()
   const searchParams = useSearchParams()
   
   // Set initial tab from URL if present
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || "overview")
+  const [userQuery, setUserQuery] = useState("")
 
   // Update URL when tab changes
   useEffect(() => {
@@ -46,7 +50,7 @@ export function AdminTabs({
   }, [activeTab, searchParams])
 
   const handleBanUser = async (id: string) => {
-    if (!confirm("Are you sure you want to ban this user? This will lock their account and block their IPs.")) return
+    if (!confirm("Bu kullanıcıyı yasaklamak istediğinize emin misiniz? Hesabı kilitlenir ve IP adresleri engellenir.")) return
     
     try {
       const res = await fetch(`/api/admin/users/${id}/ban`, { 
@@ -55,72 +59,73 @@ export function AdminTabs({
         headers: { "Content-Type": "application/json" }
       })
       if (res.ok) {
-        alert("User banned successfully")
+        alert("Kullanıcı yasaklandı")
         router.refresh()
       } else {
-        alert("Failed to ban user")
+        alert("Kullanıcı yasaklanamadı")
       }
     } catch {
-      alert("Network error")
+      alert("Ağ hatası")
     }
   }
 
   const handleUnbanUser = async (id: string) => {
-    if (!confirm("Are you sure you want to unban this user?")) return
+    if (!confirm("Bu kullanıcının yasağını kaldırmak istediğinize emin misiniz?")) return
     
     try {
       const res = await fetch(`/api/admin/users/${id}/ban`, { method: "DELETE" })
       if (res.ok) {
-        alert("User unbanned successfully")
+        alert("Yasak kaldırıldı")
         router.refresh()
       } else {
-        alert("Failed to unban user")
+        alert("Yasak kaldırılamadı")
       }
     } catch {
-      alert("Network error")
+      alert("Ağ hatası")
     }
   }
 
   const handleCloseRoom = async (id: string) => {
-    if (!confirm("Are you sure you want to forcefully close this live room?")) return
+    if (!confirm("Bu canlı odayı zorla kapatmak istediğinize emin misiniz?")) return
     
     try {
       const res = await fetch(`/api/admin/live-rooms/${id}/close`, { method: "POST" })
       if (res.ok) {
-        alert("Room closed successfully")
+        alert("Oda kapatıldı")
         router.refresh()
       } else {
-        alert("Failed to close room")
+        alert("Oda kapatılamadı")
       }
     } catch {
-      alert("Network error")
+      alert("Ağ hatası")
     }
   }
 
   const handleApproveTrial = async (teacherId: string) => {
-    if (!confirm("Approve this teacher's trial session and make their profile public?")) return
+    if (!confirm("Bu öğretmenin deneme oturumunu onaylayıp profilini herkese açmak istiyor musunuz?")) return
     
     try {
       const res = await fetch(`/api/admin/teachers/${teacherId}/approve-trial`, { method: "POST" })
       if (res.ok) {
-        alert("Teacher approved successfully!")
+        alert("Öğretmen onaylandı!")
         router.refresh()
       } else {
-        alert("Approval failed.")
+        alert("Onay işlemi başarısız oldu.")
       }
     } catch {
-      alert("Network error.")
+      alert("Ağ hatası.")
     }
   }
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: Activity },
-    { id: "applications", label: "Applications", icon: FileText, badge: pendingApplications?.length },
-    { id: "trials", label: "Trial Rooms", icon: PlaySquare, badge: trialTeachers?.length, badgeColor: "bg-amber-500" },
-    { id: "financials", label: "Financials", icon: DollarSign },
-    { id: "rooms", label: "Live Sessions", icon: Video, badge: (activeRooms?.length || 0) + (activeBookings?.length || 0) },
-    { id: "users", label: "Users", icon: Users },
-    { id: "reports", label: "Reports & Security", icon: ShieldAlert, badge: reports?.filter((r:any) => r.status === 'PENDING').length, badgeColor: "bg-red-500" },
+    { id: "overview", label: "Genel Bakış", icon: Activity },
+    { id: "applications", label: "Başvurular", icon: FileText, badge: pendingApplications?.length },
+    { id: "trials", label: "Deneme Odaları", icon: PlaySquare, badge: trialTeachers?.length, badgeColor: "bg-amber-500" },
+    { id: "financials", label: "Finans", icon: DollarSign },
+    { id: "payouts", label: "Ödeme Talepleri", icon: Wallet, badge: pendingPayoutCount, badgeColor: "bg-orange-500" },
+    { id: "rooms", label: "Canlı Oturumlar", icon: Video, badge: (activeRooms?.length || 0) + (activeBookings?.length || 0) },
+    { id: "users", label: "Kullanıcılar", icon: Users },
+    { id: "reports", label: "Raporlar ve Güvenlik", icon: ShieldAlert, badge: reports?.filter((r:any) => r.status === 'PENDING').length, badgeColor: "bg-red-500" },
   ]
 
   return (
@@ -163,8 +168,8 @@ export function AdminTabs({
             <div className="w-24 h-24 bg-sage-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
               <TrendingUp size={40} className="text-sage-400" />
             </div>
-            <h3 className="text-2xl font-display text-sage-800 mb-2">Welcome to Admin Control Center</h3>
-            <p className="text-sage-500 max-w-md">Select a tab above to manage applications, monitor live rooms, or review platform security and financials.</p>
+            <h3 className="text-2xl font-display text-sage-800 mb-2">AYA Yönetim Merkezine Hoş Geldiniz</h3>
+            <p className="text-sage-500 max-w-md">Başvuruları yönetmek, canlı odaları izlemek, ödeme taleplerini onaylamak veya platform güvenliğini incelemek için yukarıdan bir sekme seçin.</p>
           </div>
         )}
 
@@ -174,17 +179,17 @@ export function AdminTabs({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3">
-                  <FileText className="text-sage-500" /> Pending Applications
+                  <FileText className="text-sage-500" /> Bekleyen Başvurular
                 </h2>
-                <p className="text-sm text-sage-500 mt-1">Review and approve new teacher applications.</p>
+                <p className="text-sm text-sage-500 mt-1">Yeni öğretmen başvurularını inceleyin ve onaylayın.</p>
               </div>
             </div>
 
             {pendingApplications.length === 0 ? (
               <div className="glass-card p-12 rounded-3xl border border-dashed border-sage-300 text-center bg-sage-50/30">
                 <BadgeCheck size={48} className="mx-auto text-sage-300 mb-4" />
-                <h3 className="text-lg font-medium text-sage-800 mb-1">All caught up!</h3>
-                <p className="text-sage-500">There are no pending applications right now.</p>
+                <h3 className="text-lg font-medium text-sage-800 mb-1">Hepsi tamam!</h3>
+                <p className="text-sage-500">Şu anda bekleyen başvuru yok.</p>
               </div>
             ) : (
               <div className="glass-card rounded-3xl border border-sage-200/60 shadow-sm overflow-hidden">
@@ -195,7 +200,7 @@ export function AdminTabs({
             {recentActions.length > 0 && (
               <section className="pt-8">
                 <h3 className="text-xl font-display text-sage-800 mb-4 flex items-center gap-2">
-                  <History size={20} className="text-sage-400" /> Recent Decisions
+                  <History size={20} className="text-sage-400" /> Son Kararlar
                 </h3>
                 <div className="glass-card rounded-2xl border border-sage-200/60 overflow-hidden shadow-sm">
                   <div className="grid grid-cols-1 divide-y divide-sage-100/50">
@@ -213,7 +218,7 @@ export function AdminTabs({
                             ? "bg-green-100/80 text-green-700 border border-green-200" 
                             : "bg-red-100/80 text-red-700 border border-red-200"
                         }`}>
-                          {app.status}
+                          {app.status === "APPROVED" ? "ONAYLANDI" : "REDDEDİLDİ"}
                         </span>
                       </div>
                     ))}
@@ -229,30 +234,30 @@ export function AdminTabs({
           <div className="space-y-6 animate-fade-up">
             <div>
               <h2 className="text-2xl font-display text-amber-900 flex items-center gap-3">
-                <PlaySquare className="text-amber-500" /> Pending Trial Sessions
+                <PlaySquare className="text-amber-500" /> Bekleyen Deneme Oturumları
               </h2>
-              <p className="text-sm text-amber-700/70 mt-1">Teachers in trial mode awaiting live evaluation.</p>
+              <p className="text-sm text-amber-700/70 mt-1">Canlı değerlendirme bekleyen deneme modundaki öğretmenler.</p>
             </div>
 
             <div className="bg-amber-50/80 backdrop-blur-sm border border-amber-200/60 p-4 rounded-2xl flex gap-3 text-sm text-amber-800 shadow-sm">
               <AlertTriangle className="flex-shrink-0 text-amber-600 mt-0.5" size={18} />
-              <p>These teachers have been approved on paper but must complete a 5-minute live trial session before they can publish classes. Join their room to evaluate them.</p>
+              <p>Bu öğretmenler evrak olarak onaylandı ancak ders yayınlamadan önce 5 dakikalık canlı bir deneme oturumu tamamlamalıdır. Değerlendirmek için odalarına katılın.</p>
             </div>
 
             {trialTeachers?.length === 0 ? (
               <div className="glass-card p-12 rounded-3xl border border-dashed border-sage-300 text-center">
                 <PlaySquare size={48} className="mx-auto text-sage-300 mb-4 opacity-50" />
-                <p className="text-sage-600 text-lg font-medium">No pending trial sessions.</p>
+                <p className="text-sage-600 text-lg font-medium">Bekleyen deneme oturumu yok.</p>
               </div>
             ) : (
               <div className="glass-card rounded-3xl shadow-sm border border-sage-200/60 overflow-hidden">
                 <table className="w-full text-left">
                   <thead className="bg-sage-50/80 border-b border-sage-200/60 text-xs uppercase tracking-wider text-sage-500 font-semibold">
                     <tr>
-                      <th className="px-6 py-4">Teacher</th>
-                      <th className="px-6 py-4">Specialties</th>
-                      <th className="px-6 py-4">Approved At</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4">Öğretmen</th>
+                      <th className="px-6 py-4">Uzmanlıklar</th>
+                      <th className="px-6 py-4">Kayıt Tarihi</th>
+                      <th className="px-6 py-4 text-right">İşlemler</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-sage-100/50">
@@ -266,22 +271,22 @@ export function AdminTabs({
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-sage-600 max-w-xs truncate">
-                          {teacher.specialties || "General Yoga"}
+                          {teacher.specialties || "Genel Yoga"}
                         </td>
-                        <td className="px-6 py-4 text-xs text-sage-500 font-medium">{new Date(teacher.user.createdAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-xs text-sage-500 font-medium">{new Date(teacher.user.createdAt).toLocaleDateString("tr-TR")}</td>
                         <td className="px-6 py-4 flex items-center justify-end gap-2">
                           <a 
                             href={`/room/trial-${teacher.id}`} 
                             target="_blank"
                             className="px-4 py-2 bg-sage-100 hover:bg-sage-200 text-sage-800 text-sm font-medium rounded-xl transition-all btn-press shadow-sm flex items-center gap-2"
                           >
-                            <Video size={14} /> Join Room
+                            <Video size={14} /> Odaya Katıl
                           </a>
                           <button 
                             onClick={() => handleApproveTrial(teacher.id)}
                             className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-all btn-press shadow-md shadow-amber-500/20 flex items-center gap-2"
                           >
-                            <BadgeCheck size={14} /> Approve
+                            <BadgeCheck size={14} /> Onayla
                           </button>
                         </td>
                       </tr>
@@ -297,34 +302,41 @@ export function AdminTabs({
         {activeTab === "financials" && (
           <div className="space-y-6 animate-fade-up">
             <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3 mb-6">
-              <DollarSign className="text-green-600" /> Platform Financials
+              <DollarSign className="text-green-600" /> Platform Finansı
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="glass-card p-6 rounded-3xl border border-sage-200/60 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
                   <Activity size={80} />
                 </div>
-                <p className="text-xs text-sage-500 font-bold mb-1 uppercase tracking-wider">Total Volume</p>
+                <p className="text-xs text-sage-500 font-bold mb-1 uppercase tracking-wider">Toplam Hacim</p>
                 <p className="text-4xl font-display text-sage-900">${financials.totalVolume.toFixed(2)}</p>
-                <p className="text-xs text-sage-400 mt-2 flex items-center gap-1"><TrendingUp size={12}/> Lifetime gross</p>
+                <p className="text-xs text-sage-400 mt-2 flex items-center gap-1"><TrendingUp size={12}/> Toplam brüt ciro</p>
               </div>
               <div className="glass-card bg-gradient-to-br from-green-50 to-emerald-50/50 p-6 rounded-3xl border border-green-200/60 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 text-green-700 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
                   <DollarSign size={80} />
                 </div>
-                <p className="text-xs text-green-700 font-bold mb-1 uppercase tracking-wider">Platform Revenue</p>
+                <p className="text-xs text-green-700 font-bold mb-1 uppercase tracking-wider">Platform Geliri</p>
                 <p className="text-4xl font-display text-green-900">${financials.platformRevenue.toFixed(2)}</p>
-                <p className="text-xs text-green-600/70 mt-2 flex items-center gap-1"><BadgeCheck size={12}/> Commission earned</p>
+                <p className="text-xs text-green-600/70 mt-2 flex items-center gap-1"><BadgeCheck size={12}/> Kazanılan komisyon</p>
               </div>
               <div className="glass-card bg-gradient-to-br from-orange-50 to-amber-50/50 p-6 rounded-3xl border border-orange-200/60 shadow-sm relative overflow-hidden group">
                  <div className="absolute top-0 right-0 p-4 opacity-10 text-orange-700 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
                   <AlertTriangle size={80} />
                 </div>
-                <p className="text-xs text-orange-700 font-bold mb-1 uppercase tracking-wider">Pending Payouts</p>
+                <p className="text-xs text-orange-700 font-bold mb-1 uppercase tracking-wider">Bekleyen Hakedişler</p>
                 <p className="text-4xl font-display text-orange-900">${financials.pendingPayouts.toFixed(2)}</p>
-                <p className="text-xs text-orange-600/80 mt-2 font-medium">Requires manual transfer</p>
+                <p className="text-xs text-orange-600/80 mt-2 font-medium">Manuel transfer gerekir</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* PAYOUT REQUESTS TAB */}
+        {activeTab === "payouts" && (
+          <div className="animate-fade-up">
+            <AdminPayouts onChange={() => router.refresh()} />
           </div>
         )}
 
@@ -333,19 +345,19 @@ export function AdminTabs({
           <div className="space-y-8 animate-fade-up">
             <div>
               <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3">
-                <Video className="text-indigo-500" /> Live Platform Activity
+                <Video className="text-indigo-500" /> Canlı Platform Etkinliği
               </h2>
-              <p className="text-sm text-sage-500 mt-1">Monitor all active sessions across the platform.</p>
+              <p className="text-sm text-sage-500 mt-1">Platformdaki tüm aktif oturumları izleyin.</p>
             </div>
 
             {/* Scheduled Sessions (Bookings) */}
             <section className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-sage-400 flex items-center gap-2">
-                <Calendar size={14} /> Scheduled Practices
+                <Calendar size={14} /> Planlı Dersler
               </h3>
               {activeBookings?.length === 0 ? (
                 <div className="glass-card p-8 rounded-2xl border border-dashed border-sage-200 text-center">
-                  <p className="text-xs text-sage-400">No scheduled sessions are live right now.</p>
+                  <p className="text-xs text-sage-400">Şu anda canlı planlı ders yok.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -358,11 +370,11 @@ export function AdminTabs({
                            </div>
                            <div>
                               <p className="text-sm font-bold text-sage-900">{booking.teacher.user.name} ↔ {booking.student.name}</p>
-                              <p className="text-[10px] text-sage-500 font-medium">Room: {booking.dailyRoomName || "N/A"}</p>
+                              <p className="text-[10px] text-sage-500 font-medium">Oda: {booking.dailyRoomName || "Yok"}</p>
                            </div>
                         </div>
                         <span className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-widest border border-green-200/50 uppercase">
-                          <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" /> Booked
+                          <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" /> Rezerve
                         </span>
                       </div>
                       <div className="flex items-center gap-2 pt-3 border-t border-sage-100">
@@ -371,7 +383,7 @@ export function AdminTabs({
                           target="_blank" 
                           className="flex-1 text-center py-2 bg-sage-800 hover:bg-sage-900 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-colors"
                         >
-                          Spectate
+                          İzle
                         </a>
                       </div>
                     </div>
@@ -383,11 +395,11 @@ export function AdminTabs({
             {/* Instant Rooms */}
             <section className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-sage-400 flex items-center gap-2">
-                <PlaySquare size={14} /> Instant Live Rooms
+                <PlaySquare size={14} /> Anlık Canlı Odalar
               </h3>
               {activeRooms.length === 0 ? (
                 <div className="glass-card p-8 rounded-2xl border border-dashed border-sage-200 text-center">
-                  <p className="text-xs text-sage-400">No instant rooms are active.</p>
+                  <p className="text-xs text-sage-400">Aktif anlık oda yok.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -399,18 +411,18 @@ export function AdminTabs({
                             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                             <p className="font-bold text-sage-900 text-sm uppercase tracking-wide">{room.roomName}</p>
                           </div>
-                          <p className="text-[10px] text-sage-500 font-medium">Teacher ID: {room.teacherId.substring(0,8)}...</p>
+                          <p className="text-[10px] text-sage-500 font-medium">Öğretmen No: {room.teacherId.substring(0,8)}...</p>
                         </div>
                         <span className="flex items-center gap-1.5 bg-red-50 text-red-700 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-widest border border-red-200/50 uppercase">
-                          Instant
+                          Anlık
                         </span>
                       </div>
                       <div className="flex items-center gap-2 pt-3 border-t border-sage-100">
                         <a href={`/dashboard/room/${room.roomName}`} target="_blank" className="flex-1 text-center py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-colors">
-                          Spectate
+                          İzle
                         </a>
                         <button onClick={() => handleCloseRoom(room.id)} className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-colors">
-                          Close
+                          Kapat
                         </button>
                       </div>
                     </div>
@@ -426,11 +438,11 @@ export function AdminTabs({
           <div className="space-y-6 animate-fade-up">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3">
-                <Users className="text-sage-600" /> User Management
+                <Users className="text-sage-600" /> Kullanıcı Yönetimi
               </h2>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sage-400" size={16} />
-                <input type="text" placeholder="Search users..." className="pl-9 pr-4 py-2 bg-white border border-sage-200 rounded-full text-sm focus:outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-400 transition-all w-64" />
+                <input type="text" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} data-testid="admin-user-search" placeholder="Kullanıcı ara..." className="pl-9 pr-4 py-2 bg-white border border-sage-200 rounded-full text-sm focus:outline-none focus:border-sage-400 focus:ring-1 focus:ring-sage-400 transition-all w-64" />
               </div>
             </div>
 
@@ -439,15 +451,15 @@ export function AdminTabs({
                 <table className="w-full text-left whitespace-nowrap">
                   <thead className="bg-sage-50/80 border-b border-sage-200/60 text-xs uppercase tracking-wider text-sage-500 font-semibold">
                     <tr>
-                      <th className="px-6 py-4">User</th>
-                      <th className="px-6 py-4">Role</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Joined</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4">Kullanıcı</th>
+                      <th className="px-6 py-4">Rol</th>
+                      <th className="px-6 py-4">Durum</th>
+                      <th className="px-6 py-4">Katılım</th>
+                      <th className="px-6 py-4 text-right">İşlemler</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-sage-100/50">
-                    {users.map((user: any) => (
+                    {users.filter((u: any) => !userQuery.trim() || `${u.name ?? ""} ${u.email ?? ""}`.toLowerCase().includes(userQuery.trim().toLowerCase())).map((user: any) => (
                       <tr key={user.id} className="hover:bg-sage-50/30 transition-colors">
                         <td className="px-6 py-4 flex items-center gap-3">
                           <div className="relative">
@@ -471,24 +483,24 @@ export function AdminTabs({
                         <td className="px-6 py-4">
                            {user.banned ? (
                              <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-100">
-                               <Ban size={12}/> Banned
+                               <Ban size={12}/> Yasaklı
                              </span>
                            ) : (
                              <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-100">
-                               <BadgeCheck size={12}/> Active
+                               <BadgeCheck size={12}/> Aktif
                              </span>
                            )}
                         </td>
-                        <td className="px-6 py-4 text-xs text-sage-500 font-medium">{new Date(user.createdAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-xs text-sage-500 font-medium">{new Date(user.createdAt).toLocaleDateString("tr-TR")}</td>
                         <td className="px-6 py-4 text-right">
                           {user.role !== 'ADMIN' && (
                             user.banned ? (
                               <button onClick={() => handleUnbanUser(user.id)} className="px-3 py-1.5 bg-sage-100 hover:bg-sage-200 text-sage-700 text-xs font-bold rounded-lg transition-colors btn-press">
-                                Lift Ban
+                                Yasağı Kaldır
                               </button>
                             ) : (
                               <button onClick={() => handleBanUser(user.id)} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors btn-press">
-                                Ban IP & User
+                                Kullanıcıyı ve IP'yi Yasakla
                               </button>
                             )
                           )}
@@ -507,11 +519,11 @@ export function AdminTabs({
           <div className="space-y-8 animate-fade-up">
             <section>
               <h2 className="text-2xl font-display text-red-900 flex items-center gap-3 mb-6">
-                <ShieldAlert className="text-red-600" /> Platform Reports
+                <ShieldAlert className="text-red-600" /> Platform Raporları
               </h2>
               {reports?.length === 0 ? (
                 <div className="glass-card p-8 rounded-3xl border border-dashed border-sage-300 text-center">
-                  <p className="text-sage-500 font-medium">No user reports pending.</p>
+                  <p className="text-sage-500 font-medium">Bekleyen kullanıcı raporu yok.</p>
                 </div>
               ) : (
                 <div className="glass-card rounded-3xl shadow-sm border border-sage-200/60 overflow-hidden">
@@ -519,25 +531,25 @@ export function AdminTabs({
                     <table className="w-full text-left">
                       <thead className="bg-sage-50/80 border-b border-sage-200/60 text-xs uppercase tracking-wider text-sage-500 font-semibold">
                         <tr>
-                          <th className="px-6 py-4">Reporter</th>
-                          <th className="px-6 py-4">Target</th>
-                          <th className="px-6 py-4">Reason</th>
-                          <th className="px-6 py-4">Date</th>
-                          <th className="px-6 py-4">Status</th>
+                          <th className="px-6 py-4">Raporlayan</th>
+                          <th className="px-6 py-4">Hedef</th>
+                          <th className="px-6 py-4">Sebep</th>
+                          <th className="px-6 py-4">Tarih</th>
+                          <th className="px-6 py-4">Durum</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-sage-100/50">
                         {reports?.map((report: any) => (
                           <tr key={report.id} className="hover:bg-red-50/30 transition-colors">
-                            <td className="px-6 py-4 text-sm font-semibold text-sage-900">{report.reporter?.name || "Unknown"}</td>
+                            <td className="px-6 py-4 text-sm font-semibold text-sage-900">{report.reporter?.name || "Bilinmiyor"}</td>
                             <td className="px-6 py-4 text-xs font-mono text-sage-600">{report.bookingId || "Platform"}</td>
                             <td className="px-6 py-4 text-sm text-sage-700 max-w-xs truncate" title={report.reason}>{report.reason}</td>
-                            <td className="px-6 py-4 text-xs text-sage-500 font-medium">{new Date(report.createdAt).toLocaleString()}</td>
+                            <td className="px-6 py-4 text-xs text-sage-500 font-medium">{new Date(report.createdAt).toLocaleString("tr-TR")}</td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${
                                 report.status === 'PENDING' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-green-100 text-green-700 border border-green-200'
                               }`}>
-                                {report.status}
+                                {report.status === "PENDING" ? "BEKLİYOR" : report.status === "REVIEWED" ? "İNCELENDİ" : "ÇÖZÜLDÜ"}
                               </span>
                             </td>
                           </tr>
@@ -551,11 +563,11 @@ export function AdminTabs({
 
             <section>
               <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3 mb-6">
-                <History className="text-sage-600" /> System Audit Logs
+                <History className="text-sage-600" /> Sistem Denetim Kayıtları
               </h2>
               {logs?.length === 0 ? (
                 <div className="glass-card p-8 rounded-3xl border border-dashed border-sage-300 text-center">
-                  <p className="text-sage-500 font-medium">No audit logs found.</p>
+                  <p className="text-sage-500 font-medium">Denetim kaydı bulunamadı.</p>
                 </div>
               ) : (
                 <div className="glass-card rounded-3xl shadow-sm border border-sage-200/60 overflow-hidden">
@@ -563,23 +575,23 @@ export function AdminTabs({
                     <table className="w-full text-left">
                       <thead className="bg-sage-50/80 border-b border-sage-200/60 text-xs uppercase tracking-wider text-sage-500 font-semibold">
                         <tr>
-                          <th className="px-6 py-4">Admin Actor</th>
-                          <th className="px-6 py-4">Action Type</th>
-                          <th className="px-6 py-4">Details</th>
-                          <th className="px-6 py-4">Timestamp</th>
+                          <th className="px-6 py-4">Yönetici</th>
+                          <th className="px-6 py-4">İşlem</th>
+                          <th className="px-6 py-4">Ayrıntı</th>
+                          <th className="px-6 py-4">Zaman</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-sage-100/50">
                         {logs?.map((log: any) => (
                           <tr key={log.id} className="hover:bg-sage-50/40 transition-colors">
-                            <td className="px-6 py-4 text-sm font-semibold text-sage-900">{log.actor?.name || "System"}</td>
+                            <td className="px-6 py-4 text-sm font-semibold text-sage-900">{log.actor?.name || "Sistem"}</td>
                             <td className="px-6 py-4">
                               <span className="inline-flex px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded bg-sage-100 text-sage-800 border border-sage-200">
                                 {log.action}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-xs text-sage-600 max-w-sm truncate">{log.reason || log.targetId || "-"}</td>
-                            <td className="px-6 py-4 text-xs text-sage-500 font-mono tracking-tight">{new Date(log.createdAt).toLocaleString()}</td>
+                            <td className="px-6 py-4 text-xs text-sage-500 font-mono tracking-tight">{new Date(log.createdAt).toLocaleString("tr-TR")}</td>
                           </tr>
                         ))}
                       </tbody>

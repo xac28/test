@@ -6,6 +6,7 @@ import { Calendar, Clock, ArrowRight, Sparkles, Flame, Trophy, Award, History, P
 import { ReviewButton } from "@/components/review-button"
 import { BADGES } from "@/lib/badges"
 import { DashboardNotify } from "@/components/dashboard-notify"
+import { RecordingsList } from "@/components/recordings-list"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -269,6 +270,8 @@ export default async function DashboardPage() {
           </div>
         </section>
       )}
+
+      <RecordingsList role="student" />
     </div>
   )
 }

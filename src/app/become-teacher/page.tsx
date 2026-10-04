@@ -377,7 +377,7 @@ export default function BecomeTeacherPage() {
                   className="mt-1 w-4 h-4 accent-sage-600 rounded"
                 />
                 <span className="text-sm text-ink/70 leading-relaxed">
-                  Platform üzerinden vereceğim derslerin tıbbi tavsiye yerine geçmediğini, ödeme ve komisyon oranlarını kabul ettiğimi, ve dersleri hiçbir şekilde kayıt altına almayacağımı <Link href="/terms" target="_blank" className="text-sage-600 underline font-medium">Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi</Link> kapsamında kabul ve beyan ederim.
+                  Platform üzerinden vereceğim derslerin tıbbi tavsiye yerine geçmediğini, ödeme ve komisyon oranlarını kabul ettiğimi, ve dersleri platformun resmî kayıt özelliği dışında kayıt altına almayacağımı, platformda alınan kayıtların yalnızca öğrenci ile benim tarafımdan indirilebileceğini ve 30 gün sonra silineceğini <Link href="/terms" target="_blank" className="text-sage-600 underline font-medium">Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi</Link> kapsamında kabul ve beyan ederim.
                 </span>
               </label>
             </div>

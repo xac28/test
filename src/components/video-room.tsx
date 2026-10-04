@@ -144,7 +144,8 @@ export default function VideoRoom({ bookingId }: { bookingId: string }) {
           onDisconnected={() => router.push("/dashboard")}
           className="h-full w-full relative"
         >
-          <AntiPiracy userName={roomData.role === 'teacher' ? roomData.booking.teacherName : roomData.booking.studentName} />
+          {/* Viewer-side protection only: the teacher is the one who may record (official, server-side recording) */}
+          {roomData.role === "student" && <AntiPiracy userName={roomData.booking.studentName} />}
           <VideoConference />
           <RoomAudioRenderer />
           <LiveRoomManager role={roomData.role} endTime={roomData.booking.endTime} bookingId={roomData.booking.id} />

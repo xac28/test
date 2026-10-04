@@ -6,6 +6,7 @@ import { Calendar, Clock, DollarSign, Users, TrendingUp, ArrowRight, PlayCircle,
 import { GoLiveButton } from "@/components/go-live-button"
 import { StripeConnectButton } from "@/components/stripe-connect-button"
 import { TeacherVideoManager } from "@/components/teacher-video-manager"
+import { RecordingsList } from "@/components/recordings-list"
 
 export const dynamic = "force-dynamic"
 
@@ -313,6 +314,8 @@ export default async function TeachDashboardPage() {
           </div>
         </section>
       )}
+
+      <RecordingsList role="teacher" />
 
       {/* Video Management Section */}
       <TeacherVideoManager initialVideos={JSON.parse(JSON.stringify(videos))} />

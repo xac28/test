@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { CheckCircle2, Copy, Loader2, Wallet, XCircle, Banknote } from "lucide-react"
 import { PAYOUT_STATUS_LABEL_TR } from "@/lib/payouts"
+import { useConfirm, useToast } from "./admin/ui"
 
 interface PayoutRow {
   id: string
@@ -67,42 +68,47 @@ export function AdminPayouts({ onChange }: { onChange?: () => void }) {
     load()
   }, [filter, load])
 
-  const act = async (row: PayoutRow, action: "approve" | "reject" | "mark_paid") => {
-    let note: string | undefined
-    if (action === "reject") {
-      const reason = prompt("Reddetme sebebini yazın (öğretmene e-posta ile iletilir):")
-      if (reason === null) return
-      if (!reason.trim()) {
-        alert("Reddetme sebebi gerekli.")
-        return
-      }
-      note = reason
-    } else if (action === "mark_paid") {
-      if (!confirm(`${row.amount.toFixed(2)} ${row.currency} tutarını ${row.teacher.user.name} adlı öğretmene ödediğinizi onaylıyor musunuz?`)) return
-    } else if (!confirm(`${row.amount.toFixed(2)} ${row.currency} tutarındaki talebi onaylıyor musunuz?`)) {
-      return
-    }
+  const { ask, dialog } = useConfirm()
+  const { show, toast } = useToast()
 
-    setBusyId(row.id)
-    try {
-      const res = await fetch(`/api/admin/payouts/${row.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, note }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) alert(data.error || "İşlem başarısız oldu.")
-      await load()
-      onChange?.()
-    } catch {
-      alert("Ağ hatası")
-    } finally {
-      setBusyId(null)
-    }
+  const act = (row: PayoutRow, action: "approve" | "reject" | "mark_paid") => {
+    const amount = `${row.amount.toFixed(2)} ${row.currency}`
+    const who = row.teacher.user.name ?? "öğretmen"
+    ask({
+      title: action === "reject" ? "Talebi reddet" : action === "mark_paid" ? "Ödendi olarak işaretle" : "Talebi onayla",
+      description:
+        action === "reject"
+          ? `${amount} tutarındaki talep reddedilir ve tutar öğretmenin bakiyesine geri döner.`
+          : action === "mark_paid"
+          ? `${amount} tutarını ${who} adlı öğretmene ödediğinizi onaylıyor musunuz?`
+          : `${amount} tutarındaki talebi onaylıyor musunuz? Ödemeyi daha sonra “ödendi” olarak işaretlersiniz.`,
+      confirmLabel: action === "reject" ? "Reddet" : action === "mark_paid" ? "Ödendi" : "Onayla",
+      tone: action === "reject" ? "danger" : "primary",
+      ...(action === "reject" ? { input: { label: "Red gerekçesi (öğretmene e-posta ile iletilir)", min: 3, multiline: true } } : {}),
+      onConfirm: async (note) => {
+        setBusyId(row.id)
+        try {
+          const res = await fetch(`/api/admin/payouts/${row.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action, note: note || undefined }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (!res.ok) throw new Error(data.error || "İşlem başarısız oldu.")
+          show(action === "reject" ? "Talep reddedildi" : action === "mark_paid" ? "Ödendi olarak işaretlendi" : "Talep onaylandı")
+          await load()
+          onChange?.()
+        } finally {
+          setBusyId(null)
+        }
+      },
+    })
   }
 
   return (
     <div className="space-y-6" data-testid="admin-payouts">
+      {dialog}
+      {toast}
       <div>
         <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3">
           <Wallet className="text-sage-600" /> Ödeme Talepleri

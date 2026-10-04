@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ArrowDown, Crown, Send, ShieldBan } from "lucide-react"
+import { ArrowDown, Crown, Flag, Send, ShieldBan } from "lucide-react"
 import { ChatMessage, MAX_CHAT_LEN, RoomSettings, nameColor } from "@/lib/live-chat"
 
 const QUICK_EMOJIS = ["🙏", "🧘", "❤️", "👏", "🔥", "😊"]
@@ -13,11 +13,14 @@ interface Props {
   connected: boolean
   onSend: (text: string) => Promise<string | null>
   onKick?: (identity: string, name: string) => void
+  /** viewer: flag a message for the admins */
+  onReport?: (m: ChatMessage) => void
+  selfIdentity?: string
   className?: string
 }
 
 /** Twitch-style chat column: coloured names, host badge, slow mode, jump-to-latest. */
-export function LiveChatPanel({ messages, settings, isHost, connected, onSend, onKick, className = "" }: Props) {
+export function LiveChatPanel({ messages, settings, isHost, connected, onSend, onKick, onReport, selfIdentity, className = "" }: Props) {
   const [text, setText] = useState("")
   const [notice, setNotice] = useState<string | null>(null)
   const [stuck, setStuck] = useState(true) // is the list scrolled to the bottom?
@@ -91,6 +94,17 @@ export function LiveChatPanel({ messages, settings, isHost, connected, onSend, o
               </span>
               <span className="text-white/50">: </span>
               <span className="text-white/90">{m.text}</span>
+              {onReport && !m.isHost && m.identity !== selfIdentity && (
+                <button
+                  onClick={() => onReport(m)}
+                  title="Mesajı bildir"
+                  aria-label="Mesajı bildir"
+                  data-testid="chat-report"
+                  className="ml-2 opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/50 hover:text-red-300 align-middle"
+                >
+                  <Flag size={12} />
+                </button>
+              )}
               {isHost && !m.isHost && onKick && (
                 <button
                   onClick={() => onKick(m.identity, m.name)}

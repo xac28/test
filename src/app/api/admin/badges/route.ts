@@ -1,0 +1,21 @@
+import { db } from "@/lib/db"
+import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/admin-api"
+import { OPEN_STATUSES } from "@/lib/reports"
+
+export const dynamic = "force-dynamic"
+
+// GET /api/admin/badges — the small numbers next to the tabs
+export async function GET(req: Request) {
+  const g = await requireAdmin(req)
+  if ("response" in g) return g.response
+  const [applications, trials, payouts, reports, urgentReports, liveNow] = await Promise.all([
+    db.teacherApplication.count({ where: { status: "PENDING" } }),
+    db.teacher.count({ where: { isTrialMode: true } }),
+    db.payoutRequest.count({ where: { status: "PENDING" } }),
+    db.report.count({ where: { status: { in: OPEN_STATUSES } } }),
+    db.report.count({ where: { status: { in: OPEN_STATUSES }, priority: "URGENT" } }),
+    db.liveRoom.count({ where: { isActive: true } }),
+  ])
+  return NextResponse.json({ applications, trials, payouts, reports, urgentReports, liveNow })
+}

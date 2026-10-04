@@ -8,6 +8,8 @@ import { formatDuration } from "@/lib/live-chat"
 import { useLiveRoom } from "./use-live-room"
 import { LivePlayer } from "./live-player"
 import { LiveChatPanel } from "./live-chat-panel"
+import { ReportButton, ReportDialog, ReportChatMessage } from "@/components/report-dialog"
+import type { ChatMessage } from "@/lib/live-chat"
 
 interface StreamInfo {
   id: string
@@ -27,6 +29,7 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
   const [theater, setTheater] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const [copied, setCopied] = useState(false)
+  const [reportMsg, setReportMsg] = useState<ReportChatMessage | null>(null)
   const [lockedWorkshop, setLockedWorkshop] = useState<{ slug: string; title: string } | null>(null)
 
   const live = useLiveRoom({ hostIdentity: stream?.hostIdentity, isHost: false })
@@ -175,6 +178,16 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
               <button onClick={copyLink} className="ml-auto inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white">
                 <Link2 size={15} /> {copied ? "Kopyalandı" : "Bağlantıyı kopyala"}
               </button>
+              {stream && (
+                <ReportButton
+                  targetType="LIVE_ROOM"
+                  targetId={stream.id}
+                  subject={stream.title}
+                  theme="dark"
+                  label="Yayını bildir"
+                  className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-red-300"
+                />
+              )}
             </div>
 
             {stream ? (
@@ -206,8 +219,13 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
             isHost={false}
             connected={connected}
             onSend={live.sendChat}
+            selfIdentity={room?.localParticipant?.identity}
+            onReport={(m: ChatMessage) => setReportMsg({ text: m.text, senderIdentity: m.identity, senderName: m.name, sentAt: m.ts })}
           />
         </aside>
+        {reportMsg && stream && (
+          <ReportDialog targetType="CHAT_MESSAGE" targetId={stream.id} subject={`Sohbet · ${stream.title}`} message={reportMsg} theme="dark" onClose={() => setReportMsg(null)} />
+        )}
       </div>
     </div>
   )

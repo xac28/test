@@ -1,7 +1,10 @@
-import { auth } from "@/auth"
+import { requireAdmin, cleanReason } from "@/lib/admin-api"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
-import { banIpAddress } from "@/lib/ban-engine"
+import { banIpAddress, extractIp, isBannableIp } from "@/lib/ban-engine"
+import { isIP } from "net"
+
+export const dynamic = "force-dynamic"
 
 /**
  * GET /api/admin/bans
@@ -15,10 +18,8 @@ import { banIpAddress } from "@/lib/ban-engine"
  */
 export async function GET(req: Request) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
 
     const url = new URL(req.url)
     const type = url.searchParams.get("type") || "stats"
@@ -106,34 +107,41 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
+
+    const body = await req.json().catch(() => ({}))
+    const ipAddress = typeof body.ipAddress === "string" ? body.ipAddress.trim() : ""
+    const reason = cleanReason(body.reason)
+    const expiresAt = body.expiresAt
+
+    if (!ipAddress || reason.length < 3) {
+      return NextResponse.json({ error: "IP adresi ve neden gerekli." }, { status: 400 })
     }
-
-    const { ipAddress, reason, expiresAt } = await req.json()
-
-    if (!ipAddress || !reason) {
-      return NextResponse.json({ error: "ipAddress and reason are required" }, { status: 400 })
+    if (!isIP(ipAddress)) {
+      return NextResponse.json({ error: "Geçersiz IP adresi." }, { status: 400 })
     }
-
-    // IP format validasyonu (basit)
-    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
-    if (!ipRegex.test(ipAddress)) {
-      return NextResponse.json({ error: "Invalid IP address format" }, { status: 400 })
+    if (!isBannableIp(ipAddress)) {
+      return NextResponse.json({ error: "Yerel/özel ağ adresleri engellenemez (herkesi etkilerdi)." }, { status: 400 })
+    }
+    if (ipAddress === extractIp(req)) {
+      return NextResponse.json({ error: "Kendi IP adresinizi engelleyemezsiniz." }, { status: 400 })
+    }
+    if (expiresAt && (isNaN(new Date(expiresAt).getTime()) || new Date(expiresAt).getTime() < Date.now())) {
+      return NextResponse.json({ error: "Bitiş tarihi gelecekte olmalı." }, { status: 400 })
     }
 
     await banIpAddress(
       ipAddress,
       reason,
       undefined,
-      session.user.id,
+      g.admin.id,
       expiresAt ? new Date(expiresAt) : undefined
     )
 
     await db.auditLog.create({
       data: {
-        actorId: session.user.id,
+        actorId: g.admin.id,
         action: "MANUAL_IP_BAN",
         targetId: ipAddress,
         reason,
@@ -155,10 +163,8 @@ export async function POST(req: Request) {
  */
 export async function DELETE(req: Request) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
 
     const { banId } = await req.json()
 
@@ -178,7 +184,7 @@ export async function DELETE(req: Request) {
 
     await db.auditLog.create({
       data: {
-        actorId: session.user.id,
+        actorId: g.admin.id,
         action: "REMOVE_IP_BAN",
         targetId: ban.ipAddress,
         reason: `IP ban lifted for ${ban.ipAddress}`,

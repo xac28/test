@@ -13,6 +13,7 @@ import { getTeacher } from '@/lib/teachers';
 import { styleLabel } from '@/lib/constants';
 import { TeacherRecordedVideos } from '@/components/teacher-recorded-videos';
 import { MessageTeacherButton } from '@/components/message-teacher-button';
+import { ReportButton } from '@/components/report-dialog';
 
 export default function TeacherProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -65,8 +66,9 @@ export default function TeacherProfilePage({ params }: { params: Promise<{ slug:
                         {teacher.studentsCount} students
                       </div>
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-4 flex items-center flex-wrap">
                       <MessageTeacherButton teacherId={slug} />
+                      <ReportButton targetType="TEACHER" targetId={slug} subject={teacher.name} label="Bildir" className="ml-4 inline-flex items-center gap-1.5 text-sm text-ink/50 hover:text-red-600" />
                     </div>
                   </div>
                 </div>

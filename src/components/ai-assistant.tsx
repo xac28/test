@@ -109,7 +109,8 @@ export function AiAssistant() {
 
   const currentMood = AI_MOODS[selectedMood]
 
-  if (isFullScreenLivePage(pathname)) return null
+  // the student-facing helper has no place in the admin workspace or in the dashboards' working screens
+  if (isFullScreenLivePage(pathname) || pathname?.startsWith("/admin")) return null
 
   return (
     <>

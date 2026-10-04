@@ -4,7 +4,9 @@ import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
-import { LogOut, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert } from "lucide-react"
+import { WarningBanner } from "./warning-banner"
+import { ADMIN_TABS, BADGE_TONE, useAdminBadges } from "./admin/tab-defs"
+import { LogOut, Flag, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert } from "lucide-react"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
@@ -19,6 +21,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: "Pratiğim", href: "/dashboard", icon: Home },
     { name: "Profilim", href: "/dashboard/profile", icon: Settings },
     { name: "Eğitmen Bul", href: "/teachers", icon: Users },
+    { name: "Bildirimlerim", href: "/dashboard/reports", icon: Flag },
   ]
 
   const teacherLinks = [
@@ -28,17 +31,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: "Atölyelerim", href: "/teach/workshops", icon: Users },
     { name: "Canlı Yayın", href: "/live/studio", icon: Video },
     { name: "Kazançlar", href: "/teach/earnings", icon: CreditCard },
+    { name: "Bildirimlerim", href: "/dashboard/reports", icon: Flag },
   ]
 
-  const adminLinks = [
-    { name: "Genel Bakış", href: "/admin?tab=overview", icon: Activity },
-    { name: "Başvurular", href: "/admin?tab=applications", icon: FileText },
-    { name: "Ödeme Talepleri", href: "/admin?tab=payouts", icon: CreditCard },
-    { name: "İçerikler", href: "/admin?tab=articles", icon: FileText },
-    { name: "Canlı Odalar", href: "/admin?tab=rooms", icon: Video },
-    { name: "Kullanıcılar", href: "/admin?tab=users", icon: Users },
-    { name: "Güvenlik ve Kayıtlar", href: "/admin?tab=reports", icon: ShieldAlert },
-  ]
+  const adminMode = pathname.startsWith("/admin")
+  const badges = useAdminBadges(adminMode)
+  const adminLinks = ADMIN_TABS.map((t) => {
+    const b = badges && t.badge?.(badges)
+    return { name: t.label, href: `/admin?tab=${t.id}`, icon: t.icon, group: t.group, badge: b || null }
+  })
 
   let links = studentLinks
   if (pathname.startsWith("/teach")) links = teacherLinks
@@ -59,36 +60,50 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
         {collapsed && (
           <Link href="/" className="font-display text-xl tracking-widest text-sage-100 hover:text-white transition-colors btn-press">
-            N
+            A
           </Link>
         )}
       </div>
       
-      <nav className={`flex-1 py-6 ${collapsed ? "px-2" : "px-4"} space-y-1.5 overflow-y-auto`}>
-        {links.map((link) => {
+      <nav className={`flex-1 py-6 ${collapsed ? "px-2" : "px-4"} space-y-1 overflow-y-auto`}>
+        {links.map((link: any, idx: number) => {
           const Icon = link.icon
           let isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== '/dashboard' && link.href !== '/teach' && link.href !== '/admin')
-          
+
           if (pathname === '/admin' && link.href.includes('?tab=')) {
-            const currentTab = searchParams.get('tab') || 'overview'
-            isActive = link.href.includes(`tab=${currentTab}`)
+            const requested = searchParams.get('tab') || 'overview'
+            const currentTab = ADMIN_TABS.some((t) => t.id === requested) ? requested : 'overview'
+            isActive = link.href === `/admin?tab=${currentTab}`
           }
-          
+          const showGroup = adminMode && link.group && (idx === 0 || (links[idx - 1] as any).group !== link.group)
+
           return (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              title={collapsed ? link.name : undefined}
-              className={`flex items-center gap-3 ${collapsed ? "justify-center px-3" : "px-4"} py-3 rounded-xl transition-all btn-press ${
-                isActive 
-                  ? "bg-sage-700/60 text-white shadow-inner" 
-                  : "hover:bg-sage-800/40 text-sage-400 hover:text-sage-200"
-              }`}
-            >
-              <Icon size={20} className={`flex-shrink-0 ${isActive ? "text-sage-200" : "text-sage-500"}`} />
-              {!collapsed && <span className="font-medium text-sm truncate">{link.name}</span>}
-            </Link>
+            <div key={link.href}>
+              {showGroup && !collapsed && (
+                <p className={`px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-sage-600 ${idx === 0 ? "mb-1" : "mt-5 mb-1"}`}>{link.group}</p>
+              )}
+              {showGroup && collapsed && idx !== 0 && <div className="my-3 border-t border-sage-800/60" />}
+              <Link
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                title={collapsed ? link.name : undefined}
+                aria-current={isActive ? "page" : undefined}
+                data-testid={link.href.includes("?tab=") ? `nav-${link.href.split("tab=")[1]}` : undefined}
+                className={`relative flex items-center gap-3 ${collapsed ? "justify-center px-3" : "px-4"} py-2.5 rounded-xl transition-all btn-press ${
+                  isActive
+                    ? "bg-sage-700/60 text-white shadow-inner"
+                    : "hover:bg-sage-800/40 text-sage-400 hover:text-sage-200"
+                }`}
+              >
+                <Icon size={19} className={`flex-shrink-0 ${isActive ? "text-sage-200" : "text-sage-500"}`} />
+                {!collapsed && <span className="font-medium text-sm truncate flex-1">{link.name}</span>}
+                {link.badge && (
+                  <span className={`${collapsed ? "absolute -top-1 -right-1" : ""} min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center ${BADGE_TONE[link.badge.tone as keyof typeof BADGE_TONE]}`}>
+                    {link.badge.value}
+                  </span>
+                )}
+              </Link>
+            </div>
           )
         })}
       </nav>
@@ -155,6 +170,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         
         <div className="flex-1 p-6 md:p-10 overflow-y-auto texture-overlay relative">
           <div className="max-w-6xl mx-auto w-full relative z-10">
+            <WarningBanner />
             {children}
           </div>
         </div>

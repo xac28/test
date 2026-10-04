@@ -5,6 +5,7 @@ import { useRoomContext, useDataChannel } from "@livekit/components-react"
 import { Shield, MessageSquareOff, MessageSquare, UserX, AlertTriangle, Video, StopCircle, Activity, Circle } from "lucide-react"
 import { Clock } from "lucide-react"
 import { AiPostureAssist } from "./ai-posture-assist"
+import { ReportDialog } from "./report-dialog"
 import { RoomRecorder, RecorderState } from "@/lib/room-recorder"
 import { formatElapsed } from "@/lib/recording-client"
 
@@ -21,6 +22,7 @@ export function LiveRoomManager({ role, endTime, bookingId, liveRoomId }: { role
   const lastRecPing = useRef(0)
   const recorderRef = useRef<RoomRecorder | null>(null)
   const [showAiPosture, setShowAiPosture] = useState(false)
+  const [reporting, setReporting] = useState(false)
   const isRecording = recState === "recording"
 
   // Set up data channel for real-time commands
@@ -183,20 +185,6 @@ export function LiveRoomManager({ role, endTime, bookingId, liveRoomId }: { role
     }
   }, [])
 
-  const handleReport = () => {
-    const reason = prompt("Please describe the issue or inappropriate behavior:")
-    if (!reason) return
-    
-    fetch("/api/reports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookingId: room.name, reason })
-    })
-    .then(res => res.json())
-    .then(() => alert("Report submitted successfully. Admins will review this immediately."))
-    .catch(() => alert("Failed to submit report. Please contact support."))
-  }
-
   return (
     <>
       {/* Global CSS injection to hide LiveKit Chat if disabled */}
@@ -286,13 +274,19 @@ export function LiveRoomManager({ role, endTime, bookingId, liveRoomId }: { role
       )}
 
       {/* Global Report Button (Both Teacher & Student) */}
-      <button 
-        onClick={handleReport}
-        className="absolute bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-200 backdrop-blur border border-red-500/30 transition shadow-lg text-sm font-medium"
-      >
-        <AlertTriangle size={16} />
-        Report Issue
-      </button>
+      {bookingId && (
+        <button
+          data-testid="report-lesson"
+          onClick={() => setReporting(true)}
+          className="absolute bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-200 backdrop-blur border border-red-500/30 transition shadow-lg text-sm font-medium"
+        >
+          <AlertTriangle size={16} />
+          Sorun Bildir
+        </button>
+      )}
+      {reporting && bookingId && (
+        <ReportDialog targetType="BOOKING" targetId={bookingId} subject="Bu ders" theme="dark" onClose={() => setReporting(false)} />
+      )}
     </>
   )
 }

@@ -1,13 +1,15 @@
-import React from "react"
+import React, { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Alert } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { usePreventScreenCapture } from "expo-screen-capture"
 import { colors } from "../constants"
+import { ReportSheet } from "../components/ReportSheet"
 
 export default function RoomScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const router = useRouter()
-  
+  const [reporting, setReporting] = useState(false)
+
   // OS-Level Anti-Piracy: Prevents screenshots and screen recordings completely
   usePreventScreenCapture()
 
@@ -67,7 +69,14 @@ export default function RoomScreen() {
         <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace("/(tabs)")}>
           <Text style={styles.primaryBtnText}>Return to Practice</Text>
         </TouchableOpacity>
+
+        {bookingId ? (
+          <TouchableOpacity style={styles.reportBtn} onPress={() => setReporting(true)}>
+            <Text style={styles.reportBtnText}>⚠️  Sorun bildir</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
+      {bookingId ? <ReportSheet visible={reporting} bookingId={bookingId} onClose={() => setReporting(false)} /> : null}
     </SafeAreaView>
   )
 }
@@ -119,5 +128,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     shadowColor: colors.sage[600], shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12,
   },
+  reportBtn: { marginTop: 18, paddingHorizontal: 20, paddingVertical: 10 },
+  reportBtnText: { color: "#fca5a5", fontSize: 14 },
   primaryBtnText: { color: colors.white, fontWeight: "700", fontSize: 16, letterSpacing: 0.5 },
 })

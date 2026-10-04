@@ -1,5 +1,7 @@
 'use client';
 
+import { useConfirm } from './admin/ui';
+
 import { useCallback, useEffect, useState } from 'react';
 import { FileText, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { ARTICLE_CATEGORIES } from '@/lib/articles';
@@ -68,16 +70,25 @@ export function AdminArticles() {
     load();
   };
 
-  const remove = async (r: Row) => {
-    if (!confirm(`“${r.title}” silinsin mi?`)) return;
-    await fetch(`/api/admin/articles/${r.id}`, { method: 'DELETE' });
-    load();
-  };
+  const { ask, dialog } = useConfirm();
+  const remove = (r: Row) =>
+    ask({
+      title: 'Yazıyı sil',
+      description: `“${r.title}” kalıcı olarak silinir.`,
+      confirmLabel: 'Sil',
+      tone: 'danger',
+      onConfirm: async () => {
+        const res = await fetch(`/api/admin/articles/${r.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Yazı silinemedi.');
+        load();
+      },
+    });
 
   const field = 'w-full border border-sage-200 bg-white px-3 py-2.5 text-sm focus:border-ink focus:outline-none rounded-md';
 
   return (
     <div className="space-y-6" data-testid="admin-articles">
+      {dialog}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3"><FileText className="text-sage-600" /> İçerikler</h2>

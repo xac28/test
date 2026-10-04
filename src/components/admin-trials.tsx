@@ -1,5 +1,8 @@
 "use client"
 
+import { useConfirm } from "./admin/ui"
+import { refreshAdminBadges } from "./admin/tab-defs"
+
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { BadgeCheck, Loader2, PlaySquare, ShieldAlert, ShieldX, Video, XCircle } from "lucide-react"
@@ -54,38 +57,44 @@ export function AdminTrials({ initialTrials, approved }: { initialTrials: Trial[
     return () => clearInterval(id)
   }, [load])
 
-  const decide = async (id: string, name: string | null, action: "approve" | "reject" | "revoke") => {
-    let note: string | undefined
-    if (action === "approve") {
-      if (!confirm(`${name} adlı öğretmeni onaylayıp herkese açık yayın ve ders vermesine izin vermek istiyor musunuz?`)) return
-      const optional = prompt("İsterseniz öğretmene iletilecek bir not yazın (boş bırakabilirsiniz):")
-      if (optional === null) return
-      note = optional
-    } else {
-      const reason = prompt(action === "reject" ? "Reddetme gerekçesi (öğretmene e-posta ile iletilir):" : "Onayı kaldırma gerekçesi (öğretmene iletilir):")
-      if (reason === null) return
-      if (!reason.trim()) return alert("Gerekçe yazmalısınız.")
-      note = reason
-    }
-    setBusyId(id)
-    setMessage(null)
-    try {
-      const res = await fetch(`/api/admin/teachers/${id}/trial`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, note }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) setMessage(data.error || "İşlem başarısız oldu.")
-      else router.refresh()
-      await load()
-    } finally {
-      setBusyId(null)
-    }
+  const { ask, dialog } = useConfirm()
+
+  const decide = (id: string, name: string | null, action: "approve" | "reject" | "revoke") => {
+    ask({
+      title: action === "approve" ? `${name} öğretmeni onayla` : action === "reject" ? `${name} adayı reddet` : `${name} onayını kaldır`,
+      description:
+        action === "approve"
+          ? "Öğretmen herkese açık yayın ve ders verebilir; e-posta ile bilgilendirilir."
+          : action === "reject"
+          ? "Aday deneme aşamasında kalır ve yazdığınız gerekçeyi görür."
+          : "Öğretmen deneme aşamasına döner; yeni rezervasyon alamaz ve yeniden onaylanmalıdır.",
+      confirmLabel: action === "approve" ? "Onayla" : action === "reject" ? "Reddet" : "Onayı kaldır",
+      tone: action === "approve" ? "primary" : "danger",
+      input: { label: action === "approve" ? "Not (isteğe bağlı, öğretmene iletilir)" : "Gerekçe (öğretmene iletilir)", min: action === "approve" ? 0 : 3, multiline: true },
+      onConfirm: async (note) => {
+        setBusyId(id)
+        setMessage(null)
+        try {
+          const res = await fetch(`/api/admin/teachers/${id}/trial`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action, note: note || undefined }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (!res.ok) throw new Error(data.error || "İşlem başarısız oldu.")
+          refreshAdminBadges()
+          router.refresh()
+          await load()
+        } finally {
+          setBusyId(null)
+        }
+      },
+    })
   }
 
   return (
     <div className="space-y-10" data-testid="admin-trials">
+      {dialog}
       <section className="space-y-5">
         <div>
           <h2 className="text-2xl font-display text-amber-900 flex items-center gap-3">

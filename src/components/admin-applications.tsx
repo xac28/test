@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useConfirm, useToast } from "./admin/ui"
+import { refreshAdminBadges } from "./admin/tab-defs"
 import { CheckCircle2, XCircle, Eye, EyeOff, FileBadge, Calendar, MapPin, Phone, User as UserIcon } from "lucide-react"
 
 interface Application {
@@ -30,39 +32,38 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const handleAction = async (id: string, action: "approve" | "reject") => {
-    let reason = null
-    
-    if (action === "reject") {
-      reason = prompt("Lütfen reddedilme sebebini yazın (Bu mesaj öğretmene e-posta ile iletilecektir):")
-      if (reason === null) return // Admin cancelled
-    } else {
-      reason = prompt("Onay notu eklemek ister misiniz? (Öğretmene iletilecek, boş bırakabilirsiniz):")
-      if (reason === null) return // Admin cancelled
-    }
+  const { ask, dialog } = useConfirm()
+  const { show, toast } = useToast()
 
-    if (!confirm(`Bu başvuruyu ${action === "approve" ? "onaylamak" : "reddetmek"} istediğinize emin misiniz?`)) return
-
-    setProcessingId(id)
-    try {
-      const res = await fetch(`/api/admin/applications/${id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, reason }),
-      })
-
-      const data = await res.json()
-      if (res.ok) {
-        alert(data.message)
-        router.refresh()
-      } else {
-        alert(data.error || "Bir şeyler ters gitti")
-      }
-    } catch {
-      alert("Ağ hatası")
-    } finally {
-      setProcessingId(null)
-    }
+  const handleAction = (app: Application, action: "approve" | "reject") => {
+    const who = app.firstName && app.lastName ? `${app.firstName} ${app.lastName}` : app.user.name || "Başvuran"
+    ask({
+      title: action === "approve" ? `${who} başvurusunu onayla` : `${who} başvurusunu reddet`,
+      description:
+        action === "approve"
+          ? "Başvuran eğitmen olur ve deneme odası aşamasına geçer; e-posta ile bilgilendirilir."
+          : "Başvuru reddedilir. Yazdığınız gerekçe başvurana e-posta ile iletilir.",
+      confirmLabel: action === "approve" ? "Onayla" : "Reddet",
+      tone: action === "approve" ? "primary" : "danger",
+      input: { label: action === "approve" ? "Not (isteğe bağlı, başvurana iletilir)" : "Red gerekçesi (başvurana iletilir)", min: action === "approve" ? 0 : 5, multiline: true },
+      onConfirm: async (reason) => {
+        setProcessingId(app.id)
+        try {
+          const res = await fetch(`/api/admin/applications/${app.id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action, reason: reason || null }),
+          })
+          const data = await res.json().catch(() => ({}))
+          if (!res.ok) throw new Error(data.error || "Bir şeyler ters gitti")
+          show(data.message || "Kaydedildi")
+          refreshAdminBadges()
+          router.refresh()
+        } finally {
+          setProcessingId(null)
+        }
+      },
+    })
   }
 
   const parseSpecialties = (s: string | null): string[] => {
@@ -72,6 +73,8 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
 
   return (
     <div className="glass-card rounded-3xl shadow-sm border border-sage-100 overflow-hidden">
+      {dialog}
+      {toast}
       {applications.map((app, i) => (
         <div key={app.id} className={`${i < applications.length - 1 ? "border-b border-sage-100/50" : ""}`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between p-5 hover:bg-sage-50/50 transition-colors gap-4">
@@ -112,14 +115,14 @@ export function AdminApplicationsTable({ applications }: { applications: Applica
                   {expandedId === app.id ? <><EyeOff size={14}/> Gizle</> : <><Eye size={14}/> İncele</>}
                 </button>
                 <button
-                  onClick={() => handleAction(app.id, "approve")}
+                  onClick={() => handleAction(app, "approve")}
                   disabled={processingId === app.id}
                   className="flex items-center gap-1.5 bg-green-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-green-600 transition-all shadow-md shadow-green-500/20 disabled:opacity-50 btn-press"
                 >
                   <CheckCircle2 size={14}/> {processingId === app.id ? "İşleniyor..." : "Onayla"}
                 </button>
                 <button
-                  onClick={() => handleAction(app.id, "reject")}
+                  onClick={() => handleAction(app, "reject")}
                   disabled={processingId === app.id}
                   className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 btn-press"
                 >

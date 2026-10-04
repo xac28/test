@@ -52,3 +52,13 @@ export async function newSession(browser: Browser, email: string): Promise<{ ctx
 }
 
 export { expect, test }
+
+
+/** Answers the in-app confirmation dialog (replaces window.confirm/prompt in the admin panel). */
+export async function confirmDialog(page: import("@playwright/test").Page, text?: string) {
+  const dlg = page.getByTestId("confirm-dialog")
+  await dlg.waitFor({ timeout: 10_000 })
+  if (text !== undefined) await dlg.getByTestId("confirm-input").fill(text)
+  await dlg.getByTestId("confirm-ok").click()
+  await dlg.waitFor({ state: "detached", timeout: 15_000 })
+}

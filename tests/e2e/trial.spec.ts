@@ -1,4 +1,4 @@
-import { test, expect, makeAccount, newSession, db } from "./helpers"
+import { test, expect, makeAccount, newSession, db, confirmDialog } from "./helpers"
 
 async function trialTeacher(name: string) {
   const acc = await makeAccount("TEACHER", { name })
@@ -74,8 +74,8 @@ test.describe("teacher vetting: trial room", () => {
     await a.page.goto("/admin?tab=trials")
     const approved = a.page.getByTestId("approved-row").filter({ hasText: name })
     await expect(approved).toBeVisible()
-    a.page.once("dialog", (d) => d.accept("Uygunsuz davranış bildirimi"))
     await approved.getByTestId("trial-revoke").click()
+    await confirmDialog(a.page, "Uygunsuz davranış bildirimi")
     await expect(a.page.getByTestId("trial-row").filter({ hasText: name })).toBeVisible({ timeout: 20_000 })
     await t.page.goto("/teach")
     await expect(t.page.getByText("Deneme Aşamasındasınız")).toBeVisible()
@@ -93,8 +93,8 @@ test.describe("teacher vetting: trial room", () => {
     await a.page.goto("/admin?tab=trials")
     const row = a.page.getByTestId("trial-row").filter({ hasText: name })
     await expect(row).toBeVisible({ timeout: 20_000 })
-    a.page.once("dialog", (d) => d.accept("Görüntü ve ses kalitesi yetersiz"))
     await row.getByTestId("trial-reject").click()
+    await confirmDialog(a.page, "Görüntü ve ses kalitesi yetersiz")
     await expect(row.getByText("Son not: Görüntü ve ses kalitesi yetersiz")).toBeVisible({ timeout: 20_000 })
     expect((await db.teacher.findUnique({ where: { id: cand.teacher!.id } }))?.isTrialMode).toBe(true)
 

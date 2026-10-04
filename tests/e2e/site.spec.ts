@@ -1,4 +1,4 @@
-import { test, expect, makeAccount, newSession, login, db, PASSWORD } from "./helpers"
+import { test, expect, makeAccount, newSession, login, db, PASSWORD, confirmDialog } from "./helpers"
 import type { Page } from "@playwright/test"
 
 const IGNORED_ERRORS = [/ERR_TUNNEL_CONNECTION_FAILED/, /Failed to load resource/, /favicon/, /fonts\.g/, /pravatar/, /unsplash/, /Download the React DevTools/, /WebSocket/i, /LiveKit|livekit/i]
@@ -191,21 +191,21 @@ test.describe("payout requests (teacher → admin)", () => {
 
     // approve the 120 request → mark paid
     const big = rows.filter({ hasText: "120.00" })
-    a.page.once("dialog", (d) => d.accept())
     await big.getByTestId("payout-approve").click()
+    await confirmDialog(a.page)
     await a.page.getByRole("button", { name: "Onaylanan" }).click()
     const approved = a.page.getByTestId("payout-row").filter({ hasText: tname }).filter({ hasText: "120.00" })
     await expect(approved).toContainText("Onaylandı", { timeout: 15_000 })
-    a.page.once("dialog", (d) => d.accept())
     await approved.getByTestId("payout-mark-paid").click()
+    await confirmDialog(a.page)
     await a.page.getByRole("button", { name: "Ödenen" }).click()
     await expect(a.page.getByTestId("payout-row").filter({ hasText: tname }).filter({ hasText: "120.00" })).toContainText("Ödendi", { timeout: 15_000 })
 
     // reject the 40 request with a reason
     await a.page.getByRole("button", { name: "Beklemede" }).click()
     const small = a.page.getByTestId("payout-row").filter({ hasText: tname }).filter({ hasText: "40.00" })
-    a.page.once("dialog", (d) => d.accept("IBAN adı uyuşmuyor"))
     await small.getByTestId("payout-reject").click()
+    await confirmDialog(a.page, "IBAN adı uyuşmuyor")
     await expect(small).toHaveCount(0, { timeout: 15_000 })
 
     // teacher sees the outcome and gets the rejected amount back
@@ -227,14 +227,17 @@ test.describe("admin panel is Turkish", () => {
     const a = await newSession(browser, admin.email)
     await a.page.goto("/admin")
     const body = await a.page.locator("body").innerText()
-    for (const word of ["Genel Bakış", "Başvurular", "Deneme Odaları", "Finans", "Ödeme Talepleri", "İçerikler", "Canlı Oturumlar", "Kullanıcılar", "Raporlar ve Güvenlik"]) {
+    for (const word of ["Genel Bakış", "Başvurular", "Deneme Odaları", "Finans", "Ödeme Talepleri", "İçerikler", "Canlı Oturumlar", "Kullanıcılar", "Raporlar", "Güvenlik", "Denetim Kayıtları", "Rezervasyonlar", "Ders Kayıtları", "Atölyeler"]) {
       expect(body).toContain(word)
     }
     expect(body).not.toMatch(/Pending Applications|Platform Financials|User Management|Welcome to Admin/)
-    await a.page.getByRole("button", { name: /Kullanıcılar/ }).click()
+    // sidebar links drive the tab through the URL
+    await a.page.getByTestId("nav-users").click()
+    await expect(a.page).toHaveURL(/tab=users/)
+    await expect(a.page.getByTestId("tab-users")).toBeVisible()
     await a.page.getByTestId("admin-user-search").fill(needleName.toLowerCase())
+    await expect(a.page.getByTestId("user-row")).toHaveCount(1)
     await expect(a.page.getByText(needleName).first()).toBeVisible()
-    await expect(a.page.locator("tbody tr")).toHaveCount(1)
     expect(needle.user.id).toBeTruthy()
     await a.ctx.close()
   })

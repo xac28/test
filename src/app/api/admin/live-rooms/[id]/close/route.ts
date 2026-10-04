@@ -1,19 +1,22 @@
-import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { endLiveRoom } from "@/lib/live-rooms"
+import { requireAdmin, cleanReason } from "@/lib/admin-api"
 
+// POST /api/admin/live-rooms/:id/close { reason? } — force-end a broadcast
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
 
     const { id } = await params
+    const body = await req.json().catch(() => ({}))
+    const existing = await db.liveRoom.findUnique({ where: { id } })
+    if (!existing) return NextResponse.json({ error: "Oda bulunamadı" }, { status: 404 })
 
     // Marks it ended AND disconnects everybody still in the LiveKit room
-    await endLiveRoom(id)
+    if (existing.isActive) await endLiveRoom(id)
+    await db.auditLog.create({ data: { actorId: g.admin.id, action: "CLOSE_ROOM", targetId: id, reason: cleanReason(body.reason) || `Yönetici panelinden kapatıldı: ${existing.title}` } })
     const room = await db.liveRoom.findUnique({ where: { id } })
 
     return NextResponse.json({ success: true, room })

@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Cover, useDateFormat, useL } from '@/components/editorial';
 import { formatPriceTR, WorkshopState } from '@/lib/workshops';
+import { ReportButton } from '@/components/report-dialog';
 
 export interface WorkshopDetail {
   id: string;
@@ -190,6 +191,11 @@ export default function WorkshopDetailView({
                 ) : null}
 
                 {error && <p role="alert" className="text-sm text-clay-600">{error}</p>}
+                {loggedIn && !w.isOwner && (
+                  <div className="pt-3 border-t border-rule">
+                    <ReportButton targetType="WORKSHOP" targetId={w.id} subject={w.title} label={L('Bu atölyeyi bildir', 'Report this workshop')} className="inline-flex items-center gap-1.5 text-xs text-sage-500 hover:text-clay-600" />
+                  </div>
+                )}
                 {!enrolled && !w.isOwner && w.priceUsd > 0 && (
                   <p className="text-xs text-sage-500">{L('Ücretli atölyelerde yeriniz ayrılır; ödeme eğitmen tarafından onaylanınca katılımınız kesinleşir.', 'For paid workshops your seat is held until the teacher confirms payment.')}</p>
                 )}

@@ -93,6 +93,7 @@ model User {
   comments             Comment[]
   workshopEnrollments  WorkshopEnrollment[]
   articles             Article[]
+  warnings             UserWarning[]        @relation("Warned")
 }
 
 model Conversation {
@@ -335,27 +336,60 @@ model LiveRoom {
   endedAt     DateTime?
 }
 
-// Reports submitted by users against other users or bookings
+// Reports submitted by users (a teacher, a live stream, a workshop, a lesson, a chat message)
 model Report {
   id          String   @id @default(cuid())
   reporterId  String
   reporter    User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  
+
+  // The user held responsible — always resolved on the server from the target, never trusted from the client
   reportedId  String?
   reported    User?    @relation("Reported", fields: [reportedId], references: [id], onDelete: SetNull)
-  
-  bookingId   String?  // Optional relation to a specific booking/room
-  
-  reason      String   @db.Text
-  status      ReportStatus @default(PENDING) // PENDING, REVIEWED, RESOLVED
-  
+
+  bookingId   String?  // legacy: kept for old rows
+  category    String   @default("OTHER") @db.VarChar(40)
+  targetType  String   @default("USER") @db.VarChar(24) // TEACHER | LIVE_ROOM | WORKSHOP | BOOKING | CHAT_MESSAGE | USER
+  targetId    String?
+  priority    String   @default("NORMAL") @db.VarChar(12) // LOW | NORMAL | HIGH | URGENT
+
+  reason      String   @db.Text            // what the reporter wrote
+  evidence    String?  @db.Text            // JSON snapshot of the target at report time
+
+  status      ReportStatus @default(PENDING)
+  adminNote   String?  @db.Text            // internal, never shown to users
+  resolution  String?  @db.Text            // what was done (internal summary)
+  handledById String?
+  handledAt   DateTime?
+  reporterNotified Boolean @default(false)
+
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([status, priority, createdAt])
+  @@index([reportedId, createdAt])
+  @@index([reporterId, createdAt])
+  @@index([targetType, targetId])
 }
 
 enum ReportStatus {
   PENDING
   REVIEWED
   RESOLVED
+  DISMISSED
+}
+
+// An official warning from the admins, shown to the user until they acknowledge it
+model UserWarning {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation("Warned", fields: [userId], references: [id], onDelete: Cascade)
+  message        String   @db.Text
+  reportId       String?
+  issuedById     String
+  acknowledgedAt DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, acknowledgedAt])
 }
 
 // System logs (e.g. timeout events, bans)

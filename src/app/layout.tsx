@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { SITE_URL, SITE_DESCRIPTION } from '@/lib/site';
 import { SkipLink } from '@/components/skip-link';
+import { CookieNotice } from '@/components/cookie-notice';
 import { Inter, Newsreader } from 'next/font/google';
 import { I18nProvider } from '@/i18n';
 import { Providers } from '@/components/providers';
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SkipLink />
         <Providers>
           <I18nProvider>
+            <CookieNotice />
             <ErrorBoundary>
               {children}
             </ErrorBoundary>

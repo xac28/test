@@ -7,7 +7,7 @@ import { notSuspended } from "@/lib/policy"
 
 export const dynamic = "force-dynamic"
 
-const STATIC = ["/", "/yoga-stilleri", "/pozlar", "/nasil-calisir", "/sss", "/hakkimizda", "/ogretmenler-icin", "/teachers", "/atolyeler", "/live", "/icerikler", "/community", "/community/rules", "/pricing", "/become-teacher", "/terms", "/privacy"]
+const STATIC = ["/", "/yoga-stilleri", "/pozlar", "/nasil-calisir", "/sss", "/hakkimizda", "/ogretmenler-icin", "/teachers", "/atolyeler", "/live", "/icerikler", "/community", "/community/rules", "/pricing", "/become-teacher", "/terms", "/privacy", "/cerezler"]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()

@@ -113,6 +113,7 @@ export const tr = {
     contact: 'İletişim',
     terms: 'Şartlar',
     privacy: 'Gizlilik',
+    cookies: 'Çerezler',
     rights: 'Tüm hakları saklıdır.',
   },
 };

@@ -1,3 +1,24 @@
+// Content-Security-Policy. CSP_MODE (read at build time): "report-only" (default: violations are logged by /api/csp-report, nothing is
+// blocked), "enforce" or "off". Switch to "enforce" once the log of a real deployment is clean.
+const isDev = process.env.NODE_ENV !== 'production'
+const cspMode = process.env.CSP_MODE || 'report-only'
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://js.stripe.com${isDev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' blob: data: https: wss: ws:",
+  "frame-src https://js.stripe.com https://hooks.stripe.com https://*.iyzipay.com",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https:",
+  "frame-ancestors 'self'",
+  'report-uri /api/csp-report',
+].join('; ')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -45,11 +66,9 @@ const nextConfig = {
             key: 'X-DNS-Prefetch-Control',
             value: 'on'
           },
-          // HSTS disabled for HTTP VDS testing
-          // {
-          //   key: 'Strict-Transport-Security',
-          //   value: 'max-age=63072000; includeSubDomains; preload'
-          // },
+          // HSTS only where the site is served over HTTPS: set ENABLE_HSTS=true when building for production behind TLS
+          ...(process.env.ENABLE_HSTS === 'true' ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' }] : []),
+          ...(cspMode === 'off' ? [] : [{ key: cspMode === 'enforce' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only', value: csp }]),
           {
             key: 'X-Frame-Options',
             value: 'SAMEORIGIN'

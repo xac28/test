@@ -141,3 +141,23 @@ test.describe("e-mail verification", () => {
     await s.ctx.close()
   })
 })
+
+test.describe("cookie information", () => {
+  test("first visit shows the bar; it can be closed for good; the policy page lists what is used", async ({ page }) => {
+    await page.goto("/")
+    const bar = page.getByTestId("cookie-notice")
+    await expect(bar).toBeVisible()
+    await expect(bar).toContainText("zorunlu çerez")
+    // it sits in the page flow above the navigation: nothing is covered
+    const box = (await bar.boundingBox())!
+    expect(box.y).toBeLessThan(5)
+    await page.getByTestId("cookie-ok").click()
+    await expect(bar).toHaveCount(0)
+    await page.reload()
+    await expect(page.getByTestId("cookie-notice")).toHaveCount(0)
+
+    await page.getByRole("contentinfo").getByRole("link", { name: "Çerezler" }).click()
+    await expect(page).toHaveURL(/\/cerezler$/)
+    await expect(page.getByTestId("cookie-table")).toContainText("authjs.session-token")
+  })
+})

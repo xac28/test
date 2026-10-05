@@ -123,6 +123,7 @@ export const en = {
     contact: 'Contact',
     terms: 'Terms',
     privacy: 'Privacy',
+    cookies: 'Cookies',
     rights: 'All rights reserved.',
   },
 };

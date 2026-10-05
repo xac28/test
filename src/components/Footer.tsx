@@ -45,6 +45,7 @@ export default function Footer() {
         { href: '/community/rules', label: tr ? 'Topluluk kuralları' : 'Community rules' },
         { href: '/terms', label: t.footer.terms },
         { href: '/privacy', label: t.footer.privacy },
+        { href: '/cerezler', label: t.footer.cookies },
       ],
     },
   ];

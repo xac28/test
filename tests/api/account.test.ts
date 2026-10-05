@@ -173,6 +173,19 @@ describe("site plumbing", () => {
     expect(sitemap).not.toContain("/admin")
     expect(sitemap).not.toContain("silinmis-")
 
+    // security headers: a Content-Security-Policy (report-only unless CSP_MODE=enforce at build time) and the basics
+    const page = await api("/")
+    const csp = page.headers.get("content-security-policy") || page.headers.get("content-security-policy-report-only") || ""
+    expect(csp).toContain("frame-ancestors 'self'")
+    expect(csp).toContain("object-src 'none'")
+    expect(csp).toContain("report-uri /api/csp-report")
+    expect(page.headers.get("x-content-type-options")).toBe("nosniff")
+    // violation reports are accepted and end up in the system log
+    const marker = `test-${Date.now()}.example`
+    const rep = await api("/api/csp-report", null, { method: "POST", headers: { "Content-Type": "application/csp-report" }, body: JSON.stringify({ "csp-report": { "violated-directive": "img-src", "blocked-uri": `https://${marker}/x.png`, "document-uri": "http://localhost/" } }) })
+    expect(rep.status).toBe(204)
+    expect(await db.eventLog.count({ where: { type: "SECURITY", message: { contains: marker } } })).toBe(1)
+
     const manifest = await (await api("/manifest.webmanifest")).json()
     expect(manifest.short_name).toBe("AYA")
     expect((await api("/icon.svg")).status).toBe(200)

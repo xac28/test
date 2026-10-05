@@ -14,6 +14,9 @@ export async function POST(req: Request) {
   const limit = rateLimit(`streamer-pair:${ip}`, { maxRequests: 8, windowMs: 60_000 })
   if (!limit.allowed) return NextResponse.json({ error: "Çok fazla deneme. Biraz bekleyip tekrar dene.", retryAfterMs: limit.retryAfterMs }, { status: 429, headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) } })
 
+  // a second, address-independent ceiling: forwarded-for headers can be varied by whoever talks to the server directly
+  if (!rateLimit("streamer-pair:all", { maxRequests: 200, windowMs: 60_000 }).allowed) return NextResponse.json({ error: "Çok fazla deneme. Biraz bekleyip tekrar dene." }, { status: 429, headers: { "Retry-After": "60" } })
+
   const body = await req.json().catch(() => ({}))
   const code = normalizePairCode(body.code)
   const deviceName = (typeof body.deviceName === "string" ? body.deviceName : "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 80) || "Windows bilgisayarı"

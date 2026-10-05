@@ -132,7 +132,7 @@ describe("admin: violation log, forgiving, lifting, scanning", () => {
     const log = await (await api(`/api/admin/policy?view=violations&q=${encodeURIComponent(t.email)}`, admin)).json()
     expect(log.violations).toHaveLength(2)
     expect(log.stats.suspendedNow).toBeGreaterThan(0)
-    const users = await (await api("/api/admin/policy?view=users", admin)).json()
+    const users = await (await api(`/api/admin/policy?view=users&q=${encodeURIComponent(t.email)}`, admin)).json()
     expect(users.items.some((i: any) => i.user.id === t.id && i.strikes === 2)).toBe(true)
 
     // forgive the second one → one strike left → suspension lifted

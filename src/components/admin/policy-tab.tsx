@@ -88,12 +88,15 @@ function Violations({ onChanged, onOpenUser }: { onChanged: () => void; onOpenUs
 
 function Users({ onChanged, onOpenUser }: { onChanged: () => void; onOpenUser: (id: string) => void }) {
   const [page, setPage] = useState(1)
+  const [q, setQ] = useState("")
+  const dq = useDebounced(q)
   const { show, toast } = useToast()
   const { ask, dialog } = useConfirm()
-  const { data, error, loading, reload } = useLoader<any>(() => api(`/api/admin/policy?view=users&page=${page}`), [page])
+  const { data, error, loading, reload } = useLoader<any>(() => api(`/api/admin/policy?view=users&page=${page}&q=${encodeURIComponent(dq)}`), [page, dq])
   const done = (m: string) => { show(m); reload(); onChanged() }
   return (
     <div className="space-y-4" data-testid="policy-users">
+      <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Eğitmen adı veya e-posta…" testid="policy-user-search" />
       {error && <ErrorNote message={error} onRetry={reload} />}
       {!data && loading ? <Spinner /> : data && data.items.length === 0 ? <Empty icon={<CheckCircle2 size={32} />}>Sicilinde ihlal olan eğitmen yok.</Empty> : data ? (
         <div className={loading ? "opacity-60" : ""}>

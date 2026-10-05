@@ -19,12 +19,12 @@ test.describe("teacher vetting: trial room", () => {
     const t = await newSession(browser, cand.email)
     await t.page.goto("/teach")
     await expect(t.page.getByText("Deneme Aşamasındasınız")).toBeVisible()
-    await expect(t.page.getByTestId("go-live-link")).toHaveCount(0) // no public "go live" for unapproved teachers
-    // even by hand the studio refuses
+    await expect(t.page.getByTestId("badge-trial").first()).toBeVisible()
+    // trial-phase teachers may broadcast, under supervision: the panel offers it and the studio explains the rules
+    await expect(t.page.getByTestId("go-live-link")).toBeVisible()
     await t.page.goto("/live/studio")
     await expect(t.page.getByTestId("go-live")).toBeEnabled({ timeout: 30_000 })
-    await t.page.getByTestId("go-live").click()
-    await expect(t.page.getByRole("alert").filter({ hasText: "deneme yayınını tamamlamalısınız" })).toBeVisible({ timeout: 15_000 })
+    await expect(t.page.getByTestId("studio-trial-note")).toContainText("yetkililer")
 
     // the legacy link shape redirects to the real room
     await t.page.goto(`/room/trial-${cand.teacher!.id}`)

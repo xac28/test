@@ -179,6 +179,7 @@ test.describe("touch screens", () => {
         const cs = getComputedStyle(e)
         if (r.width === 0 || r.height === 0 || cs.visibility === "hidden") continue
         if (e.tagName === "A" && cs.display === "inline" && e.closest("p, li")) continue // running text
+        if (e.classList.contains("sr-only")) continue // visually hidden until focused (skip link)
         const { w, h } = hit(e)
         if (Math.min(w, h) < 40) out.push(`${(e.getAttribute("aria-label") || e.textContent || "").trim().slice(0, 30)} ${Math.round(w)}x${Math.round(h)}`)
       }

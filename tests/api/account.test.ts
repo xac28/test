@@ -129,7 +129,7 @@ describe("my data", () => {
 
     const row = await db.user.findUniqueOrThrow({ where: { id: u.id } })
     expect(row.deletedAt).not.toBeNull()
-    expect(row.banned).toBe(true)
+    expect(row.banned).toBe(false) // deletion is not a ban (ban-evasion checks must not see it)
     expect(row.email).not.toBe(u.email)
     expect(row.email).toContain("@aya.invalid")
     expect(row.password).toBeNull()
@@ -139,6 +139,10 @@ describe("my data", () => {
     expect(await db.passwordResetToken.count({ where: { userId: u.id } })).toBe(0)
     expect(await db.booking.count({ where: { id: booking.id } })).toBe(1) // records for payments stay
     expect((await api("/api/profile/export", u)).status).toBe(401) // the session is gone
+    // even a token that somehow survived is refused
+    const stray = crypto.randomBytes(48).toString("hex")
+    await db.session.create({ data: { sessionToken: stray, userId: u.id, expires: new Date(Date.now() + 3_600_000) } })
+    expect((await api("/api/profile/export", { token: stray })).status).toBe(401)
     // and the old address can sign up / be reset again without finding the old account
     expect((await db.user.findUnique({ where: { email: u.email } }))).toBeNull()
   })

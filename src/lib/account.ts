@@ -42,6 +42,7 @@ export async function anonymizeUser(userId: string) {
       await tx.teacherVideo.deleteMany({ where: { teacherId: teacher.id } })
       await tx.availability.deleteMany({ where: { teacherId: teacher.id } })
       await tx.teacher.update({ where: { id: teacher.id }, data: { bio: null, specialties: null, isTrialMode: true } })
+      await tx.workshop.updateMany({ where: { teacherId: teacher.id, status: "PUBLISHED" }, data: { status: "DRAFT" } }) // nothing of a closed account stays on sale
     }
     await tx.user.update({
       where: { id: userId },
@@ -49,7 +50,9 @@ export async function anonymizeUser(userId: string) {
         name: "Silinmiş kullanıcı", email: `silinmis-${userId}@aya.invalid`, password: null, image: null,
         firstName: null, lastName: null, dateOfBirth: null, phone: null, address: null, country: null, passportId: null, interests: null,
         expoPushToken: null, badges: null,
-        banned: true, banReason: "Hesap kullanıcı tarafından silindi", bannedAt: new Date(), deletedAt: new Date(),
+        // not "banned": a person who left of their own accord must not trip the ban-evasion checks for the next visitor on that IP;
+        // resolveUser() refuses every request of a deleted account instead
+        deletedAt: new Date(),
       },
     })
   })

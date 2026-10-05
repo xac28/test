@@ -58,9 +58,9 @@ export async function resolveUser(req: Request): Promise<AuthUser | null> {
     // 🛡️ Banned kontrolü
     const fullUser = await db.user.findUnique({
       where: { id: mobileUser.id },
-      select: { banned: true }
+      select: { banned: true, deletedAt: true }
     })
-    if (fullUser?.banned) return null
+    if (fullUser?.banned || fullUser?.deletedAt) return null
 
     // IP logla (arka planda, bloklamaz)
     const ip = extractIp(req)
@@ -75,9 +75,9 @@ export async function resolveUser(req: Request): Promise<AuthUser | null> {
     // 🛡️ Banned kontrolü
     const fullUser = await db.user.findUnique({
       where: { id: webUser.id },
-      select: { banned: true }
+      select: { banned: true, deletedAt: true }
     })
-    if (fullUser?.banned) return null
+    if (fullUser?.banned || fullUser?.deletedAt) return null
 
     // IP logla
     const ip = extractIp(req)

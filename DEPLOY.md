@@ -64,6 +64,17 @@ git pull && docker compose up -d --build
 ```
 Şema değişiklikleri açılışta `prisma db push` ile uygulanır (veri kaybettirecek bir değişiklikse reddeder ve açılmaz; o durumda yedek alıp elle uygulayın). `AUTO_DB_PUSH=false` bunu kapatır.
 
+## 7b. Öğretmen yayın uygulaması (isteğe bağlı)
+Kurulum dosyası `storage/downloads/` altında durur (Docker'da bu klasörü kalıcı birime bağlayın; web adresine açılmaz, yalnız oturumlu öğretmenlere `/api/streamer/download` verir).
+```bash
+sudo apt install nsis
+STREAMER_SERVER_URL=https://aya.ornek.com ./scripts/build-streamer.sh   # adres uygulamanın içine gömülür; https zorunlu
+STREAMER_MIN_VERSION=1.1.0 STREAMER_SERVER_URL=… ./scripts/build-streamer.sh   # eski sürümleri emekli etmek için
+```
+- Çıktı `AYA-Yayin-Studyosu-Kurulum-<sürüm>.exe` ve `streamer.json` (sürüm + SHA-256). Sürümü artırmak için `streamer/package.json`.
+- Kurulum dosyası **imzasızdır**: Windows SmartScreen "bilinmeyen yayımcı" uyarısı verir. Bir kod imzalama sertifikası (EV önerilir) alıp derlenen `.exe`'yi imzalayın, sonra `streamer.json` içindeki `sha256` değerini yeniden hesaplayın.
+- Dosya Linux'ta derlendi; yayına almadan önce gerçek bir Windows makinede kurup eşleştirme + yayın denemesi yapın.
+
 ## 8. Yayına çıkmadan önce son kontrol listesi
 - [ ] `docker compose logs web` içinde yapılandırma uyarısı kalmadı
 - [ ] Kayıt ol → doğrulama e-postası geldi → bağlantı çalıştı
@@ -73,6 +84,7 @@ git pull && docker compose up -d --build
 - [ ] Yedek alındı ve **geri yükleme bir test makinesinde denendi**
 - [ ] Kullanım şartları, gizlilik ve çerez metinleri bir hukukçu tarafından gözden geçirildi
 - [ ] `/robots.txt`, `/sitemap.xml` doğru alan adını gösteriyor
+- [ ] (yayın uygulaması kullanılacaksa) kurulum dosyası **canlı adresle** derlendi (`localhost` değil), imzalandı, Windows'ta denendi
 
 ## Docker'sız kurulum notu
 `npm ci && npx prisma generate && npx prisma db push && NEXT_PUBLIC_SITE_URL=https://aya.ornek.com ENABLE_HSTS=true npx next build && npx next start -p 3000`; süreci `systemd` ya da `pm2` ile yönetin, MariaDB ve LiveKit'i ayrıca kurun, ters vekil olarak Caddy/Nginx kullanın.

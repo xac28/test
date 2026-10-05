@@ -152,6 +152,8 @@ ipcMain.handle("aya:pair", async (e, { code, serverUrl }) => {
   if (!base) return { ok: false, error: "Sunucu adresi geçersiz. Adres https:// ile başlamalı." }
   const c = normalizeCode(code)
   if (!c) return { ok: false, error: "Kod 8 karakter olmalı (ör. K7QM-4TXD)." }
+  // check before the code is spent: if the token cannot be stored safely, pairing must not start
+  if (!safeStorage.isEncryptionAvailable()) return { ok: false, error: "Bu bilgisayarda güvenli depolama kullanılamıyor." }
   const r = await call("/api/streamer/pair", { method: "POST", body: { code: c, deviceName: os.hostname(), appVersion: VERSION }, base }).catch(() => null)
   if (!r) return { ok: false, error: "Sunucuya ulaşılamadı. Adresi ve internet bağlantını kontrol et." }
   if (!r.ok) return { ok: false, error: r.data.error || "Bağlanılamadı." }

@@ -1,7 +1,8 @@
 "use client"
 
 import { AlertTriangle, CheckCircle2, ChevronRight, XCircle } from "lucide-react"
-import { Card, ErrorNote, Pill, SectionTitle, Spinner, Stat, ago, api, fmtMoney, useLoader } from "./ui"
+import { Card, ErrorNote, Pill, SectionTitle, Spinner, ago, api, fmtMoney, useLoader } from "./ui"
+import { StatStrip } from "@/components/panel/ui"
 import { useAdminBadges } from "./tab-defs"
 import { auditLabel } from "@/lib/audit-labels"
 
@@ -18,7 +19,7 @@ function Bars({ data, color }: { data: { day: string; count: number }[]; color: 
   const total = data.reduce((s, d) => s + d.count, 0)
   return (
     <div>
-      <p className="font-display text-3xl">{total}</p>
+      <p className="mt-1 text-[1.65rem] leading-none font-semibold tabular-nums tracking-tight text-ink">{total}</p>
       <div className="flex items-end gap-[3px] h-14 mt-2" role="img" aria-label={`Son 14 gün toplam ${total}`}>
         {data.map((d) => (
           <div key={d.day} title={`${d.day}: ${d.count}`} className={`flex-1 rounded-sm ${color}`} style={{ height: `${Math.max(d.count ? 12 : 4, (d.count / max) * 100)}%`, opacity: d.count ? 1 : 0.25 }} />
@@ -36,54 +37,66 @@ export function OverviewTab({ goTo }: { goTo: (tab: string) => void }) {
   const { queue: q, totals: t } = data
 
   const items = [
-    { tab: "reports", label: "Acil raporlar", value: q.urgentReports, tone: "red", show: q.urgentReports > 0, hint: "Hemen bakılmalı" },
-    { tab: "reports", label: "Açık raporlar", value: q.openReports, tone: "amber", show: true, hint: q.oldestOpenReportAt ? `en eskisi ${ago(q.oldestOpenReportAt)}` : "bekleyen yok" },
-    { tab: "applications", label: "Eğitmen başvuruları", value: q.pendingApplications, tone: "amber", show: true, hint: "inceleme bekliyor" },
-    { tab: "trials", label: "Deneme odası", value: q.trialTeachers, tone: "amber", show: true, hint: "onaysız eğitmen" },
-    { tab: "support", label: "Canlı destek", value: badges?.openSupport ?? 0, tone: "red", show: true, hint: "yanıt bekleyen görüşme" },
-    { tab: "community", label: "Onay bekleyen fotoğraf", value: badges?.pendingPosts ?? 0, tone: "amber", show: true, hint: "topluluk paylaşımı" },
-    { tab: "ai", label: "Rehberin bilmedikleri", value: badges?.aiUnknown ?? 0, tone: "amber", show: true, hint: "öğretilmeyi bekliyor" },
-    { tab: "payouts", label: "Ödeme talepleri", value: q.pendingPayouts, tone: "amber", show: true, hint: q.pendingPayouts ? fmtMoney(q.pendingPayoutAmount) : "bekleyen yok" },
+    { tab: "reports", label: "Acil raporlar", value: q.urgentReports, tone: "red", hint: "Hemen bakılmalı" },
+    { tab: "support", label: "Canlı destek", value: badges?.openSupport ?? 0, tone: "red", hint: "Yanıt bekleyen görüşme" },
+    { tab: "reports", label: "Açık raporlar", value: q.openReports, tone: "amber", hint: q.oldestOpenReportAt ? `En eskisi ${ago(q.oldestOpenReportAt)}` : "Bekleyen yok" },
+    { tab: "applications", label: "Eğitmen başvuruları", value: q.pendingApplications, tone: "amber", hint: "İnceleme bekliyor" },
+    { tab: "trials", label: "Deneme odası", value: q.trialTeachers, tone: "amber", hint: "Onaysız eğitmen" },
+    { tab: "payouts", label: "Ödeme talepleri", value: q.pendingPayouts, tone: "amber", hint: q.pendingPayouts ? fmtMoney(q.pendingPayoutAmount) : "Bekleyen yok" },
+    { tab: "community", label: "Onay bekleyen fotoğraf", value: badges?.pendingPosts ?? 0, tone: "amber", hint: "Topluluk paylaşımı" },
+    { tab: "ai", label: "Rehberin bilmedikleri", value: badges?.aiUnknown ?? 0, tone: "amber", hint: "Öğretilmeyi bekliyor" },
   ]
+  const waiting = items.filter((i) => i.value > 0).length
 
   return (
     <div className="space-y-8" data-testid="tab-overview">
-      <SectionTitle title="Genel bakış" hint="Önce yapılması gerekenler, ardından platformun durumu." />
+      <SectionTitle title="Genel bakış" hint={waiting ? `${waiting} başlıkta bekleyen iş var. Üstteki en acil olanlar.` : "Bekleyen iş yok. Platform sakin."} />
 
-      <section>
-        <h3 className="text-xs font-bold uppercase tracking-widest text-sage-500 mb-3">Bekleyen işler</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <section aria-label="Bekleyen işler">
+        <ul className="bg-paper border border-rule rounded-xl divide-y divide-rule overflow-hidden">
           {items.map((i) => (
-            <button key={i.label} onClick={() => goTo(i.tab)} data-testid={`queue-${i.tab}-${i.label === "Acil raporlar" ? "urgent" : "all"}`} className={`text-left rounded-xl border p-4 transition hover:shadow-md ${i.value > 0 ? (i.tone === "red" ? "border-red-300 bg-red-50" : "border-amber-200 bg-amber-50/60") : "border-rule bg-paper"} ${i.show ? "" : "hidden"}`}>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-sage-500">{i.label}</p>
-              <p className={`font-display text-4xl mt-1 ${i.value > 0 ? (i.tone === "red" ? "text-red-600" : "text-amber-700") : "text-sage-500"}`}>{i.value}</p>
-              <p className="text-xs text-sage-500 mt-1 flex items-center gap-1">{i.hint} <ChevronRight size={12} className="ml-auto" /></p>
-            </button>
+            <li key={i.label}>
+              <button
+                onClick={() => goTo(i.tab)}
+                data-testid={`queue-${i.tab}-${i.label === "Acil raporlar" ? "urgent" : "all"}`}
+                className="w-full flex items-center gap-4 px-5 py-3 text-left hover:bg-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
+              >
+                <span aria-hidden className={`w-2 h-2 rounded-full shrink-0 ${i.value === 0 ? "bg-sage-300" : i.tone === "red" ? "bg-clay-500" : "bg-saffron-500"}`} />
+                <span className="min-w-0 flex-1">
+                  <span className={`block text-sm font-medium ${i.value === 0 ? "text-sage-600" : "text-ink"}`}>{i.label}</span>
+                  <span className="block text-[13px] text-sage-500">{i.hint}</span>
+                </span>
+                <span className={`text-xl font-semibold tabular-nums ${i.value === 0 ? "text-sage-400" : i.tone === "red" ? "text-clay-600" : "text-ink"}`}>{i.value}</span>
+                <ChevronRight size={16} className="text-sage-400 shrink-0" aria-hidden />
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <Stat label="Kullanıcı" value={t.users} hint={`${t.teachers} eğitmen`} />
-        <Stat label="Rezervasyon" value={t.bookings} hint={`son 7 günde ${t.bookings7d}`} />
-        <Stat label="Canlı şimdi" value={t.liveNow} tone={t.liveNow ? "green" : undefined} hint={`${t.workshopsPublished} atölye yayında`} />
-        <Stat label="Yasaklı hesap" value={t.bannedUsers} hint={t.evasions24h ? `son 24 saatte ${t.evasions24h} aşma denemesi` : "aşma denemesi yok"} tone={t.evasions24h ? "red" : undefined} />
-        <Stat label="Toplam hacim" value={fmtMoney(t.volume)} />
-        <Stat label="Platform geliri" value={fmtMoney(t.revenue)} hint="komisyon" tone="green" />
-      </section>
+      <StatStrip
+        items={[
+          { label: "Kullanıcı", value: t.users, hint: `${t.teachers} eğitmen` },
+          { label: "Rezervasyon", value: t.bookings, hint: `son 7 günde ${t.bookings7d}` },
+          { label: "Canlı şimdi", value: t.liveNow, hint: `${t.workshopsPublished} atölye yayında`, tone: t.liveNow ? "good" : undefined },
+          { label: "Yasaklı hesap", value: t.bannedUsers, hint: t.evasions24h ? `son 24 saatte ${t.evasions24h} aşma denemesi` : "aşma denemesi yok", tone: t.evasions24h ? "bad" : undefined },
+          { label: "Toplam hacim", value: fmtMoney(t.volume) },
+          { label: "Platform geliri", value: fmtMoney(t.revenue), hint: "komisyon", tone: "good" },
+        ]}
+      />
 
       <section>
-        <h3 className="text-xs font-bold uppercase tracking-widest text-sage-500 mb-3">Son 14 gün</h3>
+        <h3 className="text-[15px] font-semibold text-ink mb-3">Son 14 gün</h3>
         <div className="grid md:grid-cols-3 gap-3">
-          <Card className="p-4"><p className="text-xs font-semibold uppercase tracking-wider text-sage-500">Yeni kullanıcı</p><Bars data={data.series.users} color="bg-indigo-400" /></Card>
-          <Card className="p-4"><p className="text-xs font-semibold uppercase tracking-wider text-sage-500">Yeni rezervasyon</p><Bars data={data.series.bookings} color="bg-emerald-400" /></Card>
-          <Card className="p-4"><p className="text-xs font-semibold uppercase tracking-wider text-sage-500">Yeni rapor</p><Bars data={data.series.reports} color="bg-red-400" /></Card>
+          <Card className="p-4"><p className="text-[13px] text-sage-500">Yeni kullanıcı</p><Bars data={data.series.users} color="bg-teal-500" /></Card>
+          <Card className="p-4"><p className="text-[13px] text-sage-500">Yeni rezervasyon</p><Bars data={data.series.bookings} color="bg-teal-500" /></Card>
+          <Card className="p-4"><p className="text-[13px] text-sage-500">Yeni rapor</p><Bars data={data.series.reports} color="bg-clay-500" /></Card>
         </div>
       </section>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section>
-          <h3 className="text-xs font-bold uppercase tracking-widest text-sage-500 mb-3">Sistem sağlığı</h3>
+          <h3 className="text-[15px] font-semibold text-ink mb-3">Sistem sağlığı</h3>
           <Card className="divide-y divide-rule" data-testid="health">
             {data.health.map((h) => (
               <div key={h.id} className="flex items-start gap-3 p-3.5">
@@ -98,8 +111,8 @@ export function OverviewTab({ goTo }: { goTo: (tab: string) => void }) {
         </section>
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-sage-500">Son yönetici işlemleri</h3>
-            <button onClick={() => goTo("audit")} className="text-xs underline text-sage-500">Tümü</button>
+            <h3 className="text-[15px] font-semibold text-ink">Son yönetici işlemleri</h3>
+            <button onClick={() => goTo("audit")} className="text-[13px] font-medium text-teal-700 hover:text-teal-900 cursor-pointer">Tümü</button>
           </div>
           <Card className="divide-y divide-rule">
             {data.recentAudit.length === 0 ? <p className="p-4 text-sm text-sage-500">Henüz kayıt yok.</p> : data.recentAudit.map((a) => (

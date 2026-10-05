@@ -129,7 +129,7 @@ const TONES: Record<string, string> = {
 }
 export function Pill({ tone = "gray", children, title }: { tone?: keyof typeof TONES | string; children: ReactNode; title?: string }) {
   return (
-    <span title={title} className={`inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-full border whitespace-nowrap ${TONES[tone] ?? TONES.gray}`}>
+    <span title={title} className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full border whitespace-nowrap ${TONES[tone] ?? TONES.gray}`}>
       {children}
     </span>
   )
@@ -143,7 +143,7 @@ export function SectionTitle({ title, hint, actions }: { title: string; hint?: s
   return (
     <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
       <div>
-        <h2 className="font-display text-3xl text-ink">{title}</h2>
+        <h2 className="font-display text-3xl md:text-[2.5rem] leading-[1.1] text-ink">{title}</h2>
         {hint && <p className="text-sm text-sage-500 mt-1 max-w-2xl">{hint}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -293,13 +293,13 @@ export function ConfirmDialog({ spec, onClose }: { spec: ConfirmSpec; onClose: (
         {spec.description && <div className="text-sm text-sage-600 leading-relaxed">{spec.description}</div>}
         {spec.input && (
           <label className="block">
-            <span className="text-xs font-semibold uppercase tracking-wider text-sage-500">{spec.input.label}</span>
+            <span className="text-xs font-semibold text-sage-500">{spec.input.label}</span>
             {spec.input.multiline ? (
               <textarea autoFocus rows={3} value={value} onChange={(e) => setValue(e.target.value)} placeholder={spec.input.placeholder} data-testid="confirm-input" className="mt-1.5 w-full px-3 py-2 bg-white border border-rule rounded-lg text-sm focus:outline-none focus:border-sage-500" />
             ) : (
               <input autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder={spec.input.placeholder} data-testid="confirm-input" className="mt-1.5 w-full px-3 py-2 bg-white border border-rule rounded-lg text-sm focus:outline-none focus:border-sage-500" />
             )}
-            {min > 0 && value.trim().length < min && <span className="text-[11px] text-sage-500">En az {min} karakter</span>}
+            {min > 0 && value.trim().length < min && <span className="text-xs text-sage-500">En az {min} karakter</span>}
           </label>
         )}
         {error && <p role="alert" data-testid="confirm-error" className="text-sm text-red-600">{error}</p>}
@@ -355,7 +355,7 @@ export function Table({ children, head }: { children: ReactNode; head: string[] 
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="bg-sage-50 border-b border-rule text-[11px] uppercase tracking-wider text-sage-500">
+          <thead className="bg-sage-50 border-b border-rule text-xs font-medium text-sage-600">
             <tr>{head.map((h) => <th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">{h}</th>)}</tr>
           </thead>
           <tbody className="divide-y divide-rule">{children}</tbody>
@@ -369,8 +369,8 @@ export function Stat({ label, value, hint, tone }: { label: string; value: React
   const color = tone === "red" ? "text-red-600" : tone === "amber" ? "text-amber-600" : tone === "green" ? "text-green-600" : "text-ink"
   return (
     <Card className="p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-sage-500">{label}</p>
-      <p className={`font-display text-3xl mt-1 ${color}`}>{value}</p>
+      <p className="text-[13px] text-sage-500">{label}</p>
+      <p className={`text-[1.65rem] leading-none font-semibold tabular-nums tracking-tight mt-1.5 ${color}`}>{value}</p>
       {hint && <p className="text-xs text-sage-500 mt-1">{hint}</p>}
     </Card>
   )

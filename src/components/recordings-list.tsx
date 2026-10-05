@@ -33,12 +33,12 @@ export function RecordingsList({ role }: { role: "teacher" | "student" }) {
   }, [])
 
   return (
-    <section data-testid="recordings-section" className="rounded-3xl border border-sage-200/70 bg-white p-6">
+    <section data-testid="recordings-section" className="rounded-xl border border-rule bg-paper p-5">
       <div className="mb-4">
-        <h2 className="font-display text-2xl text-ink flex items-center gap-2">
-          <Film size={22} className="text-sage-600" /> Ders Kayıtları
+        <h2 className="text-[15px] font-semibold text-ink flex items-center gap-2">
+          <Film size={17} className="text-sage-500" aria-hidden /> Ders kayıtları
         </h2>
-        <p className="text-sm text-ink/60 mt-1">
+        <p className="text-[13px] text-sage-500 mt-1">
           Kayıtlar yalnızca dersin öğretmeni ve öğrencisi tarafından indirilebilir ve 30 gün sonra otomatik silinir.
         </p>
       </div>

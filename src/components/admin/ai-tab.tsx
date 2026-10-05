@@ -39,18 +39,18 @@ export function TeachDialog({ init, onClose, onDone }: { init: TeachInit; onClos
   const field = "mt-1.5 w-full px-3 py-2 bg-white border border-rule rounded-lg text-sm focus:outline-none focus:border-ink"
   return (
     <Drawer title={editing ? "Cevabı düzenle" : "Rehbere öğret"} subtitle="Bu cevap, yerleşik bilgilerden önce kullanılır." onClose={onClose} testid="teach-dialog">
-      <label className="block"><span className="text-xs font-semibold uppercase tracking-wider text-sage-500">Soru (örnek)</span>
+      <label className="block"><span className="text-xs font-semibold text-sage-500">Soru (örnek)</span>
         <input value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={300} data-testid="teach-question" className={field} /></label>
-      <label className="block"><span className="text-xs font-semibold uppercase tracking-wider text-sage-500">Cevap</span>
+      <label className="block"><span className="text-xs font-semibold text-sage-500">Cevap</span>
         <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={6} maxLength={2000} data-testid="teach-answer" placeholder="**kalın** yazabilirsin, satır atlayabilirsin." className={field} />
-        <span className="text-[11px] text-sage-500">{answer.length}/2000</span></label>
-      <label className="block"><span className="text-xs font-semibold uppercase tracking-wider text-sage-500">Anahtar kelimeler (virgülle, isteğe bağlı)</span>
+        <span className="text-xs text-sage-500">{answer.length}/2000</span></label>
+      <label className="block"><span className="text-xs font-semibold text-sage-500">Anahtar kelimeler (virgülle, isteğe bağlı)</span>
         <input value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="iade, para iadesi, geri ödeme" data-testid="teach-keywords" className={field} />
-        <span className="text-[11px] text-sage-500">Boş bırakırsan sorudaki önemli kelimeler kullanılır. Bir satırdaki kelimelerin <strong>hepsi</strong> soruda geçmeli; birden çok ifade için virgül kullan.</span></label>
+        <span className="text-xs text-sage-500">Boş bırakırsan sorudaki önemli kelimeler kullanılır. Bir satırdaki kelimelerin <strong>hepsi</strong> soruda geçmeli; birden çok ifade için virgül kullan.</span></label>
       <div className="grid sm:grid-cols-2 gap-3">
-        <label className="block"><span className="text-xs font-semibold uppercase tracking-wider text-sage-500">Bağlantı etiketi</span>
+        <label className="block"><span className="text-xs font-semibold text-sage-500">Bağlantı etiketi</span>
           <input value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} maxLength={60} placeholder="Paketleri gör" className={field} /></label>
-        <label className="block"><span className="text-xs font-semibold uppercase tracking-wider text-sage-500">Bağlantı</span>
+        <label className="block"><span className="text-xs font-semibold text-sage-500">Bağlantı</span>
           <input value={linkHref} onChange={(e) => setLinkHref(e.target.value)} placeholder="/pricing" data-testid="teach-href" className={field} /></label>
       </div>
       {error && <p role="alert" data-testid="teach-error" className="text-sm text-red-600">{error}</p>}

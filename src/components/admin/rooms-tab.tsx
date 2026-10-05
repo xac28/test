@@ -27,7 +27,7 @@ export function RoomsTab({ onChanged }: { onChanged: () => void }) {
       {!data && loading ? <Spinner /> : data ? (
         <>
           <section className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-sage-500 flex items-center gap-2"><Radio size={14} /> Canlı yayınlar ({data.broadcasts.length})</h3>
+            <h3 className="text-xs font-bold text-sage-500 flex items-center gap-2"><Radio size={14} /> Canlı yayınlar ({data.broadcasts.length})</h3>
             {data.broadcasts.length === 0 ? <Empty icon={<Radio size={28} />}>Şu an yayın yok.</Empty> : (
               <div className="grid md:grid-cols-2 gap-3">
                 {data.broadcasts.map((b) => (
@@ -54,7 +54,7 @@ export function RoomsTab({ onChanged }: { onChanged: () => void }) {
             )}
           </section>
           <section className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-sage-500 flex items-center gap-2"><Video size={14} /> Devam eden birebir dersler ({data.lessons.length})</h3>
+            <h3 className="text-xs font-bold text-sage-500 flex items-center gap-2"><Video size={14} /> Devam eden birebir dersler ({data.lessons.length})</h3>
             {data.lessons.length === 0 ? <Empty icon={<Video size={28} />}>Şu an devam eden ders yok.</Empty> : (
               <div className="grid md:grid-cols-2 gap-3">
                 {data.lessons.map((l) => (

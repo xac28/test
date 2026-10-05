@@ -60,7 +60,7 @@ export function AdminTabs({ pendingApplications, recentActions, financials, tria
               className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm border transition ${active ? "bg-ink text-cream border-ink" : "bg-paper border-rule text-sage-700"}`}
             >
               <Icon size={15} /> {t.label}
-              {b && <span className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center ${BADGE_TONE[b.tone]}`}>{b.value}</span>}
+              {b && <span className={`min-w-5 h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center ${BADGE_TONE[b.tone]}`}>{b.value}</span>}
             </button>
           )
         })}
@@ -97,7 +97,7 @@ export function AdminTabs({ pendingApplications, recentActions, financials, tria
             )}
             {recentActions.length > 0 && (
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest text-sage-500 mb-3 flex items-center gap-2"><History size={14} /> Son kararlar</h3>
+                <h3 className="text-xs font-bold text-sage-500 mb-3 flex items-center gap-2"><History size={14} /> Son kararlar</h3>
                 <Card className="divide-y divide-rule overflow-hidden">
                   {recentActions.map((app: any) => (
                     <div key={app.id} className="flex items-center justify-between p-4 text-sm">

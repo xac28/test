@@ -140,7 +140,7 @@ export function AdminPayouts({ onChange }: { onChange?: () => void }) {
         <div className="glass-card rounded-3xl border border-sage-200/60 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-sage-50/80 border-b border-sage-200/60 text-xs uppercase tracking-wider text-sage-500 font-semibold">
+              <thead className="bg-sage-50/80 border-b border-sage-200/60 text-xs text-sage-500 font-semibold">
                 <tr>
                   <th className="px-5 py-4">Öğretmen</th>
                   <th className="px-5 py-4">Tutar</th>
@@ -185,7 +185,7 @@ export function AdminPayouts({ onChange }: { onChange?: () => void }) {
                       {new Date(r.createdAt).toLocaleString("tr-TR")}
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`inline-flex px-2.5 py-1 text-[11px] font-bold rounded-full border ${STATUS_STYLE[r.status]}`}>
+                      <span className={`inline-flex px-2.5 py-1 text-xs font-bold rounded-full border ${STATUS_STYLE[r.status]}`}>
                         {PAYOUT_STATUS_LABEL_TR[r.status]}
                       </span>
                     </td>

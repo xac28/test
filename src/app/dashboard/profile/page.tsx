@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/panel/ui"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
@@ -15,12 +16,8 @@ export default async function ProfilePage() {
   if (!user) redirect("/")
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="glass-card p-8 rounded-3xl border border-sage-100/50">
-        <p className="text-sage-500 text-sm font-medium tracking-wider uppercase mb-1">Profilin</p>
-        <h1 className="text-4xl font-display text-sage-900 gradient-text">Complete Profilin</h1>
-        <p className="text-sage-500 mt-2">Yoga yolculuğunu sana göre şekillendirmemize yardım et</p>
-      </div>
+    <div className="pb-12 space-y-6">
+      <PageHeader title={user.profileCompleted ? "Profilim" : "Profilini tamamla"} description="Yoga yolculuğunu sana göre şekillendirmemize yardım et." />
 
       <StudentProfileForm
         initialData={JSON.parse(JSON.stringify({

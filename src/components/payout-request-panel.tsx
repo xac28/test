@@ -108,7 +108,7 @@ export function PayoutRequestPanel() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs uppercase tracking-wide text-ink/50 block mb-1.5">Tutar (USD)</label>
+            <label className="text-xs text-ink/50 block mb-1.5">Tutar (USD)</label>
             <input
               data-testid="payout-amount"
               type="number"
@@ -123,7 +123,7 @@ export function PayoutRequestPanel() {
             />
           </div>
           <div>
-            <label className="text-xs uppercase tracking-wide text-ink/50 block mb-1.5">Yöntem</label>
+            <label className="text-xs text-ink/50 block mb-1.5">Yöntem</label>
             <select value={method} onChange={(e) => setMethod(e.target.value as any)} className={input}>
               <option value="IBAN">Banka havalesi (IBAN)</option>
               <option value="STRIPE" disabled={!data.hasStripeConnect}>
@@ -136,11 +136,11 @@ export function PayoutRequestPanel() {
         {method === "IBAN" && (
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs uppercase tracking-wide text-ink/50 block mb-1.5">IBAN</label>
+              <label className="text-xs text-ink/50 block mb-1.5">IBAN</label>
               <input data-testid="payout-iban" value={iban} onChange={(e) => setIban(e.target.value)} placeholder="TR00 0000 0000 0000 0000 0000 00" className={`${input} font-mono`} />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-wide text-ink/50 block mb-1.5">Hesap sahibi</label>
+              <label className="text-xs text-ink/50 block mb-1.5">Hesap sahibi</label>
               <input data-testid="payout-account-name" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Ad Soyad" className={input} />
             </div>
           </div>
@@ -176,7 +176,7 @@ export function PayoutRequestPanel() {
                   </p>
                   {r.adminNote && <p className="text-xs text-ink/60 mt-0.5">Not: {r.adminNote}</p>}
                 </div>
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${STATUS_STYLE[r.status]}`}>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${STATUS_STYLE[r.status]}`}>
                   {PAYOUT_STATUS_LABEL_TR[r.status]}
                 </span>
               </li>
@@ -191,7 +191,7 @@ export function PayoutRequestPanel() {
 function Stat({ label, value, highlight, testId }: { label: string; value: number; highlight?: boolean; testId?: string }) {
   return (
     <div className={`rounded-3xl border p-5 ${highlight ? "bg-sage-800 text-white border-sage-800" : "bg-white border-sage-200/70"}`}>
-      <p className={`text-xs uppercase tracking-wider ${highlight ? "text-sage-200" : "text-ink/50"}`}>{label}</p>
+      <p className={`text-xs ${highlight ? "text-sage-200" : "text-ink/50"}`}>{label}</p>
       <p data-testid={testId} className="font-display text-3xl mt-1">${value.toFixed(2)}</p>
     </div>
   )

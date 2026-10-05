@@ -93,7 +93,7 @@ export function MonitorView({ liveRoomId }: { liveRoomId: string }) {
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/admin?tab=monitor" className="inline-flex items-center gap-1.5 text-sm text-sage-600 hover:text-ink min-h-[44px]"><ArrowLeft size={16} /> Canlı izleme</Link>
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sage-600 bg-sage-100 rounded-full px-2.5 py-1" title="İzleyici listesinde ve sayısında görünmezsiniz"><EyeOff size={13} /> Gizli izliyorsunuz</span>
-        {stream?.supervised && <span className="text-xs font-bold uppercase tracking-wider bg-saffron-300 text-ink rounded px-2 py-1">Denetimli yayın</span>}
+        {stream?.supervised && <span className="text-xs font-bold bg-saffron-300 text-ink rounded px-2 py-1">Denetimli yayın</span>}
       </div>
 
       <div className="grid xl:grid-cols-[1fr_22rem] gap-4">

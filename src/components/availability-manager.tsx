@@ -71,7 +71,7 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
           {slots.map((slot, i) => (
             <div key={i} className="flex flex-wrap items-center gap-4 p-4 bg-white/50 rounded-2xl border border-sage-100/50 group">
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-sage-500 uppercase tracking-wide font-medium">Gün</label>
+                <label className="text-xs text-sage-500 font-medium">Gün</label>
                 <select
                   value={slot.dayOfWeek}
                   onChange={e => updateSlot(i, "dayOfWeek", parseInt(e.target.value))}
@@ -83,7 +83,7 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-sage-500 uppercase tracking-wide font-medium">Başlangıç</label>
+                <label className="text-xs text-sage-500 font-medium">Başlangıç</label>
                 <select
                   value={slot.startTime}
                   onChange={e => updateSlot(i, "startTime", e.target.value)}
@@ -93,7 +93,7 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-sage-500 uppercase tracking-wide font-medium">Bitiş</label>
+                <label className="text-xs text-sage-500 font-medium">Bitiş</label>
                 <select
                   value={slot.endTime}
                   onChange={e => updateSlot(i, "endTime", e.target.value)}

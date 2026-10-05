@@ -33,7 +33,7 @@ export function StripeConnectButton({ isConnected }: StripeConnectButtonProps) {
       <div className="flex items-center gap-3 p-4 border border-rule bg-paper rounded-xl" data-testid="stripe-connected">
         <span className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700" aria-hidden>✓</span>
         <div>
-          <p className="font-medium text-ink">{L("Ödemeler bağlı", "Payouts connected")}</p>
+          <p className="text-sm font-semibold text-ink">{L("Ödemeler bağlı", "Payouts connected")}</p>
           <p className="text-xs text-sage-600">{L("Stripe üzerinden doğrudan ödeme alabilirsiniz.", "You can receive direct payouts through Stripe.")}</p>
         </div>
       </div>
@@ -44,13 +44,13 @@ export function StripeConnectButton({ isConnected }: StripeConnectButtonProps) {
     <div className="p-5 border border-rule bg-paper rounded-xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="font-display text-xl text-ink">{L("Ödemeleri bağlayın", "Set up payouts")}</p>
-          <p className="text-sm text-sage-600 mt-0.5">{L("Banka hesabınızı bağlayın; derslerinizin kazancı otomatik yatsın.", "Connect your bank account to receive automatic payouts for your sessions.")}</p>
+          <p className="text-[15px] font-semibold text-ink">{L("Ödeme hesabını bağla", "Set up payouts")}</p>
+          <p className="text-sm text-sage-600 mt-0.5">{L("Banka hesabını bağla; derslerinin kazancı otomatik olarak yatsın.", "Connect your bank account to receive automatic payouts for your sessions.")}</p>
         </div>
         <button
           onClick={handleConnect}
           disabled={loading}
-          className="shrink-0 inline-flex items-center justify-center gap-2 bg-ink hover:bg-sage-800 text-cream px-5 py-2.5 rounded-md text-sm font-semibold transition disabled:opacity-50"
+          className="shrink-0 inline-flex items-center justify-center gap-2 min-h-[42px] bg-ink hover:bg-sage-800 text-cream px-4 rounded-lg text-sm font-semibold transition disabled:opacity-50 cursor-pointer"
         >
           {loading ? <Loader2 size={15} className="animate-spin" /> : null}
           {L("Stripe ile bağla", "Connect with Stripe")}

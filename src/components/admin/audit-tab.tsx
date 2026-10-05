@@ -69,7 +69,7 @@ function Events() {
         <Stat label="Son 24 saat olay" value={s ? (s.byLevel.info ?? 0) + (s.byLevel.warn ?? 0) + (s.byLevel.error ?? 0) : "—"} />
         <Stat label="Uyarı" value={s?.byLevel.warn ?? 0} tone={s?.byLevel.warn ? "amber" : undefined} />
         <Stat label="Hata" value={s?.byLevel.error ?? 0} tone={s?.byLevel.error ? "red" : undefined} />
-        <Card className="p-3">{s ? <Bars hours={s.hours} /> : <Spinner />}<p className="text-[11px] text-sage-500 mt-1">Saat başına olay (kırmızı: uyarı/hata)</p></Card>
+        <Card className="p-3">{s ? <Bars hours={s.hours} /> : <Spinner />}<p className="text-xs text-sage-500 mt-1">Saat başına olay (kırmızı: uyarı/hata)</p></Card>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Olay, kullanıcı, e-posta veya IP…" testid="log-search" />
@@ -101,7 +101,7 @@ function Events() {
                   <td className="px-4 py-3 whitespace-nowrap text-xs font-mono text-sage-500">{e.ip ?? "—"}</td>
                 </tr>
                 {open === e.id && e.meta && (
-                  <tr><td colSpan={6} className="px-6 pb-3 bg-sage-50"><pre className="text-[11px] font-mono whitespace-pre-wrap break-all text-sage-700" data-testid="log-meta">{JSON.stringify(e.meta, null, 2)}</pre></td></tr>
+                  <tr><td colSpan={6} className="px-6 pb-3 bg-sage-50"><pre className="text-xs font-mono whitespace-pre-wrap break-all text-sage-700" data-testid="log-meta">{JSON.stringify(e.meta, null, 2)}</pre></td></tr>
                 )}
               </Fragment>
             ))}
@@ -145,10 +145,10 @@ function AdminActions() {
           <Table head={["Zaman", "Yönetici", "İşlem", "Ayrıntı"]}>
             {data.logs.map((l: any) => (
               <tr key={l.id} data-testid="audit-row" className="align-top">
-                <td className="px-4 py-3 whitespace-nowrap text-xs text-sage-500" title={fmtDateTime(l.createdAt)}>{fmtDateTime(l.createdAt)}<p className="text-[11px]">{ago(l.createdAt)}</p></td>
-                <td className="px-4 py-3 whitespace-nowrap">{l.actor}{l.actorEmail && <p className="text-[11px] text-sage-500">{l.actorEmail}</p>}</td>
-                <td className="px-4 py-3"><Pill title={l.action}>{auditLabel(l.action)}</Pill><p className="text-[10px] text-sage-400 font-mono mt-0.5">{l.action}</p></td>
-                <td className="px-4 py-3 text-sage-700 break-words max-w-md">{l.reason || "—"}{l.targetId && <p className="text-[11px] text-sage-500 font-mono">{l.targetId}</p>}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-sage-500" title={fmtDateTime(l.createdAt)}>{fmtDateTime(l.createdAt)}<p className="text-xs">{ago(l.createdAt)}</p></td>
+                <td className="px-4 py-3 whitespace-nowrap">{l.actor}{l.actorEmail && <p className="text-xs text-sage-500">{l.actorEmail}</p>}</td>
+                <td className="px-4 py-3"><Pill title={l.action}>{auditLabel(l.action)}</Pill><p className="text-xs text-sage-400 font-mono mt-0.5">{l.action}</p></td>
+                <td className="px-4 py-3 text-sage-700 break-words max-w-md">{l.reason || "—"}{l.targetId && <p className="text-xs text-sage-500 font-mono">{l.targetId}</p>}</td>
               </tr>
             ))}
           </Table>

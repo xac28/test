@@ -41,8 +41,7 @@ export default async function TeacherWorkshopsPage() {
   return (
     <div className="space-y-8 pb-12">
       <div>
-        <p className="eyebrow mb-2">Atölyelerim</p>
-        <h1 className="font-display text-4xl">Atölyeleriniz</h1>
+        <h1 className="font-display text-3xl md:text-[2.5rem] leading-[1.1]">Atölyeleriniz</h1>
         <p className="text-sage-600 mt-2 max-w-xl">
           Canlı ya da kayıtlı atölyeler oluşturun, katılımcıları ve ödeme onaylarını buradan yönetin. Canlı atölyeleri “Yayınla” ile stüdyodan başlatırsınız; yalnızca onaylı katılımcılar izleyebilir.
         </p>

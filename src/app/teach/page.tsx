@@ -3,12 +3,15 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { Calendar, Clock, DollarSign, Users, TrendingUp, ArrowRight, PlayCircle, Star, Zap, History, ShieldCheck } from "lucide-react"
+import { ArrowRight, ExternalLink, Star, Video } from "lucide-react"
 import { GoLiveButton } from "@/components/go-live-button"
 import { StripeConnectButton } from "@/components/stripe-connect-button"
 import { TeacherVideoManager } from "@/components/teacher-video-manager"
 import { TeacherProfileEditor } from "@/components/teacher-profile-editor"
 import { RecordingsList } from "@/components/recordings-list"
+import { Portrait } from "@/components/person-avatar"
+import { Checklist, Dot, EmptyNote, PageHeader, Panel, PanelHeader, StatStrip, accentBtn, primaryBtn, quietBtn } from "@/components/panel/ui"
+import { firstName, fmtDate, fmtDay, fmtTime, greetingTr, untilTr } from "@/lib/format-tr"
 
 export const dynamic = "force-dynamic"
 
@@ -38,7 +41,7 @@ export default async function TeachDashboardPage() {
       <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
         <div className="glass-card p-10 rounded-3xl text-center max-w-md w-full border border-sage-100">
           <p className="text-sage-600 text-lg mb-6">Eğitmen profili bulunamadı.</p>
-          <Link href="/become-teacher" className="bg-sage-600 text-white px-8 py-3 rounded-full btn-press inline-block font-medium w-full text-center hover:bg-sage-700 transition">Apply to Teach</Link>
+          <Link href="/become-teacher" className="bg-sage-600 text-white px-8 py-3 rounded-full btn-press inline-block font-medium w-full text-center hover:bg-sage-700 transition">Eğitmenlik için başvur</Link>
         </div>
       </div>
     )
@@ -46,286 +49,151 @@ export default async function TeachDashboardPage() {
 
   const now = new Date()
 
-  const upcomingBookings = await db.booking.findMany({
-    where: {
-      teacherId: teacher.id,
-      startTime: { gte: now },
-      status: { in: ["CONFIRMED", "PENDING"] },
-    },
-    include: { student: true },
-    orderBy: { startTime: "asc" },
-    take: 6,
-  })
-
-  const completedBookings = await db.booking.findMany({
-    where: { teacherId: teacher.id, status: "COMPLETED" },
-    orderBy: { startTime: "desc" },
-    take: 5,
-    include: { student: true, review: true },
-  })
-
-  const totalCompleted = await db.booking.count({
-    where: { teacherId: teacher.id, status: "COMPLETED" },
-  })
-
-  // Calculate earnings
-  const allCompleted = await db.booking.findMany({
-    where: { teacherId: teacher.id, status: "COMPLETED" },
-    select: { price: true },
-  })
+  const [upcomingBookings, completedBookings, totalCompleted, allCompleted, videos, uniqueStudents, activeLiveRoom, availabilityCount, appDevices] = await Promise.all([
+    db.booking.findMany({
+      where: { teacherId: teacher.id, endTime: { gte: now }, status: { in: ["CONFIRMED", "PENDING"] } },
+      include: { student: true },
+      orderBy: { startTime: "asc" },
+      take: 6,
+    }),
+    db.booking.findMany({
+      where: { teacherId: teacher.id, status: "COMPLETED" },
+      orderBy: { startTime: "desc" },
+      take: 5,
+      include: { student: true, review: true },
+    }),
+    db.booking.count({ where: { teacherId: teacher.id, status: "COMPLETED" } }),
+    db.booking.findMany({ where: { teacherId: teacher.id, status: "COMPLETED" }, select: { price: true } }),
+    db.teacherVideo.findMany({ where: { teacherId: teacher.id }, orderBy: { createdAt: "desc" } }),
+    db.booking.groupBy({ by: ["studentId"], where: { teacherId: teacher.id } }),
+    db.liveRoom.findFirst({ where: { teacherId: teacher.id, isActive: true } }),
+    db.availability.count({ where: { teacherId: teacher.id } }),
+    db.streamerDevice.count({ where: { userId: session.user.id, revokedAt: null, expiresAt: { gt: now } } }),
+  ])
   const grossEarnings = allCompleted.reduce((sum, b) => sum + b.price, 0)
   const netEarnings = grossEarnings * (1 - teacher.commissionRate)
 
-  const videos = await db.teacherVideo.findMany({
-    where: { teacherId: teacher.id },
-    orderBy: { createdAt: "desc" }
-  })
-
-  // Unique students
-  const uniqueStudents = await db.booking.groupBy({
-    by: ["studentId"],
-    where: { teacherId: teacher.id },
-  })
-
-  // Active live room
-  const activeLiveRoom = await db.liveRoom.findFirst({
-    where: { teacherId: teacher.id, isActive: true },
-  })
+  const setup = [
+    { done: (teacher.bio ?? "").trim().length >= 40 && teacher.bio !== "Admin Test Profile", title: "Profil metnini yaz", text: "Öğrenciler seni burada tanır: deneyimini ve tarzını anlat.", href: "#profil", cta: "Yaz" },
+    { done: videos.length > 0, title: "Bir tanıtım videosu ekle", text: "Kısa bir video, profilini ziyaret edenlerin güvenini artırır.", href: "#videolar", cta: "Ekle" },
+    { done: availabilityCount > 0, title: "Müsait olduğun saatleri seç", text: "Öğrenciler yalnızca açtığın saatlere randevu alabilir.", href: "/teach/availability", cta: "Saatleri seç" },
+    { done: !!teacher.stripeConnectId, title: "Ödeme hesabını bağla", text: "Kazancın doğrudan hesabına geçer.", href: "#odeme", cta: "Bağla" },
+    { done: appDevices > 0, title: "Masaüstü yayın uygulamasını kur", text: "Daha kararlı ve yüksek kaliteli yayın için (isteğe bağlı).", href: "/teach/uygulama", cta: "Kur" },
+  ]
+  const doneCount = setup.filter((x) => x.done).length
+  const [next, ...later] = upcomingBookings
+  const nextIsNow = !!next && new Date(next.startTime) <= now && new Date(next.endTime) >= now
+  const summary = activeLiveRoom
+    ? "Şu anda canlı yayındasın."
+    : next ? (nextIsNow ? "Bir dersin şu an devam ediyor." : `Sıradaki dersin ${untilTr(next.startTime)}.`) : "Yaklaşan dersin yok."
 
   return (
-    <div className="space-y-12 animate-fade-in stagger-children pb-12">
-      {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-[2rem] bg-sage-900 text-white p-8 md:p-12 shadow-2xl shadow-sage-900/20">
+    <div className="pb-12">
+      <PageHeader
+        title={`${greetingTr(now)}, ${firstName(session.user.name) || "hoş geldin"}`}
+        description={summary}
+        meta={<TeacherBadge trial={teacher.isTrialMode} />}
+        actions={<Link href={`/teachers/${teacher.id}`} className={quietBtn}>Herkese açık profilim <ExternalLink size={15} aria-hidden /></Link>}
+      />
+
+      <div className="space-y-6">
         {teacher.isTrialMode && (
-          <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-6 py-1.5 rounded-bl-2xl shadow-md z-20 flex items-center gap-1.5 uppercase tracking-widest">
-            <Zap size={14}/> Deneme süreci
-          </div>
-        )}
-        <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
-          <svg className="absolute right-0 top-0 h-full w-1/2" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="0.5">
-            <path d="M0,100 C30,60 70,40 100,0 L100,100 Z" fill="currentColor" opacity="0.2"/>
-            <path d="M20,100 C50,50 80,30 100,0 L100,100 Z" fill="currentColor" opacity="0.4"/>
-          </svg>
-        </div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-sage-200 mb-4 border border-white/10">
-              <ShieldCheck size={14} className="text-green-400" /> Eğitmen Paneli
-            </div>
-            <div className="mb-4"><TeacherBadge trial={teacher.isTrialMode} tone="dark" /></div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display text-white mb-2 leading-tight">Tekrar hoş geldiniz,<br/><span className="text-sage-200 italic">{session.user.name || "Teacher"}</span></h1>
-            <p className="text-sage-500 max-w-md">Derslerinizi yönetin, kazancınızı takip edin ve öğrencilerinizle buluşun.</p>
-          </div>
-        </div>
-      </div>
-
-      {teacher.isTrialMode && (
-        <div className="bg-amber-50 border border-amber-200 p-6 rounded-3xl shadow-sm relative overflow-hidden">
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h2 className="text-xl font-bold text-amber-900 mb-2 flex items-center gap-2">
-                <span className="bg-amber-200 text-amber-800 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">1</span> 
-                Deneme Aşamasındasınız
-              </h2>
-              <p className="text-amber-800/80 text-sm max-w-2xl leading-relaxed">
-                Tebrikler, eğitmenlik başvurunuz onaylandı! Deneme sürecinde <strong>canlı yayın açabilirsiniz</strong>; yayınlarınız AYA yetkilileri tarafından canlı izlenir ve gerekirse size mesaj gönderebilirler. Yetkililer yayınınızı beğenirse <strong>“Onaylı öğretmen” rozetini</strong> alır, atölye ve rezervasyon da açabilirsiniz. İsterseniz yetkililerle <strong>5 dakikalık özel bir deneme yayını</strong> da yapabilirsiniz.
-              </p>
-              {teacher.trialNote && (
-                <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 max-w-2xl" data-testid="trial-note">
-                  Son değerlendirme notu: {teacher.trialNote}
+          <Panel className="border-l-4 !border-l-saffron-500" data-testid="trial-panel">
+            <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
+              <div className="min-w-0">
+                <h2 className="text-[15px] font-semibold text-ink">Deneme Aşamasındasınız</h2>
+                <p className="mt-1.5 text-sm text-sage-700 max-w-2xl leading-relaxed">
+                  Başvurun onaylandı. Deneme sürecinde <strong>canlı yayın açabilirsin</strong>; yayınların AYA yetkilileri tarafından canlı izlenir ve gerekirse sana mesaj gönderebilirler. Yayınları beğenirlerse <strong>“Onaylı öğretmen”</strong> rozetini alırsın; atölye ve rezervasyon da o zaman açılır. İstersen yetkililerle <strong>5 dakikalık özel bir deneme yayını</strong> da yapabilirsin.
                 </p>
-              )}
-            </div>
-            <Link 
-              href={`/room/trial/${teacher.id}`}
-              className="whitespace-nowrap bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-full font-medium transition shadow-lg shadow-amber-500/20 flex items-center gap-2"
-            >
-              Deneme Yayınını Başlat
-            </Link>
-          </div>
-          <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-400 opacity-10 rounded-full blur-3xl"></div>
-        </div>
-      )}
-
-      {/* Go Live Now — Instant Session (trial-phase teachers too: their broadcasts are supervised) */}
-      <GoLiveButton activeLiveRoom={activeLiveRoom ? JSON.parse(JSON.stringify(activeLiveRoom)) : null} />
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 stagger-children">
-        <div className="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-sage-200/60 card-hover bg-gradient-to-b from-white to-sage-50/30 group">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-green-100/50 text-green-600 rounded-2xl flex items-center justify-center shadow-inner border border-green-200 group-hover:scale-110 transition-transform">
-              <DollarSign size={24} />
-            </div>
-          </div>
-          <p className="text-4xl lg:text-5xl font-display text-sage-900 animate-count">${netEarnings.toFixed(2)}</p>
-          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Net kazanç</p>
-        </div>
-        <div className="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-sage-200/60 card-hover bg-gradient-to-b from-white to-sage-50/30 group">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-blue-100/50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner border border-blue-200 group-hover:scale-110 transition-transform">
-              <Calendar size={24} />
-            </div>
-          </div>
-          <p className="text-4xl lg:text-5xl font-display text-sage-900 animate-count" style={{ animationDelay: '100ms' }}>{totalCompleted}</p>
-          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Toplam ders</p>
-        </div>
-        <div className="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-sage-200/60 card-hover bg-gradient-to-b from-white to-sage-50/30 group">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-purple-100/50 text-purple-600 rounded-2xl flex items-center justify-center shadow-inner border border-purple-200 group-hover:scale-110 transition-transform">
-              <Users size={24} />
-            </div>
-          </div>
-          <p className="text-4xl lg:text-5xl font-display text-sage-900 animate-count" style={{ animationDelay: '200ms' }}>{uniqueStudents.length}</p>
-          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Öğrenci</p>
-        </div>
-        <div className="glass-card p-6 md:p-8 rounded-3xl shadow-sm border border-sage-200/60 card-hover bg-gradient-to-b from-white to-sage-50/30 group">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-orange-100/50 text-orange-600 rounded-2xl flex items-center justify-center shadow-inner border border-orange-200 group-hover:scale-110 transition-transform">
-              <TrendingUp size={24} />
-            </div>
-          </div>
-          <p className="text-4xl lg:text-5xl font-display text-sage-900 animate-count" style={{ animationDelay: '300ms' }}>{(teacher.commissionRate * 100).toFixed(0)}%</p>
-          <p className="text-[10px] md:text-xs text-sage-500 uppercase tracking-widest mt-2 font-bold">Komisyon</p>
-        </div>
-      </div>
-
-      {/* Stripe Connect Notice */}
-      <StripeConnectButton isConnected={!!teacher.stripeConnectId} />
-
-      {/* Upcoming */}
-      <section>
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-display text-sage-900 flex items-center gap-3">
-              <Calendar className="text-indigo-500" size={28} /> Yaklaşan Dersler
-            </h2>
-            <p className="text-sage-500 text-sm mt-1">Öğrencilerinizle planlanmış canlı dersler.</p>
-          </div>
-        </div>
-        {upcomingBookings.length === 0 ? (
-          <div className="glass-card p-12 rounded-3xl shadow-sm border border-sage-200/60 text-center animate-scale-in bg-gradient-to-br from-white to-sage-50/50">
-            <div className="w-20 h-20 bg-sage-100 text-sage-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-              <Calendar size={32} />
-            </div>
-            <p className="text-sage-500 text-lg">Yaklaşan ders yok. Öğrenciler profiliniz üzerinden randevu alabilir.</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 stagger-children">
-            {upcomingBookings.map((booking: any) => {
-              const isNow = new Date(booking.startTime) <= now && new Date(booking.endTime) >= now
-              const isConfirmed = booking.status === "CONFIRMED"
-
-              return (
-                <div key={booking.id} className={`glass-card p-6 rounded-3xl shadow-sm border ${isNow ? 'border-green-300 bg-green-50/30' : 'border-sage-200/60'} card-hover group flex flex-col`}>
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-sage-100 rounded-full overflow-hidden flex-shrink-0 border-2 border-white shadow-md relative">
-                        {booking.student.image ? (
-                          <img src={booking.student.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-sage-500 font-display text-xl">
-                            {(booking.student.name || "S")[0]}
-                          </div>
-                        )}
-                        {isConfirmed && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sage-900 text-lg group-hover:text-sage-700 transition-colors">{booking.student.name || "Student"}</h3>
-                        <p className="text-xs font-bold uppercase tracking-widest text-green-600 mt-0.5">${booking.price.toFixed(2)}</p>
-                      </div>
-                    </div>
-                    {isNow && (
-                      <span className="flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest border border-red-200/50 shadow-sm uppercase">
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" /> Live Now
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-sage-700 mb-6 p-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-sage-100/50">
-                    <span className="flex items-center gap-2 font-semibold">
-                      <Calendar size={16} className="text-sage-500" />
-                      {new Date(booking.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                    <span className="flex items-center gap-2 font-semibold bg-sage-100/50 px-2.5 py-1 rounded-lg">
-                      <Clock size={14} className="text-sage-500" />
-                      {new Date(booking.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-
-                  <div className="mt-auto">
-                    {isConfirmed ? (
-                      <Link
-                        href={`/room?bookingId=${booking.id}`}
-                        className={`block text-center w-full px-4 py-3.5 rounded-xl transition-all font-bold btn-press flex items-center justify-center gap-2 ${
-                          isNow 
-                            ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20' 
-                            : 'bg-sage-800 text-white hover:bg-sage-900 shadow-md shadow-sage-800/20'
-                        }`}
-                      >
-                        {isNow ? <><PlayCircle size={18}/> Canlı dersi başlat</> : "Ders odasını aç"}
-                      </Link>
-                    ) : (
-                      <div className="text-center w-full bg-orange-50 text-orange-700 px-4 py-3.5 rounded-xl text-xs font-bold border border-orange-100/50 uppercase tracking-wider flex items-center justify-center gap-2">
-                        <Clock size={14}/> Pending Payment
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Past Sessions */}
-      {completedBookings.length > 0 && (
-        <section className="pt-8 border-t border-sage-200/60">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-display text-sage-900 flex items-center gap-3">
-              <History className="text-sage-500" size={24} /> Son Dersler
-            </h2>
-          </div>
-          <div className="glass-card rounded-3xl shadow-sm border border-sage-200/60 overflow-hidden">
-            {completedBookings.map((booking: any, i: number) => (
-              <div key={booking.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:bg-white/60 transition-colors gap-4 ${i < completedBookings.length - 1 ? "border-b border-sage-100/50" : ""}`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-sage-100 shadow-inner border border-white rounded-full flex items-center justify-center overflow-hidden">
-                    {booking.student.image ? (
-                      <img src={booking.student.image} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-sage-600 font-display text-lg font-bold">{(booking.student.name || "S")[0]}</span>
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-bold text-sage-900">{booking.student.name || "Student"}</p>
-                    <p className="text-sm font-medium text-sage-500 flex items-center gap-1.5 mt-0.5">
-                      <Calendar size={12}/> {new Date(booking.startTime).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 sm:ml-auto pl-16 sm:pl-0">
-                  {booking.review && (
-                    <div className="flex items-center gap-1 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100/50">
-                      <Star size={14} className="text-yellow-500 fill-yellow-500" />
-                      <span className="text-yellow-700 text-xs font-bold">{booking.review.rating}.0</span>
-                    </div>
-                  )}
-                  <span className="text-green-700 font-bold px-3 py-1.5 bg-green-50 rounded-full shadow-sm border border-green-200 flex items-center gap-1">
-                    <DollarSign size={14}/> {(booking.price * (1 - teacher.commissionRate)).toFixed(2)}
-                  </span>
-                </div>
+                {teacher.trialNote && (
+                  <p className="mt-3 text-sm text-clay-700 border-l-2 border-clay-400 pl-3 max-w-2xl" data-testid="trial-note">
+                    Son değerlendirme notu: {teacher.trialNote}
+                  </p>
+                )}
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+              <Link href={`/room/trial/${teacher.id}`} className={`${primaryBtn} shrink-0`}>Deneme yayınını başlat</Link>
+            </div>
+          </Panel>
+        )}
 
-      <RecordingsList role="teacher" />
+        {/* going live: trial-phase teachers too (their broadcasts are supervised) */}
+        <GoLiveButton activeLiveRoom={activeLiveRoom ? JSON.parse(JSON.stringify(activeLiveRoom)) : null} />
 
-      {/* Video Management Section */}
-      <TeacherProfileEditor initialBio={teacher.bio ?? ""} />
-      <TeacherVideoManager initialVideos={JSON.parse(JSON.stringify(videos))} />
+        <StatStrip
+          items={[
+            { label: "Net kazanç", value: `$${netEarnings.toFixed(2)}`, hint: `brüt $${grossEarnings.toFixed(2)}`, tone: netEarnings > 0 ? "good" : undefined },
+            { label: "Tamamlanan ders", value: totalCompleted },
+            { label: "Öğrenci", value: uniqueStudents.length },
+            { label: "Komisyon", value: `%${(teacher.commissionRate * 100).toFixed(0)}`, hint: "her dersten kesilir" },
+          ]}
+        />
+
+        {doneCount < setup.length && (
+          <Panel data-testid="setup-checklist">
+            <PanelHeader title="Başlarken" description={`${doneCount} / ${setup.length} adım tamamlandı`} />
+            <div className="px-5 pb-3"><div className="h-1.5 rounded-full bg-sage-100 overflow-hidden"><div className="h-full bg-teal-600 rounded-full" style={{ width: `${(doneCount / setup.length) * 100}%` }} /></div></div>
+            <div className="border-t border-rule"><Checklist items={setup} /></div>
+          </Panel>
+        )}
+
+        {/* the checklist's payout step jumps here */}
+        {!teacher.stripeConnectId && <div id="odeme" className="scroll-mt-24"><StripeConnectButton isConnected={false} /></div>}
+
+        <div className="grid xl:grid-cols-2 gap-6 items-start">
+          <Panel>
+            <PanelHeader title="Yaklaşan dersler" />
+            {upcomingBookings.length === 0 ? (
+              <EmptyNote title="Yaklaşan ders yok">Öğrenciler profilin üzerinden, açtığın saatlere randevu alabilir.</EmptyNote>
+            ) : (
+              <ul className="divide-y divide-rule border-t border-rule">
+                {upcomingBookings.map((b: any) => {
+                  const isNow = new Date(b.startTime) <= now && new Date(b.endTime) >= now
+                  return (
+                    <li key={b.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
+                      <Portrait src={b.student.image} name={b.student.name} seed={b.student.id} size={36} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-ink truncate">{b.student.name || "Öğrenci"}</p>
+                        <p className="text-[13px] text-sage-500">{fmtDay(b.startTime)} · {fmtTime(b.startTime)} · <span className="tabular-nums">${b.price.toFixed(2)}</span></p>
+                      </div>
+                      {b.status === "CONFIRMED" ? (
+                        <Link href={`/room?bookingId=${b.id}`} className={isNow ? accentBtn : quietBtn}><Video size={15} aria-hidden /> {isNow ? "Dersi başlat" : "Odayı aç"}</Link>
+                      ) : (
+                        <span className="text-[13px] text-sage-600 inline-flex items-center gap-1.5"><Dot tone="wait" /> Ödeme bekleniyor</span>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </Panel>
+
+          <Panel>
+            <PanelHeader title="Son dersler" href="/teach/bookings" hrefLabel="Tüm dersler" />
+            {completedBookings.length === 0 ? (
+              <EmptyNote title="Henüz tamamlanan ders yok">Tamamlanan dersler, öğrenci puanları ve kazancın burada görünür.</EmptyNote>
+            ) : (
+              <ul className="divide-y divide-rule border-t border-rule">
+                {completedBookings.map((b: any) => (
+                  <li key={b.id} className="flex items-center gap-4 px-5 py-3.5">
+                    <Portrait src={b.student.image} name={b.student.name} seed={b.student.id} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-ink truncate">{b.student.name || "Öğrenci"}</p>
+                      <p className="text-[13px] text-sage-500">{fmtDate(b.startTime)}</p>
+                    </div>
+                    {b.review && <span className="inline-flex items-center gap-1 text-[13px] text-sage-700" aria-label={`Puan: ${b.review.rating} / 5`}><Star size={14} className="text-saffron-500 fill-saffron-400" aria-hidden /> {b.review.rating}/5</span>}
+                    <span className="text-sm font-medium tabular-nums text-teal-700">+${(b.price * (1 - teacher.commissionRate)).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        </div>
+
+        <RecordingsList role="teacher" />
+
+        <div id="profil" className="scroll-mt-24"><TeacherProfileEditor initialBio={teacher.bio ?? ""} /></div>
+        <div id="videolar" className="scroll-mt-24"><TeacherVideoManager initialVideos={JSON.parse(JSON.stringify(videos))} /></div>
+      </div>
     </div>
   )
 }

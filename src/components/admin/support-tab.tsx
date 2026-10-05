@@ -143,12 +143,12 @@ function TicketDrawer({ id, onClose, onChanged, onOpenUser }: { id: string; onCl
 
       <div className="rounded-xl border border-rule bg-paper max-h-[22rem] overflow-y-auto p-4 space-y-3" data-testid="support-thread" role="log">
         {data.messages.map((m: any) =>
-          m.role === "SYSTEM" ? <p key={m.id} className="text-center text-[11px] text-sage-500">{m.content}</p> : (
+          m.role === "SYSTEM" ? <p key={m.id} className="text-center text-xs text-sage-500">{m.content}</p> : (
             <div key={m.id} data-testid={`thread-${m.role.toLowerCase()}`} className={`flex ${m.role === "USER" ? "justify-start" : "justify-end"}`}>
               <div className={`max-w-[85%] rounded-xl px-3.5 py-2 text-sm whitespace-pre-line break-words ${m.role === "USER" ? "bg-sage-100 text-ink" : m.role === "NOTE" ? "bg-amber-50 border border-amber-200 text-amber-900" : "bg-ink text-cream"}`}>
-                <span className="block text-[10px] font-bold uppercase tracking-wider opacity-70 mb-0.5">{m.role === "USER" ? data.user.name ?? "Üye" : m.role === "NOTE" ? <><Lock size={9} className="inline" /> İç not · {m.senderName ?? "Yetkili"}</> : m.senderName ?? "Yetkili"}</span>
+                <span className="block text-xs font-bold opacity-70 mb-0.5">{m.role === "USER" ? data.user.name ?? "Üye" : m.role === "NOTE" ? <><Lock size={9} className="inline" /> İç not · {m.senderName ?? "Yetkili"}</> : m.senderName ?? "Yetkili"}</span>
                 {m.content}
-                <span className="block text-[10px] opacity-60 mt-1">{fmtDateTime(m.createdAt)}</span>
+                <span className="block text-xs opacity-60 mt-1">{fmtDateTime(m.createdAt)}</span>
               </div>
             </div>
           ),
@@ -183,7 +183,7 @@ function TicketDrawer({ id, onClose, onChanged, onOpenUser }: { id: string; onCl
       )}
 
       <Card className="p-4 text-sm space-y-2">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 flex items-center gap-1.5"><Bot size={13} /> Rehber ile geçmiş</h4>
+        <h4 className="text-xs font-bold text-sage-500 flex items-center gap-1.5"><Bot size={13} /> Rehber ile geçmiş</h4>
         {data.interactions.length === 0 ? <p className="text-sage-500">Bu üyenin Rehber kaydı yok.</p> : (
           <ul className="space-y-1">
             {data.interactions.map((i: any) => (

@@ -27,8 +27,7 @@ export default function NotificationsPage() {
     <div className="max-w-3xl space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow mb-2">Hesabım</p>
-          <h1 className="font-display text-4xl text-ink">Bildirimler</h1>
+          <h1 className="font-display text-3xl md:text-[2.5rem] leading-[1.1] text-ink">Bildirimler</h1>
           <p className="text-sage-600 mt-2">Beğeniler, yorumlar, paylaşım onayları ve yönetimden gelen haberler.</p>
         </div>
         <button onClick={markAll} disabled={!unread} data-testid="mark-all-page" className="inline-flex items-center gap-2 px-4 py-2 min-h-[44px] border border-rule rounded-md text-sm font-medium disabled:opacity-40 hover:border-ink"><CheckCheck size={16} /> Hepsini okundu yap</button>

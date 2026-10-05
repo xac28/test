@@ -44,15 +44,14 @@ export default function MyReportsPage() {
   return (
     <div className="space-y-10 max-w-3xl">
       <header>
-        <p className="eyebrow mb-2">Güvenlik</p>
-        <h1 className="font-display text-4xl text-ink">Raporlarım</h1>
+        <h1 className="font-display text-3xl md:text-[2.5rem] leading-[1.1] text-ink">Raporlarım</h1>
         <p className="text-sage-600 mt-2">Gönderdiğiniz bildirimlerin durumu ve yönetimden aldığınız uyarılar.</p>
       </header>
 
       {error && <p role="alert" className="text-clay-600">Bildirimler yüklenemedi.</p>}
 
       <section>
-        <h2 className="text-sm font-bold uppercase tracking-widest text-sage-500 mb-4 flex items-center gap-2"><Flag size={14} /> Gönderdiğim bildirimler</h2>
+        <h2 className="text-[15px] font-semibold text-ink mb-4 flex items-center gap-2"><Flag size={14} /> Gönderdiğim bildirimler</h2>
         {reports === null && !error ? (
           <Loader2 className="animate-spin text-sage-500" />
         ) : reports && reports.length === 0 ? (
@@ -64,7 +63,7 @@ export default function MyReportsPage() {
             {reports?.map((r) => (
               <li key={r.id} data-testid="my-report" className="border border-rule bg-paper rounded-xl p-4">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-sage-500">{r.targetLabel}</span>
+                  <span className="text-xs font-medium text-sage-500">{r.targetLabel}</span>
                   <span className="text-sage-300">·</span>
                   <span className="text-sm font-medium text-ink">{r.categoryLabel}</span>
                   <span className={`ml-auto text-xs font-bold px-2.5 py-1 rounded-full ${BADGE[r.status] ?? BADGE.PENDING}`}>{r.statusLabel}</span>
@@ -82,7 +81,7 @@ export default function MyReportsPage() {
 
       {warnings.length > 0 && (
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-sage-500 mb-4 flex items-center gap-2"><TriangleAlert size={14} /> Aldığım uyarılar</h2>
+          <h2 className="text-[15px] font-semibold text-ink mb-4 flex items-center gap-2"><TriangleAlert size={14} /> Aldığım uyarılar</h2>
           <ul className="space-y-3">
             {warnings.map((w) => (
               <li key={w.id} className="border border-amber-200 bg-amber-50 rounded-xl p-4 text-amber-900">

@@ -130,7 +130,7 @@ export function AdminArticles() {
       ) : (
         <div className="glass-card overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-sage-50 border-b border-sage-200 text-xs uppercase tracking-wider text-sage-500">
+            <thead className="bg-sage-50 border-b border-sage-200 text-xs text-sage-500">
               <tr><th className="px-5 py-3">Başlık</th><th className="px-5 py-3">Kategori</th><th className="px-5 py-3">Durum</th><th className="px-5 py-3 text-right">İşlem</th></tr>
             </thead>
             <tbody className="divide-y divide-sage-100">
@@ -138,7 +138,7 @@ export function AdminArticles() {
                 <tr key={r.id} data-testid="article-row">
                   <td className="px-5 py-3 text-sm font-medium text-sage-900">{r.title}</td>
                   <td className="px-5 py-3 text-sm text-sage-600">{r.category}</td>
-                  <td className="px-5 py-3"><span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${r.status === 'PUBLISHED' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>{r.status === 'PUBLISHED' ? 'Yayında' : 'Taslak'}</span></td>
+                  <td className="px-5 py-3"><span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.status === 'PUBLISHED' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>{r.status === 'PUBLISHED' ? 'Yayında' : 'Taslak'}</span></td>
                   <td className="px-5 py-3">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => edit(r.id)} title="Düzenle" className="p-2 hover:bg-sage-100 rounded-md"><Pencil size={15} /></button>

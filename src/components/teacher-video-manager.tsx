@@ -93,12 +93,12 @@ export function TeacherVideoManager({ initialVideos }: { initialVideos: any[] })
   const field = "w-full bg-white border border-sage-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-sage-400"
 
   return (
-    <div className="glass-card p-8 rounded-3xl border border-sage-100 shadow-sm mt-8" data-testid="video-manager">
+    <div className="bg-paper p-6 rounded-xl border border-rule" data-testid="video-manager">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-display text-sage-800 flex items-center gap-2">
-          <Video size={24} className="text-sage-500" /> Kayıtlı dersler
+        <h2 className="text-[15px] font-semibold text-ink flex items-center gap-2">
+          <Video size={17} className="text-sage-500" aria-hidden /> Kayıtlı dersler
         </h2>
-        <button onClick={() => (isAdding ? reset() : setIsAdding(true))} data-testid="video-add-toggle" className="flex items-center gap-2 bg-sage-100 text-sage-700 px-4 py-2 rounded-full font-medium text-sm hover:bg-sage-200 transition">
+        <button onClick={() => (isAdding ? reset() : setIsAdding(true))} data-testid="video-add-toggle" className="flex items-center gap-2 min-h-[40px] border border-rule bg-paper text-sage-800 px-3.5 rounded-lg font-semibold text-sm hover:border-sage-300 hover:bg-white transition cursor-pointer">
           <Plus size={16} /> {isAdding ? "Vazgeç" : "Video ekle"}
         </button>
       </div>

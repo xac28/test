@@ -48,7 +48,7 @@ export function BookingsTab({ onOpenUser, onChanged }: { onOpenUser: (id: string
           <Table head={["Ders", "Öğrenci", "Eğitmen", "Ücret", "Durum", ""]}>
             {data.bookings.map((b) => (
               <tr key={b.id} data-testid="booking-row">
-                <td className="px-4 py-3 whitespace-nowrap">{fmtDateTime(b.startTime)}<p className="text-[11px] text-sage-500 font-mono">{b.id.slice(-8).toUpperCase()}</p></td>
+                <td className="px-4 py-3 whitespace-nowrap">{fmtDateTime(b.startTime)}<p className="text-xs text-sage-500 font-mono">{b.id.slice(-8).toUpperCase()}</p></td>
                 <td className="px-4 py-3"><button className="underline-offset-2 hover:underline text-left" onClick={() => onOpenUser(b.student.id)}>{b.student.name ?? "—"}</button><p className="text-xs text-sage-500">{b.student.email}</p></td>
                 <td className="px-4 py-3"><button className="underline-offset-2 hover:underline" onClick={() => onOpenUser(b.teacher.userId)}>{b.teacher.name ?? "—"}</button></td>
                 <td className="px-4 py-3">{fmtMoney(b.price)}</td>

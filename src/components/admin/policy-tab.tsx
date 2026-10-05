@@ -61,7 +61,7 @@ function Violations({ onChanged, onOpenUser }: { onChanged: () => void; onOpenUs
               <tr key={v.id} data-testid="policy-row" className={`align-top ${v.forgiven ? "opacity-50" : ""}`}>
                 <td className="px-4 py-3 whitespace-nowrap text-xs text-sage-500" title={fmtDateTime(v.createdAt)}>{ago(v.createdAt)}</td>
                 <td className="px-4 py-3"><button className="underline text-left" onClick={() => onOpenUser(v.user.id)}>{v.user.name ?? v.user.email}</button>
-                  <p className="text-[11px] text-sage-500">{v.user.banned ? "Yasaklı" : v.user.suspendedUntil && new Date(v.user.suspendedUntil) > new Date() ? `Uzaklaştırılmış → ${new Date(v.user.suspendedUntil).toLocaleDateString("tr-TR")}` : ""}</p></td>
+                  <p className="text-xs text-sage-500">{v.user.banned ? "Yasaklı" : v.user.suspendedUntil && new Date(v.user.suspendedUntil) > new Date() ? `Uzaklaştırılmış → ${new Date(v.user.suspendedUntil).toLocaleDateString("tr-TR")}` : ""}</p></td>
                 <td className="px-4 py-3"><p className="text-xs text-sage-600 mb-1">{SURFACE_TR[v.surface] ?? v.surface}</p><Kinds kinds={v.kinds} /></td>
                 <td className="px-4 py-3 max-w-sm break-words text-sage-700">{v.excerpt}</td>
                 <td className="px-4 py-3 whitespace-nowrap"><Pill tone={ACTION_TONE[v.action]}>{v.counted ? `${v.strike}. ihlal · ${ACTION_TR[v.action]}` : ACTION_TR[v.action]}</Pill>{v.forgiven && <Pill tone="green">Affedildi</Pill>}</td>
@@ -143,7 +143,7 @@ function Scan({ onChanged, onOpenUser }: { onChanged: () => void; onOpenUser: (i
                 <div className="min-w-0 flex-1">
                   <p className="text-sm"><button className="font-semibold underline" onClick={() => onOpenUser(h.owner.id)}>{h.owner.name ?? h.owner.email}</button> · {h.field}</p>
                   <p className="text-sm text-sage-700 mt-1 break-words">{h.text}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5 items-center"><Kinds kinds={h.kinds} />{h.matches.map((m: string) => <code key={m} className="text-[11px] bg-sage-100 px-1.5 py-0.5 rounded">{m}</code>)}</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5 items-center"><Kinds kinds={h.kinds} />{h.matches.map((m: string) => <code key={m} className="text-xs bg-sage-100 px-1.5 py-0.5 rounded">{m}</code>)}</div>
                 </div>
                 <Button onClick={() => ask({ title: "İhlal olarak kaydet", description: "Eğitmen bir sonraki basamağa taşınır (1. ihlal uyarı, 2. ihlal 10 gün uzaklaştırma, 3. ihlal kalıcı ban).", confirmLabel: "Kaydet ve yaptırım uygula", tone: "danger", onConfirm: async () => { const r = await api("/api/admin/policy", { method: "POST", json: { action: "record", userId: h.owner.id, text: h.text } }); show(`${r.outcome.strike}. ihlal kaydedildi (${ACTION_TR[r.outcome.action] ?? r.outcome.action})`); reload(); onChanged() } })} data-testid="policy-scan-record"><ShieldBan size={14} /> İhlal olarak kaydet</Button>
               </li>

@@ -304,13 +304,13 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
         )}
 
         <section>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Bildirenin açıklaması</h4>
+          <h4 className="text-xs font-bold text-sage-500 mb-2">Bildirenin açıklaması</h4>
           <Card className="p-4 text-sm whitespace-pre-line break-words" data-testid="report-reason">{r.reason}</Card>
         </section>
 
         {(evidence.label || evidence.message) && (
           <section>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Kanıt / bağlam</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Kanıt / bağlam</h4>
             <Card className="p-4 text-sm space-y-2">
               {evidence.label && <p><span className="text-sage-500">İçerik:</span> {evidence.label}</p>}
               {evidence.teacher && <p><span className="text-sage-500">Eğitmen:</span> {evidence.teacher}</p>}
@@ -326,7 +326,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
               {evidence.message && (
                 <blockquote className="border-l-4 border-accent bg-sage-50 px-3 py-2">
                   <span className="font-semibold">{evidence.message.senderName}: </span>{evidence.message.text}
-                  <p className="text-[11px] text-sage-500 mt-1">{fmtDateTime(evidence.message.sentAt)}{evidence.reporterSupplied && " · bildiren kişinin sunduğu içerik, sunucu doğrulaması yok"}</p>
+                  <p className="text-xs text-sage-500 mt-1">{fmtDateTime(evidence.message.sentAt)}{evidence.reporterSupplied && " · bildiren kişinin sunduğu içerik, sunucu doğrulaması yok"}</p>
                 </blockquote>
               )}
               {target && (
@@ -342,7 +342,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
 
         <div className="grid sm:grid-cols-2 gap-3">
           <Card className="p-4 text-sm">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Bildiren</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Bildiren</h4>
             <p className="font-medium">{reporter.name ?? "—"}</p>
             <p className="text-xs text-sage-500 break-all">{reporter.email}</p>
             <p className="text-xs text-sage-500 mt-2">
@@ -352,7 +352,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
             <button className="text-xs underline mt-2" onClick={() => onOpenUser(reporter.id)}>Kullanıcıyı aç</button>
           </Card>
           <Card className="p-4 text-sm">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Bildirilen</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Bildirilen</h4>
             {reported ? (
               <>
                 <p className="font-medium">{reported.name ?? "—"} <Pill tone="indigo">{isTeacher ? (reported.teacher!.isTrialMode ? "Eğitmen (onaysız)" : "Eğitmen") : reported.role}</Pill></p>
@@ -369,7 +369,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
 
         {data.siblings.length > 0 && (
           <section>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Aynı kişiye ait diğer raporlar ({data.siblings.length})</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Aynı kişiye ait diğer raporlar ({data.siblings.length})</h4>
             <ul className="space-y-1.5">
               {data.siblings.map((s) => (
                 <li key={s.id}>
@@ -385,7 +385,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
         )}
 
         <section>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">İç not (bildirene gösterilmez)</h4>
+          <h4 className="text-xs font-bold text-sage-500 mb-2">İç not (bildirene gösterilmez)</h4>
           <textarea
             value={noteValue}
             onChange={(e) => setNote(e.target.value)}
@@ -412,7 +412,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
         ) : (
           <section className="space-y-4">
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Durum</h4>
+              <h4 className="text-xs font-bold text-sage-500 mb-2">Durum</h4>
               <div className="flex flex-wrap gap-2">
                 {r.status === "PENDING" && <Button disabled={busy} onClick={() => patch({ status: "REVIEWED" }, "İncelemeye alındı")} data-testid="mark-reviewed"><Eye size={14} /> İncelemeye al</Button>}
                 <Button disabled={busy} onClick={() => patch({ status: "DISMISSED" }, "Rapor geçersiz sayıldı")} data-testid="dismiss"><XCircle size={14} /> Geçersiz say</Button>
@@ -421,7 +421,7 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
             </div>
 
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Yaptırım (raporu da kapatır)</h4>
+              <h4 className="text-xs font-bold text-sage-500 mb-2">Yaptırım (raporu da kapatır)</h4>
               <div className="flex flex-wrap gap-2">
                 {reported && reported.role !== "ADMIN" && (
                   <Button
@@ -463,13 +463,13 @@ function ReportDrawer({ id, onClose, onChanged, onOpenReport, onOpenUser }: { id
 
         {data.timeline.length > 0 && (
           <section>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Geçmiş</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Geçmiş</h4>
             <ol className="space-y-2 border-l border-rule pl-4">
               {data.timeline.map((t) => (
                 <li key={t.id} className="text-sm">
                   <p><span className="font-medium">{t.actor}</span> <span className="text-sage-500">· {t.action.replace(/_/g, " ").toLowerCase()}</span></p>
                   {t.reason && <p className="text-xs text-sage-500">{t.reason}</p>}
-                  <p className="text-[11px] text-sage-500">{fmtDateTime(t.createdAt)}</p>
+                  <p className="text-xs text-sage-500">{fmtDateTime(t.createdAt)}</p>
                 </li>
               ))}
             </ol>

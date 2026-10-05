@@ -186,7 +186,7 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
             ["Atölye kaydı", stats.enrollments],
             ["Yaptığı bildirim", stats.reportsMade],
           ].map(([l, v]) => (
-            <Card key={l as string} className="py-3"><p className="font-display text-2xl">{v}</p><p className="text-[11px] text-sage-500 uppercase tracking-wide">{l}</p></Card>
+            <Card key={l as string} className="py-3"><p className="font-display text-2xl">{v}</p><p className="text-xs text-sage-500">{l}</p></Card>
           ))}
         </div>
 
@@ -270,7 +270,7 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
 
         {data.reportsAgainst.length > 0 && (
           <section>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Hakkındaki raporlar ({data.reportsAgainst.length})</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Hakkındaki raporlar ({data.reportsAgainst.length})</h4>
             <ul className="space-y-1.5">
               {data.reportsAgainst.map((r) => (
                 <li key={r.id} className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-rule bg-paper">
@@ -285,12 +285,12 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
 
         {data.warnings.length > 0 && (
           <section>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Uyarılar</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Uyarılar</h4>
             <ul className="space-y-1.5">
               {data.warnings.map((w) => (
                 <li key={w.id} className="text-sm px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-900">
                   {w.message}
-                  <p className="text-[11px] text-amber-700">{fmtDateTime(w.createdAt)} · {w.acknowledgedAt ? "okundu" : "henüz okunmadı"}</p>
+                  <p className="text-xs text-amber-700">{fmtDateTime(w.createdAt)} · {w.acknowledgedAt ? "okundu" : "henüz okunmadı"}</p>
                 </li>
               ))}
             </ul>
@@ -299,7 +299,7 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
 
         {data.ips.length > 0 && (
           <section>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Bilinen IP adresleri</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Bilinen IP adresleri</h4>
             <ul className="space-y-1.5">
               {data.ips.map((ip) => (
                 <li key={ip.ip} className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-rule bg-paper">
@@ -327,7 +327,7 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
                       Engelle
                     </button>
                   ) : (
-                    <span className="text-[11px] text-sage-500">yerel/özel</span>
+                    <span className="text-xs text-sage-500">yerel/özel</span>
                   )}
                 </li>
               ))}
@@ -337,13 +337,13 @@ export function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: ()
 
         {data.audit.length > 0 && (
           <section>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-sage-500 mb-2">Bu kullanıcıyla ilgili yönetici işlemleri</h4>
+            <h4 className="text-xs font-bold text-sage-500 mb-2">Bu kullanıcıyla ilgili yönetici işlemleri</h4>
             <ol className="space-y-2 border-l border-rule pl-4">
               {data.audit.map((a) => (
                 <li key={a.id} className="text-sm">
                   <p><span className="font-medium">{a.actor}</span> <span className="text-sage-500">· {a.action.replace(/_/g, " ").toLowerCase()}</span></p>
                   {a.reason && <p className="text-xs text-sage-500">{a.reason}</p>}
-                  <p className="text-[11px] text-sage-500">{fmtDateTime(a.createdAt)}</p>
+                  <p className="text-xs text-sage-500">{fmtDateTime(a.createdAt)}</p>
                 </li>
               ))}
             </ol>

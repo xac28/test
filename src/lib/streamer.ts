@@ -30,17 +30,20 @@ export function normalizePairCode(raw: unknown): string | null {
 export const hashSecret = (v: string) => crypto.createHash("sha256").update(v).digest("hex")
 export const newDeviceToken = () => `ayas_${crypto.randomBytes(32).toString("hex")}`
 
-export interface Eligibility { ok: boolean; reason?: "NOT_FOUND" | "BANNED" | "DELETED" | "ROLE" | "TRIAL" | "SUSPENDED"; message?: string }
+export interface Eligibility { ok: boolean; reason?: "NOT_FOUND" | "BANNED" | "DELETED" | "ROLE" | "NO_PROFILE" | "SUSPENDED"; message?: string }
 const MESSAGES: Record<NonNullable<Eligibility["reason"]>, string> = {
   NOT_FOUND: "Hesap bulunamadı.",
   BANNED: "Hesabın kapatılmış.",
   DELETED: "Hesap silinmiş.",
   ROLE: "Yayın uygulaması yalnızca eğitmenler içindir.",
-  TRIAL: "Yayın uygulamasını kullanabilmek için önce eğitmen onayını tamamlamalısın.",
+  NO_PROFILE: "Eğitmen profilin henüz oluşturulmamış; önce başvurunu tamamla.",
   SUSPENDED: "Hesabın geçici olarak uzaklaştırılmış durumda; bu süre boyunca yayın uygulaması kullanılamaz.",
 }
 
-/** The one rule for every step (download, pairing, token use): an approved teacher (or an admin) in good standing. */
+/**
+ * The one rule for every step (download, pairing, token use): a teacher (approved or in the supervised trial phase) or an
+ * admin, in good standing. What a trial teacher may broadcast is decided on the server when the room is opened.
+ */
 export async function streamerEligibility(userId: string): Promise<Eligibility> {
   const u = await db.user.findUnique({
     where: { id: userId },
@@ -52,7 +55,7 @@ export async function streamerEligibility(userId: string): Promise<Eligibility> 
   if (u.banned) return fail("BANNED")
   if (u.role !== "TEACHER" && u.role !== "ADMIN") return fail("ROLE")
   if (u.suspendedUntil && u.suspendedUntil > new Date()) return fail("SUSPENDED")
-  if (u.role === "TEACHER" && (!u.teacher || u.teacher.isTrialMode)) return fail("TRIAL")
+  if (u.role === "TEACHER" && !u.teacher) return fail("NO_PROFILE")
   return { ok: true }
 }
 

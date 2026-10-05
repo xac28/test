@@ -8,7 +8,7 @@ import { WarningBanner } from "./warning-banner"
 import { VerifyEmailBanner } from "./verify-email-banner"
 import { NotificationBell } from "./notification-bell"
 import { ADMIN_TABS, BADGE_TONE, useAdminBadges } from "./admin/tab-defs"
-import { LogOut, Bell, LifeBuoy, Flag, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert } from "lucide-react"
+import { LogOut, Bell, LifeBuoy, Flag, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert, Download } from "lucide-react"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
@@ -34,6 +34,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: "Müsaitlik", href: "/teach/availability", icon: Calendar },
     { name: "Atölyelerim", href: "/teach/workshops", icon: Users },
     { name: "Canlı Yayın", href: "/live/studio", icon: Video },
+    { name: "Yayın Uygulaması", href: "/teach/uygulama", icon: Download },
     { name: "Kazançlar", href: "/teach/earnings", icon: CreditCard },
     { name: "Bildirimler", href: "/dashboard/notifications", icon: Bell },
     { name: "Raporlarım", href: "/dashboard/reports", icon: Flag },

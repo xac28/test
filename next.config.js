@@ -36,6 +36,7 @@ const nextConfig = {
   },
 
   experimental: {
+    instrumentationHook: true,
     optimizeCss: false,
     serverComponentsExternalPackages: ['iyzipay'],
   },

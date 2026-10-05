@@ -43,8 +43,12 @@ export async function createLiveKitToken(
   return await at.toJwt();
 }
 
-/** The browser connects over ws(s)://, the server SDK talks to the same host over http(s)://. */
+/**
+ * The browser connects over ws(s):// (LIVEKIT_URL, the public address); the server SDK talks to the same host over http(s)://
+ * unless LIVEKIT_SERVER_URL names an internal address (docker network, same machine).
+ */
 export function livekitHttpUrl(): string {
+  if (process.env.LIVEKIT_SERVER_URL) return process.env.LIVEKIT_SERVER_URL;
   return (process.env.LIVEKIT_URL || "ws://localhost:7880").replace(/^ws/, "http");
 }
 

@@ -55,6 +55,10 @@ npm run lint             # next lint (ESLint, next/core-web-vitals)
 AYA_RECORD_DIR=tour-output/videos npx playwright test tests/e2e/tour.spec.ts   # sitenin tamamını gezen, video kaydeden tur testi (ekran görüntüleri tour-output/ altına)
 ```
 
+## Canlıya alma
+
+`DEPLOY.md`: Docker ile kurulum (`Dockerfile`, `docker-compose.yml`, `deploy/`), TLS (Caddy), zamanlanmış işler, yedek ve geri yükleme (`deploy/backup.sh`, `deploy/restore.sh`), güvenlik başlıkları ve yayın öncesi kontrol listesi. Üretimde sunucu açılırken yapılandırma eksikleri (`AUTH_SECRET`, SMTP, Stripe, LiveKit anahtarları…) günlüğe uyarı olarak yazılır.
+
 ## Notlar
 
 - Otomatik IP engeli yerel/özel ağ adreslerine (127.x, 10.x, 192.168.x, 172.16–31.x, IPv6 yerel) uygulanmaz; bir proxy arkasında herkesi kilitlemesin diye. Yönetici kendi IP'sini engelleyemez.

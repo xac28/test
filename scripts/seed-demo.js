@@ -24,9 +24,9 @@ async function user(email, name, role, extra = {}) {
   const password = await bcrypt.hash("Passw0rd!", 10)
   return db.user.upsert({
     where: { email },
-    update: { role, name },
+    update: { role, name, emailVerified: new Date() },
     create: {
-      email, name, role, password, profileCompleted: true,
+      email, name, role, password, profileCompleted: true, emailVerified: new Date(),
       termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION, ...extra,
     },
   })

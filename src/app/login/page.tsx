@@ -12,7 +12,7 @@ import { Eye, EyeOff, Loader2, Mail, Lock, User } from "lucide-react"
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
+  const callbackUrl = searchParams.get("callbackUrl") || "/panel"
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")

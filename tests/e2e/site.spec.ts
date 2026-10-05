@@ -140,7 +140,7 @@ test.describe("registration, terms gate, role protection", () => {
 
     const t = await newSession(browser, teacher.email)
     await t.page.goto("/teach"); await expect(t.page).toHaveURL(/\/teach$/)
-    await t.page.goto("/admin"); await expect(t.page).toHaveURL(/\/dashboard/)
+    await t.page.goto("/admin"); await expect(t.page).toHaveURL(/\/teach$/)
 
     const a = await newSession(browser, admin.email)
     await a.page.goto("/admin"); await expect(a.page).toHaveURL(/\/admin/)

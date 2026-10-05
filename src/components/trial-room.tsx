@@ -49,7 +49,7 @@ export default function TrialRoom({ teacherId }: { teacherId: string }) {
         <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center"><X size={28} /></div>
         <h1 className="font-display text-3xl">Odaya girilemedi</h1>
         <p className="text-white/60 max-w-md" data-testid="trial-error">{error}</p>
-        <Link href="/dashboard" className="bg-accent hover:bg-accent-dark px-6 py-2.5 rounded-md text-sm font-semibold">Panele dön</Link>
+        <Link href="/panel" className="bg-accent hover:bg-accent-dark px-6 py-2.5 rounded-md text-sm font-semibold">Panele dön</Link>
       </div>
     )
   }

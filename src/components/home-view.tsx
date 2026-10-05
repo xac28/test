@@ -291,7 +291,7 @@ export default function HomeView({ data }: { data: HomeData }) {
                     {L('Ücretsiz üye ol', 'Join for free')} <ArrowRight size={18} />
                   </Link>
                 ) : (
-                  <Link href="/dashboard" className="btn-cta !px-8 !py-4 !text-base">
+                  <Link href="/panel" className="btn-cta !px-8 !py-4 !text-base">
                     {L('Panele git', 'Go to dashboard')} <ArrowRight size={18} />
                   </Link>
                 )}

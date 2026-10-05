@@ -8,6 +8,7 @@ import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield, ChevronDown,
 import { useI18n } from '@/i18n';
 import { NotificationBell } from '@/components/notification-bell';
 import { Portrait } from '@/components/person-avatar';
+import { homePathFor } from '@/lib/home-path';
 
 /** AYA wordmark: set in the display serif with wide tracking. */
 export function Wordmark({ className = '' }: { className?: string }) {
@@ -186,7 +187,7 @@ export default function Navbar() {
                     <p className="text-sm font-semibold truncate">{session.user.name}</p>
                     <p className="text-xs text-sage-500 truncate">{session.user.email}</p>
                   </div>
-                  <MenuLink href="/dashboard" icon={<LayoutDashboard size={15} />} onClick={() => setProfileOpen(false)}>Panelim</MenuLink>
+                  <MenuLink href={homePathFor(role)} icon={<LayoutDashboard size={15} />} onClick={() => setProfileOpen(false)}>Panelim</MenuLink>
                   <MenuLink href="/dashboard/profile" icon={<Settings size={15} />} onClick={() => setProfileOpen(false)}>Profil</MenuLink>
                   <MenuLink href="/messages" icon={<span className="w-[15px]" />} onClick={() => setProfileOpen(false)}>{t.nav.messages}</MenuLink>
                   {isTeacher && <MenuLink href="/teach" icon={<Radio size={15} />} onClick={() => setProfileOpen(false)}>Eğitmen paneli</MenuLink>}
@@ -240,7 +241,7 @@ export default function Navbar() {
               {!session?.user ? (
                 <Link href="/login?mode=register" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">{t.nav.signIn} / {t.nav.signUp}</Link>
               ) : (
-                <Link href="/dashboard" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">Panelim</Link>
+                <Link href={homePathFor(role)} className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">Panelim</Link>
               )}
               <div className="flex items-center gap-1.5 text-xs font-semibold">
                 <button onClick={() => setLocale('tr')} className={locale === 'tr' ? 'text-ink' : 'text-sage-500'}>TR</button>

@@ -34,7 +34,7 @@ export function termsGate(user: { termsAccepted?: boolean } | null): NextRespons
 }
 
 /** Only same-site relative paths are allowed as post-acceptance redirect targets. */
-export function safeNextPath(next: string | null | undefined, fallback = "/dashboard"): string {
+export function safeNextPath(next: string | null | undefined, fallback = "/panel"): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return fallback
   if (next.startsWith("/accept-terms") || next.startsWith("/login")) return fallback
   return next

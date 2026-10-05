@@ -29,7 +29,7 @@ function Verify() {
         <div className="text-center" data-testid="verify-ok">
           <CheckCircle2 className="mx-auto text-teal-600" size={44} />
           <p className="mt-4 text-sage-700">Teşekkürler, hesabın artık doğrulanmış durumda.</p>
-          <Link href="/dashboard" className="btn-cta mt-8">Panele git</Link>
+          <Link href="/panel" className="btn-cta mt-8">Panele git</Link>
         </div>
       </AuthCard>
     )
@@ -39,7 +39,7 @@ function Verify() {
       <div data-testid="verify-bad">
         <XCircle className="text-clay-600" size={36} />
         <p className="mt-4 text-sage-700 leading-relaxed">Bu doğrulama bağlantısı geçersiz, süresi dolmuş ya da daha önce kullanılmış. Giriş yapıp panelden yeni bir bağlantı isteyebilirsin.</p>
-        <Link href="/dashboard" className="btn-cta mt-8">Panele git</Link>
+        <Link href="/panel" className="btn-cta mt-8">Panele git</Link>
       </div>
     </AuthCard>
   )

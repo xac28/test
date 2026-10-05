@@ -104,7 +104,7 @@ export default function VideoRoom({ bookingId }: { bookingId: string }) {
         <h2 className="text-2xl text-white font-display">Unable to Join</h2>
         <p className="text-sage-400 text-center max-w-md">{error}</p>
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push("/panel")}
           className="mt-4 bg-sage-600 text-white px-6 py-3 rounded-full hover:bg-sage-500 transition"
         >
           Return to Dashboard
@@ -141,7 +141,7 @@ export default function VideoRoom({ bookingId }: { bookingId: string }) {
           token={roomData.token}
           serverUrl={roomData.roomUrl}
           options={roomOptions}
-          onDisconnected={() => router.push("/dashboard")}
+          onDisconnected={() => router.push("/panel")}
           className="h-full w-full relative"
         >
           {/* Viewer-side protection only: the teacher is the one who may record (official, server-side recording) */}

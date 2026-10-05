@@ -47,7 +47,7 @@ export function LiveRoomManager({ role, endTime, bookingId, liveRoomId }: { role
         if (data.type === "TIMEOUT" && role === "student") {
           alert(`You have been timed out.\nReason: ${data.reason || "Violation of rules"}`)
           room.disconnect()
-          window.location.href = "/dashboard"
+          window.location.href = "/panel"
         }
       } catch (e) {
         console.error("Data channel error", e)
@@ -75,7 +75,7 @@ export function LiveRoomManager({ role, endTime, bookingId, liveRoomId }: { role
         }
         alert("Ders süresi doldu! Teşekkür ederiz.")
         room.disconnect()
-        window.location.href = "/dashboard"
+        window.location.href = "/panel"
       } else {
         setTimeLeft(diff)
         // 10 minutes warning (600,000 ms)

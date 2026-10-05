@@ -13,7 +13,7 @@ const { auth } = NextAuth(authConfig)
 const TERMS_GATE_EXEMPT = ['/accept-terms', '/terms', '/privacy', '/login', '/auth-error', '/api']
 
 /** Pages that need a signed-in user. */
-const PROTECTED_PREFIXES = ['/dashboard', '/teach', '/admin', '/room', '/live', '/messages', '/accept-terms']
+const PROTECTED_PREFIXES = ['/panel', '/dashboard', '/teach', '/admin', '/room', '/live', '/messages', '/accept-terms']
 
 const inArea = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(prefix + '/')
 
@@ -54,7 +54,7 @@ export default auth((req) => {
     // 2. Pages that need a signed-in user
     if (PROTECTED_PREFIXES.some((p) => inArea(pathname, p)) && !isLoggedIn) {
       // login pages for deep links, the home page for the dashboards (as before)
-      if (inArea(pathname, '/live') || inArea(pathname, '/room') || inArea(pathname, '/messages')) {
+      if (inArea(pathname, '/live') || inArea(pathname, '/room') || inArea(pathname, '/messages') || inArea(pathname, '/panel')) {
         const url = new URL('/login', req.nextUrl)
         url.searchParams.set('callbackUrl', pathname + req.nextUrl.search)
         return NextResponse.redirect(url)
@@ -73,10 +73,10 @@ export default auth((req) => {
     // 4. Role areas ("/teach" must not match the public "/teachers")
     const role = req.auth?.user?.role
     if (inArea(pathname, '/teach') && role !== 'TEACHER' && role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+      return NextResponse.redirect(new URL('/panel', req.nextUrl))
     }
     if (inArea(pathname, '/admin') && role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+      return NextResponse.redirect(new URL('/panel', req.nextUrl))
     }
     if (pathname === '/live/studio' && role !== 'TEACHER' && role !== 'ADMIN') {
       return NextResponse.redirect(new URL('/live', req.nextUrl))

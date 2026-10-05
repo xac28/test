@@ -30,10 +30,10 @@ describe("terms", () => {
 
   it("safeNextPath only allows same-site relative paths", () => {
     expect(safeNextPath("/dashboard/profile")).toBe("/dashboard/profile")
-    expect(safeNextPath("https://evil.example")).toBe("/dashboard")
-    expect(safeNextPath("//evil.example")).toBe("/dashboard")
-    expect(safeNextPath("/\\evil")).toBe("/dashboard")
-    expect(safeNextPath("/accept-terms?x=1")).toBe("/dashboard")
+    expect(safeNextPath("https://evil.example")).toBe("/panel")
+    expect(safeNextPath("//evil.example")).toBe("/panel")
+    expect(safeNextPath("/\\evil")).toBe("/panel")
+    expect(safeNextPath("/accept-terms?x=1")).toBe("/panel")
     expect(safeNextPath(null, "/teach")).toBe("/teach")
   })
 

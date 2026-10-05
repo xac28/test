@@ -118,3 +118,26 @@ test.describe("not found and plumbing", () => {
     await expect(page.locator("main")).toBeFocused()
   })
 })
+
+test.describe("e-mail verification", () => {
+  test("the dashboard reminds unverified members, resending works, and the link verifies", async ({ browser, page }) => {
+    const a = await makeAccount("STUDENT")
+    const s = await newSession(browser, a.email)
+    await s.page.goto("/dashboard")
+    const banner = s.page.getByTestId("verify-banner")
+    await expect(banner).toBeVisible()
+    await s.page.getByTestId("verify-resend").click()
+    await expect(s.page.getByTestId("verify-msg")).toContainText("gönderildi")
+
+    const token = crypto.randomBytes(32).toString("hex")
+    await db.verificationToken.create({ data: { identifier: `verify:${a.user.id}`, token: hash(token), expires: new Date(Date.now() + 3_600_000) } })
+    await page.goto(`/verify-email?token=${token}`)
+    await expect(page.getByTestId("verify-ok")).toBeVisible()
+    await s.page.reload()
+    await expect(s.page.getByTestId("dashboard-ready").or(s.page.locator("main")).first()).toBeVisible()
+    await expect(s.page.getByTestId("verify-banner")).toHaveCount(0)
+    await page.goto(`/verify-email?token=${token}`)
+    await expect(page.getByTestId("verify-bad")).toBeVisible()
+    await s.ctx.close()
+  })
+})

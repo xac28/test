@@ -66,6 +66,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     // 🛡️ Başarılı login/signup sonrası IP loglama (Google OAuth dahil)
     async signIn({ user, account }) {
+      if (user?.id && account?.provider === "google") {
+        // Google proves the mailbox: mark it verified, and drop any password somebody may have set for this address
+        // before the real owner ever signed in (pre-registration takeover)
+        try {
+          const row = await db.user.findUnique({ where: { id: user.id }, select: { emailVerified: true, password: true } })
+          if (row && !row.emailVerified) await db.user.update({ where: { id: user.id }, data: { emailVerified: new Date(), ...(row.password ? { password: null } : {}) } })
+        } catch {}
+      }
       if (user?.id) {
         try {
           // IP loglama için bir marker set et — 
@@ -116,6 +124,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!existingUser) return token;
 
       // 🛡️ Banned kullanıcıları engelle — oturumu geçersiz kıl
+      if (existingUser.deletedAt) return {} as any // closed accounts lose their session at once
       if (existingUser.banned) {
         console.log(`[AUTH] 🚨 Banned user session invalidated: ${existingUser.email}`)
         return {} as any; // Token'ı boşalt — forces re-login, login de çalışmaz

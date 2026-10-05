@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { emailGate } from "@/lib/email-verification"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
@@ -16,6 +17,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const termsBlock = termsGate(user)
     if (termsBlock) return termsBlock
+    const verifyBlock = await emailGate(user.id)
+    if (verifyBlock) return verifyBlock
 
     const w = await findWorkshop(params.id)
     if (!w) return NextResponse.json({ error: "Atölye bulunamadı" }, { status: 404 })

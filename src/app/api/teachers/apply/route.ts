@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
+import { emailGate } from "@/lib/email-verification"
 import { scanPoaching, poachKindsLabel } from "@/lib/poaching"
 
 export async function POST(req: Request) {
@@ -12,6 +13,8 @@ export async function POST(req: Request) {
     }
     const termsBlock = termsGate(user)
     if (termsBlock) return termsBlock
+    const verifyBlock = await emailGate(user.id)
+    if (verifyBlock) return verifyBlock
 
     const body = await req.json()
     const {

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { emailGate } from "@/lib/email-verification"
 import { suspensionOf } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { termsGate } from "@/lib/terms"
@@ -19,6 +20,8 @@ export async function POST(req: Request) {
 
     const termsBlock = termsGate(user)
     if (termsBlock) return termsBlock
+    const verifyBlock = await emailGate(user.id)
+    if (verifyBlock) return verifyBlock
 
     const { teacherSlug, slot, type, paymentProvider } = await req.json()
 

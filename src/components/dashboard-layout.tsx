@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { WarningBanner } from "./warning-banner"
+import { VerifyEmailBanner } from "./verify-email-banner"
 import { NotificationBell } from "./notification-bell"
 import { ADMIN_TABS, BADGE_TONE, useAdminBadges } from "./admin/tab-defs"
 import { LogOut, Bell, LifeBuoy, Flag, Home, Calendar, CreditCard, Settings, Users, FileText, ChevronLeft, ChevronRight, Video, Activity, ShieldAlert } from "lucide-react"
@@ -178,6 +179,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 p-6 md:p-10 overflow-y-auto texture-overlay relative">
           <div className="max-w-6xl mx-auto w-full relative z-10">
             <WarningBanner />
+            {!adminMode && <VerifyEmailBanner />}
             {children}
           </div>
         </div>

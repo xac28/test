@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { emailGate } from "@/lib/email-verification"
 import { suspensionGate } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
@@ -44,6 +45,8 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: "Paylaşım yapmak için giriş yapın." }, { status: 401 })
     const gate = termsGate(user)
     if (gate) return gate
+    const verifyBlock = await emailGate(user.id)
+    if (verifyBlock) return verifyBlock
     const susp = await suspensionGate(user.id)
     if (susp) return susp
 

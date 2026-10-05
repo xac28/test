@@ -6,13 +6,13 @@ import { serializeRoomSettings, DEFAULT_ROOM_SETTINGS } from "@/lib/live-chat"
 export const GHOST_AFTER_MS = 3 * 60 * 1000
 
 /** Create the LiveKit room up-front so the chat settings live in its metadata. Best-effort. */
-export async function createLiveKitRoom(roomName: string, title: string): Promise<void> {
+export async function createLiveKitRoom(roomName: string, title: string, metadata?: string): Promise<void> {
   try {
     await livekitRoomService().createRoom({
       name: roomName,
       emptyTimeout: 120,
       maxParticipants: 500,
-      metadata: serializeRoomSettings({ ...DEFAULT_ROOM_SETTINGS, title }),
+      metadata: metadata ?? serializeRoomSettings({ ...DEFAULT_ROOM_SETTINGS, title }),
     })
   } catch (e) {
     console.warn("[LIVE] createRoom failed (the room will be auto-created on first join):", (e as Error).message)
@@ -38,7 +38,9 @@ export interface LiveSummary {
   title: string
   startedAt: string
   viewerCount: number
-  teacher: { id: string; name: string | null; image: string | null }
+  teacher: { id: string; name: string | null; image: string | null; trial: boolean }
+  /** opened by a trial-phase teacher: watched by officials */
+  supervised: boolean
   workshop: { slug: string; title: string } | null
 }
 
@@ -86,7 +88,8 @@ export async function listActiveBroadcasts(): Promise<LiveSummary[]> {
       title: r.title,
       startedAt: r.createdAt.toISOString(),
       viewerCount,
-      teacher: { id: r.teacher.user.id, name: r.teacher.user.name, image: r.teacher.user.image },
+      teacher: { id: r.teacher.user.id, name: r.teacher.user.name, image: r.teacher.user.image, trial: r.teacher.isTrialMode },
+      supervised: r.supervised,
       workshop: r.workshop,
     })
   }

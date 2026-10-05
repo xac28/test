@@ -42,6 +42,7 @@ import {
 import { SLOW_MODE_OPTIONS, formatDuration } from "@/lib/live-chat"
 import { RoomRecorder, RecorderState } from "@/lib/room-recorder"
 import { useLiveRoom } from "./use-live-room"
+import { StaffNoticeBanner } from "./staff-notice"
 import { LiveChatPanel } from "./live-chat-panel"
 
 type Phase = "setup" | "starting" | "live" | "ended"
@@ -83,7 +84,7 @@ const publishOptsOf = (p: QualityPreset) => {
   }
 }
 
-export function Studio() {
+export function Studio({ trial = false }: { trial?: boolean }) {
   const router = useRouter()
   const workshopId = useSearchParams().get("workshop")
   const live = useLiveRoom({ isHost: true })
@@ -103,7 +104,8 @@ export function Studio() {
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
   const [liveRoomId, setLiveRoomId] = useState<string | null>(null)
-  const [resume, setResume] = useState<{ title: string; roomUrl: string; token: string; liveRoomId: string; startedAt: string } | null>(null)
+  const [supervised, setSupervised] = useState(false) // a trial-phase teacher is on air: officials may watch
+  const [resume, setResume] = useState<{ title: string; roomUrl: string; token: string; liveRoomId: string; startedAt: string; supervised?: boolean } | null>(null)
   const [tab, setTab] = useState<"chat" | "settings" | "viewers">("chat")
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -279,6 +281,7 @@ export function Studio() {
       if (res.status === 403 && data.code === "TERMS_REQUIRED") return router.replace("/accept-terms?next=/live/studio")
       if (!res.ok) throw new Error(data.error || "Yayın başlatılamadı")
       setLiveRoomId(data.liveRoomId)
+      setSupervised(!!data.supervised)
       await live.connect(data.roomUrl, data.token)
       await publishAll(room)
       setStartedAt(Date.now())
@@ -294,6 +297,7 @@ export function Studio() {
     setPhase("starting")
     try {
       setLiveRoomId(resume.liveRoomId)
+      setSupervised(!!resume.supervised)
       setTitle(resume.title)
       await live.connect(resume.roomUrl, resume.token)
       await publishAll(room)
@@ -481,6 +485,7 @@ export function Studio() {
 
   return (
     <div className="min-h-screen bg-stage text-white flex flex-col">
+      <StaffNoticeBanner notice={live.staffNotice} onDismiss={live.dismissStaffNotice} />
       {/* top bar */}
       <header className="h-14 shrink-0 flex items-center gap-4 px-4 border-b border-white/10 bg-stage-2">
         <Link href="/teach" className="font-display text-xl tracking-[0.2em]">AYA</Link>
@@ -488,6 +493,11 @@ export function Studio() {
         <span className="text-sm text-white/70">Yayın stüdyosu</span>
 
         <div className="ml-auto flex items-center gap-3">
+          {(supervised || trial) && (
+            <span data-testid="studio-supervised" title="Deneme sürecindesin: yayınların yetkililer tarafından canlı izlenebilir." className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-saffron-300 text-ink">
+              Deneme · denetimli yayın
+            </span>
+          )}
           {isLive && (
             <>
               <span data-testid="studio-live-badge" className="inline-flex items-center gap-1.5 bg-accent text-[11px] font-bold tracking-wider uppercase px-2 py-1 rounded">
@@ -510,6 +520,12 @@ export function Studio() {
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
         {/* left: preview + setup */}
         <main className="flex-1 min-w-0 p-4 lg:overflow-y-auto space-y-4">
+          {(trial || supervised) && !isLive && (
+            <div data-testid="studio-trial-note" className="max-w-5xl rounded-xl border border-saffron-300/40 bg-saffron-300/10 px-4 py-3 text-sm text-saffron-100">
+              <p className="font-semibold text-saffron-300">Deneme sürecindesin</p>
+              <p className="mt-0.5 text-white/75">Yayın açabilirsin; yayınların yetkililer tarafından canlı izlenir ve gerekirse sana mesaj gönderebilirler. Sohbet, ilk başta 5 saniyelik yavaş modla açılır. Başarılı bir yayından sonra “Onaylı öğretmen” rozetini alırsın.</p>
+            </div>
+          )}
           <div className="relative aspect-video bg-black rounded-xl overflow-hidden max-w-5xl">
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video ref={previewRef} data-testid="studio-preview" autoPlay muted playsInline className={`w-full h-full object-contain -scale-x-100 ${camOn ? "" : "invisible"}`} />

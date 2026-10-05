@@ -8,6 +8,8 @@ import { formatDuration } from "@/lib/live-chat"
 import { useLiveRoom } from "./use-live-room"
 import { LivePlayer } from "./live-player"
 import { LiveChatPanel } from "./live-chat-panel"
+import { StaffNoticeBanner } from "./staff-notice"
+import { TeacherBadge } from "@/components/teacher-badge"
 import { ReportButton, ReportDialog, ReportChatMessage } from "@/components/report-dialog"
 import type { ChatMessage } from "@/lib/live-chat"
 
@@ -16,7 +18,8 @@ interface StreamInfo {
   title: string
   startedAt: string
   hostIdentity: string
-  teacher: { id: string; name: string | null; image: string | null }
+  supervised?: boolean
+  teacher: { id: string; name: string | null; image: string | null; trial?: boolean }
 }
 
 type Phase = "loading" | "watching" | "ended" | "error" | "locked"
@@ -144,6 +147,7 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
 
   return (
     <div className="min-h-screen bg-stage text-white flex flex-col">
+      <StaffNoticeBanner notice={live.staffNotice} onDismiss={live.dismissStaffNotice} />
       <header className="h-12 shrink-0 flex items-center gap-4 px-4 border-b border-white/10 bg-stage-2">
         <Link href="/live" className="flex items-center gap-2 text-white/70 hover:text-white text-sm">
           <ArrowLeft size={16} /> <span className="hidden sm:inline">Canlı yayınlar</span>
@@ -200,13 +204,25 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
                 )}
                 <div className="min-w-0">
                   <h1 data-testid="stream-title" className="font-display text-2xl leading-tight truncate">{stream.title}</h1>
-                  <Link href={`/teachers/${stream.teacher.id}`} className="text-sm text-white/60 hover:text-white">
-                    {stream.teacher.name}
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    {stream.teacher.trial ? (
+                      <span className="text-sm text-white/60">{stream.teacher.name}</span> // trial-phase teachers have no public profile yet
+                    ) : (
+                      <Link href={`/teachers/${stream.teacher.id}`} className="text-sm text-white/60 hover:text-white">
+                        {stream.teacher.name}
+                      </Link>
+                    )}
+                    <TeacherBadge trial={!!stream.teacher.trial} size="sm" tone="dark" />
+                  </div>
                 </div>
               </div>
             ) : (
               <p className="text-white/50 flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Yükleniyor…</p>
+            )}
+            {stream?.supervised && (
+              <p data-testid="supervised-note" className="text-xs text-saffron-300/90 border border-saffron-300/30 bg-saffron-300/10 rounded-lg px-3 py-2 max-w-xl">
+                Bu yayın, deneme sürecindeki bir öğretmene ait ve yetkililer tarafından izlenmektedir. Bir sorun görürsen “Bildir” düğmesini kullanabilirsin.
+              </p>
             )}
           </div>
         </main>

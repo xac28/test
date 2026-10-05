@@ -57,7 +57,7 @@ async function loadHome(): Promise<HomeData> {
 
     const live = rooms[0]
     return {
-      live: live ? { id: live.id, title: live.title, viewers: live.viewerCount, teacher: live.teacher.name } : null,
+      live: live ? { id: live.id, title: live.title, viewers: live.viewerCount, teacher: live.teacher.name, trial: live.teacher.trial } : null,
       workshops,
       articles: articleRows.map((a) => ({ ...a, publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null })),
       teachers: teacherRows.map((t) => {

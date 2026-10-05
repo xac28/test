@@ -50,10 +50,15 @@ describe("unapproved teachers cannot teach the public", () => {
     const admin = await makeUser("ADMIN")
     const student = await makeUser("STUDENT")
 
-    const live = await json("/api/room/instant", user, "POST", { title: "Troll yayın" })
-    expect(live.status).toBe(403)
-    expect((await live.json()).code).toBe("TRIAL_REQUIRED")
+    // a trial-phase teacher may go live, but only as a supervised broadcast; workshop broadcasts stay approved-only
+    const wsLive = await json("/api/room/instant", user, "POST", { title: "Atölye", workshopId: "x" })
+    expect(wsLive.status).toBe(403)
+    expect((await wsLive.json()).code).toBe("TRIAL_REQUIRED")
     expect((await db.liveRoom.count({ where: { teacherId: teacher.id } }))).toBe(0)
+    const live = await json("/api/room/instant", user, "POST", { title: "Deneme yayını" })
+    expect(live.status).toBe(200)
+    expect((await live.json()).supervised).toBe(true)
+    expect((await db.liveRoom.findFirstOrThrow({ where: { teacherId: teacher.id } })).supervised).toBe(true)
 
     const ws = await json("/api/workshops", user, "POST", {
       title: "Deneme Atölyesi", description: "Bu atölye onaysız öğretmen tarafından açılmaya çalışılıyor, reddedilmeli.", category: "Hatha", startsAt: future(),
@@ -118,7 +123,9 @@ describe("admin decisions", () => {
     expect((await db.teacher.findUnique({ where: { id: teacher.id } }))?.isTrialMode).toBe(true)
     expect((await db.liveRoom.findUnique({ where: { id: liveRoomId } }))?.isActive).toBe(false)
     expect((await db.workshop.findUnique({ where: { id: wid } }))?.status).toBe("DRAFT")
-    expect((await json("/api/room/instant", user, "POST", {})).status).toBe(403)
+    const again = await json("/api/room/instant", user, "POST", {})
+    expect(again.status).toBe(200) // revoked = back in the trial phase: allowed to broadcast, but supervised again
+    expect((await again.json()).supervised).toBe(true)
 
     const logs = await db.auditLog.findMany({ where: { targetId: teacher.id }, orderBy: { createdAt: "asc" } })
     expect(logs.map((l) => l.action)).toEqual(["TRIAL_REJECT", "TRIAL_APPROVE", "TRIAL_REVOKE"])

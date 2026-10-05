@@ -1,5 +1,6 @@
 "use client"
 
+import { TeacherBadge } from "@/components/teacher-badge"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Radio, Users, Video } from "lucide-react"
@@ -12,7 +13,8 @@ interface Broadcast {
   title: string
   startedAt: string
   viewerCount: number
-  teacher: { id: string; name: string | null; image: string | null }
+  teacher: { id: string; name: string | null; image: string | null; trial?: boolean }
+  supervised?: boolean
   workshop: { slug: string; title: string } | null
 }
 
@@ -118,7 +120,7 @@ export default function LiveDirectoryPage() {
                         <p className="eyebrow !text-clay-600 mb-1">Atölye · yalnızca kayıtlı katılımcılar</p>
                       )}
                       <h2 className="font-display text-xl text-ink leading-snug group-hover:underline underline-offset-4 decoration-1">{b.title}</h2>
-                      <p className="text-sm text-ink/70">{b.teacher.name}</p>
+                      <p className="text-sm text-ink/70 flex flex-wrap items-center gap-x-2 gap-y-1">{b.teacher.name} <TeacherBadge trial={!!b.teacher.trial} size="sm" /></p>
                       <p className="text-xs text-ink/50 mt-0.5">{since(b.startedAt, now)}</p>
                     </div>
                   </Link>

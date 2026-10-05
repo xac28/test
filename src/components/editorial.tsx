@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { ArrowRight, ArrowUpRight, Radio, Users } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { TeacherBadge } from '@/components/teacher-badge';
 import { PersonAvatar } from '@/components/person-avatar';
 import { formatPriceTR, WorkshopState } from '@/lib/workshops';
 
@@ -190,7 +191,7 @@ export function ArticleCard({ a, large = false }: { a: ArticleCardData; large?: 
   );
 }
 
-export function LiveNowCard({ title, teacher, viewers, id }: { title: string; teacher: string | null; viewers: number; id: string }) {
+export function LiveNowCard({ title, teacher, viewers, id, trial }: { title: string; teacher: string | null; viewers: number; id: string; trial?: boolean }) {
   const L = useL();
   return (
     <Link href={`/live/${id}`} className="group flex items-center justify-between gap-4 bg-stage text-cream p-5 hover:bg-stage-2 transition-colors">
@@ -201,6 +202,7 @@ export function LiveNowCard({ title, teacher, viewers, id }: { title: string; te
         <p className="font-display text-2xl mt-1 truncate">{title}</p>
         <p className="text-sm text-cream/60 flex items-center gap-3 mt-0.5">
           {teacher}
+          <TeacherBadge trial={!!trial} size="sm" tone="dark" />
           <span className="inline-flex items-center gap-1"><Users size={13} /> {viewers}</span>
         </p>
       </div>

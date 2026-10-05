@@ -72,6 +72,8 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   passwordResets PasswordResetToken[]
+  streamerPairings StreamerPairing[]
+  streamerDevices  StreamerDevice[]
   // set when the person deleted their own account (the row stays, anonymised, so bookings and payments keep their references)
   deletedAt     DateTime?
 
@@ -424,6 +426,8 @@ model LiveRoom {
   roomName    String   @unique
   title       String   @default("Live Yoga Session")
   isActive    Boolean  @default(true)
+  // opened by a teacher who is still in the trial phase: officials may watch it live and step in (see src/lib/supervision.ts)
+  supervised  Boolean  @default(false)
 
   // Set when the broadcast is a workshop session: only confirmed enrollees may watch
   workshopId  String?
@@ -854,4 +858,35 @@ model PasswordResetToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+// "Connect the desktop streaming app": the teacher asks for a short code in the web panel and types it into the app.
+// Codes are single-use and live ten minutes; only the SHA-256 of a code is stored.
+model StreamerPairing {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// A paired desktop app. The long-lived token is only ever shown to the app once; the database keeps its hash.
+model StreamerDevice {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  name       String    @db.VarChar(80)
+  appVersion String?   @db.VarChar(20)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  lastIp     String?   @db.VarChar(64)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

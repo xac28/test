@@ -19,7 +19,7 @@ const HERO_POSES = ['kolay-oturus', 'dag-durusu', 'savasci-2', 'agac', 'ayakta-y
 import { PHOTOS } from '@/lib/photos';
 
 export interface HomeData {
-  live: { id: string; title: string; viewers: number; teacher: string | null } | null;
+  live: { id: string; title: string; viewers: number; teacher: string | null; trial?: boolean } | null;
   workshops: WorkshopCardData[];
   articles: ArticleCardData[];
   teachers: { id: string; name: string; image: string | null; bio: string | null; specialties: string[] }[];
@@ -83,7 +83,7 @@ export default function HomeView({ data }: { data: HomeData }) {
                 </Link>
               </div>
               {data.live ? (
-                <LiveNowCard id={data.live.id} title={data.live.title} teacher={data.live.teacher} viewers={data.live.viewers} />
+                <LiveNowCard id={data.live.id} title={data.live.title} teacher={data.live.teacher} viewers={data.live.viewers} trial={data.live.trial} />
               ) : (
                 <div className="mt-3 bg-teal-900 text-cream/80 px-5 py-4 text-sm rounded-2xl">
                   {L('Şu anda canlı yayın yok.', 'Nobody is live right now.')}{' '}

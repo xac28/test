@@ -1,5 +1,6 @@
 'use client';
 
+import { TeacherBadge } from '@/components/teacher-badge';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Teacher } from '@/lib/teachers';
@@ -30,7 +31,8 @@ export default function TeacherCard({ teacher }: { teacher: Teacher }) {
           <h3 className="font-display text-2xl leading-snug">
             <Link href={`/teachers/${teacher.slug}`} className="tap-area hover:underline underline-offset-4 decoration-1">{teacher.name}</Link>
           </h3>
-          <p className="eyebrow mt-1">
+          <TeacherBadge trial={false} size="sm" className="mt-1.5" />
+          <p className="eyebrow mt-1.5">
             {teacher.country && teacher.country !== 'Unknown' ? `${teacher.country} · ` : ''}
             {teacher.yearsExperience} {t.card.yearsExp}
           </p>

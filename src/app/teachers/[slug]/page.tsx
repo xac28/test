@@ -1,5 +1,6 @@
 'use client';
 
+import { TeacherBadge } from '@/components/teacher-badge';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -69,6 +70,7 @@ export default function TeacherProfilePage({ params }: { params: { slug: string 
                       <span>{teacher.country}</span>
                     </div>
                     <h1 className="font-display text-3xl md:text-4xl text-ink mb-2">{teacher.name}</h1>
+                    <TeacherBadge trial={false} className="mb-3" />
                     <p className="text-ink/70 mb-3">{teacher.bio[locale]}</p>
                     <div className="flex flex-wrap gap-4 text-sm">
                       <div className="flex items-center gap-1">

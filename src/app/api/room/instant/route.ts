@@ -5,7 +5,7 @@ import { NextResponse } from "next/server"
 import { termsGate } from "@/lib/terms"
 import { resolveUser } from "@/lib/auth-utils"
 import { createLiveKitRoom, endLiveRoom } from "@/lib/live-rooms"
-import { canTeachPublicly } from "@/lib/trial"
+import { announceSupervisedStart, supervisedRoomMetadata } from "@/lib/supervision"
 
 async function teacherFor(user: { id: string; role: string }) {
   let teacher = await db.teacher.findUnique({ where: { userId: user.id } })
@@ -47,14 +47,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Teacher profile not found" }, { status: 404 })
     }
 
-    if (!canTeachPublicly(teacher, user)) {
-      return NextResponse.json(
-        { error: "Herkese açık yayın için önce yetkililerle deneme yayınını tamamlamalısınız.", code: "TRIAL_REQUIRED" },
-        { status: 403 }
-      )
-    }
+    // Trial-phase teachers may broadcast, under supervision (officials are alerted and can watch). Workshops stay approved-only.
+    const supervised = teacher.isTrialMode && user.role !== "ADMIN"
 
     const body = await req.json().catch(() => ({}))
+    if (supervised && body.workshopId) {
+      return NextResponse.json({ error: "Atölye yayınları onaylı eğitmenler içindir. Deneme sürecinde normal canlı yayın açabilirsin.", code: "TRIAL_REQUIRED" }, { status: 403 })
+    }
 
     // A workshop session: only the workshop's own teacher may broadcast it
     let workshop: { id: string; title: string } | null = null
@@ -77,9 +76,10 @@ export async function POST(req: Request) {
     for (const p of previous) await endLiveRoom(p.id).catch(() => {})
 
     const liveRoom = await db.liveRoom.create({
-      data: { teacherId: teacher.id, roomName, title, isActive: true, workshopId: workshop?.id ?? null },
+      data: { teacherId: teacher.id, roomName, title, isActive: true, workshopId: workshop?.id ?? null, supervised },
     })
-    await createLiveKitRoom(roomName, title)
+    await createLiveKitRoom(roomName, title, supervised ? supervisedRoomMetadata(title) : undefined)
+    if (supervised) await announceSupervisedStart({ id: liveRoom.id, title }, { userId: user.id, user: { name: user.name ?? null } })
 
     return NextResponse.json({
       roomUrl: livekitUrl,
@@ -88,6 +88,7 @@ export async function POST(req: Request) {
       liveRoomId: liveRoom.id,
       title,
       role: "teacher",
+      supervised,
     })
   } catch (error: any) {
     console.error("[INSTANT_ROOM_ERROR]", error)
@@ -118,6 +119,7 @@ export async function GET(req: Request) {
         startedAt: room.createdAt,
         token: await hostToken(room.roomName, user),
         role: "teacher",
+        supervised: room.supervised,
       },
     })
   } catch (error: any) {

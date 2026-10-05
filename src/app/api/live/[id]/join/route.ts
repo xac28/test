@@ -59,7 +59,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         title: room.title,
         startedAt: room.createdAt,
         hostIdentity: room.teacher.user.id,
-        teacher: { id: room.teacher.id, name: room.teacher.user.name, image: room.teacher.user.image },
+        supervised: room.supervised,
+        teacher: { id: room.teacher.id, name: room.teacher.user.name, image: room.teacher.user.image, trial: room.teacher.isTrialMode },
       },
     })
   } catch (error) {

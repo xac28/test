@@ -22,6 +22,7 @@ import { RecordingsTab } from "./admin/recordings-tab"
 import { SecurityTab } from "./admin/security-tab"
 import { AuditTab } from "./admin/audit-tab"
 import { RoomsTab } from "./admin/rooms-tab"
+import { MonitorTab } from "./admin/monitor-tab"
 import { Card, SectionTitle, Stat, fmtMoney } from "./admin/ui"
 
 /**
@@ -67,6 +68,7 @@ export function AdminTabs({ pendingApplications, recentActions, financials, tria
 
       <div key={tab} className="animate-fade-up">
         {tab === "overview" && <OverviewTab goTo={goTo} />}
+        {tab === "monitor" && <MonitorTab onChanged={changed} />}
         {tab === "reports" && <ReportsTab onChanged={changed} onOpenUser={setUserId} />}
         {tab === "community" && <CommunityTab onChanged={changed} onOpenUser={setUserId} />}
         {tab === "policy" && <PolicyTab onChanged={changed} onOpenUser={setUserId} />}

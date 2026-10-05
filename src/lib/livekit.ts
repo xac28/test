@@ -14,6 +14,8 @@ export interface TokenOptions {
   metadata?: string;
   /** Token lifetime, default 6 hours. */
   ttl?: string | number;
+  /** A hidden participant is invisible to everybody else in the room (used by officials who watch a supervised broadcast). */
+  hidden?: boolean;
 }
 
 export async function createLiveKitToken(
@@ -38,6 +40,7 @@ export async function createLiveKitToken(
     canPublishData: opts.canPublishData ?? true,
     canUpdateOwnMetadata: isTeacher,
     roomAdmin: isTeacher,
+    ...(opts.hidden ? { hidden: true } : {}),
   });
 
   return await at.toJwt();

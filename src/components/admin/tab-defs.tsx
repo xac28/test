@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import {
-  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images, LifeBuoy, Bot, Star, ShieldBan,
+  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images, LifeBuoy, Bot, Star, ShieldBan, Eye,
 } from "lucide-react"
 
-export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number; pendingPosts: number; openSupport: number; aiUnknown: number; reviewReports: number; policyToday: number }
+export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number; pendingPosts: number; openSupport: number; aiUnknown: number; reviewReports: number; policyToday: number; supervisedLive: number }
 
 export interface TabDef {
   id: string
@@ -17,6 +17,7 @@ export interface TabDef {
 
 export const ADMIN_TABS: TabDef[] = [
   { id: "overview", label: "Genel Bakış", icon: Activity, group: "Genel" },
+  { id: "monitor", label: "Canlı İzleme", icon: Eye, group: "Moderasyon", badge: (b) => (b.supervisedLive ? { value: b.supervisedLive, tone: "red" } : null) },
   { id: "reports", label: "Raporlar", icon: Flag, group: "Moderasyon", badge: (b) => (b.reports ? { value: b.reports, tone: b.urgentReports ? "red" : "amber" } : null) },
   { id: "community", label: "Fotoğraflar", icon: Images, group: "Moderasyon", badge: (b) => (b.pendingPosts ? { value: b.pendingPosts, tone: "amber" } : null) },
   { id: "support", label: "Canlı Destek", icon: LifeBuoy, group: "Moderasyon", badge: (b) => (b.openSupport ? { value: b.openSupport, tone: "red" } : null) },

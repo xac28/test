@@ -38,6 +38,8 @@ export async function anonymizeUser(userId: string) {
     await tx.session.deleteMany({ where: { userId } })
     await tx.account.deleteMany({ where: { userId } })
     await tx.passwordResetToken.deleteMany({ where: { userId } })
+    await tx.streamerDevice.deleteMany({ where: { userId } })
+    await tx.streamerPairing.deleteMany({ where: { userId } })
     if (teacher) {
       await tx.teacherVideo.deleteMany({ where: { teacherId: teacher.id } })
       await tx.availability.deleteMany({ where: { teacherId: teacher.id } })

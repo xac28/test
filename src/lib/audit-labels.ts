@@ -1,7 +1,7 @@
 /** Human-readable (Turkish) names for audit-log action codes; unknown codes are shown as they are. */
 const EXACT: Record<string, string> = {
   BAN_USER: "Kullanıcı yasaklandı", UNBAN_USER: "Yasak kaldırıldı", WARN_USER: "Uyarı gönderildi", MANUAL_IP_BAN: "IP engellendi", REMOVE_IP_BAN: "IP engeli kaldırıldı",
-  CLOSE_ROOM: "Yayın kapatıldı", TIMEOUT_ROOM: "Sohbet kısıtlandı", CANCEL_BOOKING: "Rezervasyon iptal", DELETE_RECORDING: "Ders kaydı silindi", UNPUBLISH_WORKSHOP: "Atölye yayından kaldırıldı",
+  CLOSE_ROOM: "Yayın kapatıldı", WATCH_LIVE: "Yayın canlı izlendi", LIVE_NOTICE: "Yayına yetkili mesajı", TIMEOUT_ROOM: "Sohbet kısıtlandı", CANCEL_BOOKING: "Rezervasyon iptal", DELETE_RECORDING: "Ders kaydı silindi", UNPUBLISH_WORKSHOP: "Atölye yayından kaldırıldı",
   REMOVE_POST: "Fotoğraf kaldırıldı", REMOVE_COMMENT: "Yorum kaldırıldı", REMOVE_CONTENT: "İçerik kaldırıldı (rapor)", UNMUTE_USER: "Susturma kaldırıldı",
   BLOCKED_WORD_ADD: "Yasaklı kelime eklendi", BLOCKED_WORD_REMOVE: "Yasaklı kelime silindi",
   AI_TEACH: "Rehbere cevap öğretildi", AI_TAUGHT_EDIT: "Öğretilen cevap düzenlendi", AI_TAUGHT_DELETE: "Öğretilen cevap silindi", AI_DISMISS: "Rehber sorusu yoksayıldı",

@@ -59,6 +59,7 @@ export function useLiveRoom(opts: { hostIdentity?: string; isHost: boolean }) {
   const [settings, setSettings] = useState<RoomSettings>(DEFAULT_ROOM_SETTINGS)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [audioBlocked, setAudioBlocked] = useState(false)
+  const [staffNotice, setStaffNotice] = useState<{ text: string; audience: "teacher" | "all"; ts: number } | null>(null)
   const lastSent = useRef(0)
   const connectedAt = useRef<number | null>(null)
   const [, force] = useState(0)
@@ -129,6 +130,15 @@ export function useLiveRoom(opts: { hostIdentity?: string; isHost: boolean }) {
       } else setState("ended") // room deleted / server closed → the stream is over
     }
     const onData = (payload: Uint8Array, participant?: { identity: string; name?: string; metadata?: string }, _k?: unknown, topic?: string) => {
+      if (topic === "staff-notice") {
+        // officials' messages arrive from the server (no participant) or from a hidden "staff-…" participant — never from a viewer
+        if (participant && !participant.identity.startsWith("staff-")) return
+        try {
+          const d = JSON.parse(new TextDecoder().decode(payload))
+          if (typeof d.text === "string" && d.text) setStaffNotice({ text: d.text.slice(0, 240), audience: d.audience === "all" ? "all" : "teacher", ts: Number(d.ts) || Date.now() })
+        } catch {}
+        return
+      }
       if (topic !== "chat" || !participant) return
       let role = ""
       try {
@@ -258,6 +268,8 @@ export function useLiveRoom(opts: { hostIdentity?: string; isHost: boolean }) {
     disconnect,
     sendChat,
     clearMessages: () => setMessages([]),
+    staffNotice,
+    dismissStaffNotice: () => setStaffNotice(null),
   }
 }
 

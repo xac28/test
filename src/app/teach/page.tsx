@@ -1,3 +1,4 @@
+import { TeacherBadge } from "@/components/teacher-badge"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
@@ -97,7 +98,7 @@ export default async function TeachDashboardPage() {
       <div className="relative overflow-hidden rounded-[2rem] bg-sage-900 text-white p-8 md:p-12 shadow-2xl shadow-sage-900/20">
         {teacher.isTrialMode && (
           <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-6 py-1.5 rounded-bl-2xl shadow-md z-20 flex items-center gap-1.5 uppercase tracking-widest">
-            <Zap size={14}/> Trial Mode
+            <Zap size={14}/> Deneme süreci
           </div>
         )}
         <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
@@ -111,6 +112,7 @@ export default async function TeachDashboardPage() {
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-sage-200 mb-4 border border-white/10">
               <ShieldCheck size={14} className="text-green-400" /> Eğitmen Paneli
             </div>
+            <div className="mb-4"><TeacherBadge trial={teacher.isTrialMode} tone="dark" /></div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display text-white mb-2 leading-tight">Tekrar hoş geldiniz,<br/><span className="text-sage-200 italic">{session.user.name || "Teacher"}</span></h1>
             <p className="text-sage-500 max-w-md">Derslerinizi yönetin, kazancınızı takip edin ve öğrencilerinizle buluşun.</p>
           </div>
@@ -126,7 +128,7 @@ export default async function TeachDashboardPage() {
                 Deneme Aşamasındasınız
               </h2>
               <p className="text-amber-800/80 text-sm max-w-2xl leading-relaxed">
-                Tebrikler, eğitmenlik başvurunuz onaylandı! Ancak platformda öğrencilere ders açmaya başlamadan önce AYA yetkilileriyle <strong>5 dakikalık bir deneme canlı yayını</strong> yapmanız gerekmektedir. Bu yayın sonrası profiliniz tamamen aktif olacaktır.
+                Tebrikler, eğitmenlik başvurunuz onaylandı! Deneme sürecinde <strong>canlı yayın açabilirsiniz</strong>; yayınlarınız AYA yetkilileri tarafından canlı izlenir ve gerekirse size mesaj gönderebilirler. Yetkililer yayınınızı beğenirse <strong>“Onaylı öğretmen” rozetini</strong> alır, atölye ve rezervasyon da açabilirsiniz. İsterseniz yetkililerle <strong>5 dakikalık özel bir deneme yayını</strong> da yapabilirsiniz.
               </p>
               {teacher.trialNote && (
                 <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 max-w-2xl" data-testid="trial-note">
@@ -145,10 +147,8 @@ export default async function TeachDashboardPage() {
         </div>
       )}
 
-      {/* Go Live Now — Instant Session */}
-      {!teacher.isTrialMode && (
-        <GoLiveButton activeLiveRoom={activeLiveRoom ? JSON.parse(JSON.stringify(activeLiveRoom)) : null} />
-      )}
+      {/* Go Live Now — Instant Session (trial-phase teachers too: their broadcasts are supervised) */}
+      <GoLiveButton activeLiveRoom={activeLiveRoom ? JSON.parse(JSON.stringify(activeLiveRoom)) : null} />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 stagger-children">

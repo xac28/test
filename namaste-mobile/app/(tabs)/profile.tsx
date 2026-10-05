@@ -5,6 +5,7 @@ import { useAuth } from '../../context/auth';
 import { API_BASE, colors } from '../../constants';
 import { AvatarPicker } from '../../components/AvatarPicker';
 import { TeacherVideos } from '../../components/TeacherVideos';
+import { AccountCard } from '../../components/AccountCard';
 
 // The API stores interests as a JSON string but expects an array on update
 function parseInterests(raw: unknown): string[] {
@@ -81,10 +82,10 @@ export default function ProfileScreen() {
         Alert.alert('Başarılı', 'Profil güncellendi!');
       } else {
         const data = await res.json();
-        Alert.alert('Error', data.error || 'Failed to update profile');
+        Alert.alert('Hata', data.error || 'Profil güncellenemedi');
       }
     } catch (e) {
-      Alert.alert('Error', 'Network error');
+      Alert.alert('Hata', 'Bağlantı hatası, tekrar dene');
     } finally {
       setSaving(false);
     }
@@ -98,10 +99,10 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Profile</Text>
+          <Text style={styles.headerTitle}>Profilim</Text>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: colors.ink }}>Loading...</Text>
+          <Text style={{ color: colors.ink }}>Yükleniyor…</Text>
         </View>
       </SafeAreaView>
     );
@@ -110,9 +111,9 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Profile</Text>
+        <Text style={styles.headerTitle}>Profilim</Text>
         <TouchableOpacity onPress={signOut} style={{ padding: 8, backgroundColor: colors.sage[100], borderRadius: 8 }}>
-          <Text style={{ color: colors.sage[700], fontWeight: '600', fontSize: 12 }}>Logout</Text>
+          <Text style={{ color: colors.sage[700], fontWeight: '600', fontSize: 12 }}>Çıkış yap</Text>
         </TouchableOpacity>
       </View>
 
@@ -124,27 +125,27 @@ export default function ProfileScreen() {
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>First Name</Text>
+            <Text style={styles.label}>Ad</Text>
             <TextInput
               style={styles.input}
               value={firstName}
               onChangeText={setFirstName}
-              placeholder="Your first name"
+              placeholder="Adın"
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last Name</Text>
+            <Text style={styles.label}>Soyad</Text>
             <TextInput
               style={styles.input}
               value={lastName}
               onChangeText={setLastName}
-              placeholder="Your last name"
+              placeholder="Soyadın"
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Phone</Text>
+            <Text style={styles.label}>Telefon</Text>
             <TextInput
               style={styles.input}
               value={phone}
@@ -155,12 +156,12 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Country</Text>
+            <Text style={styles.label}>Ülke</Text>
             <TextInput
               style={styles.input}
               value={country}
               onChangeText={setCountry}
-              placeholder="Your country"
+              placeholder="Ülken"
             />
           </View>
 
@@ -169,11 +170,12 @@ export default function ProfileScreen() {
             onPress={handleSave}
             disabled={saving}
           >
-            <Text style={styles.saveBtnText}>{saving ? 'Saving...' : 'Save Profile'}</Text>
+            <Text style={styles.saveBtnText}>{saving ? 'Kaydediliyor…' : 'Profili kaydet'}</Text>
           </TouchableOpacity>
         </View>
 
         {user?.role === 'TEACHER' && <TeacherVideos />}
+        <AccountCard token={token} onDeleted={signOut} />
       </ScrollView>
     </SafeAreaView>
   );

@@ -52,3 +52,21 @@ jobs:
           npx next start -p 3000 &
           for i in $(seq 1 60); do curl -fs localhost:3000/api/health && break; sleep 1; done
           npm run test:api
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: namaste-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: namaste-mobile/package-lock.json
+      - run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Bundle (Android)
+        run: npx expo export --platform android --output-dir /tmp/expo-out

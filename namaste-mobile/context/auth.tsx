@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true }
       }
 
-      return { success: false, error: data.error || "Login failed" }
+      return { success: false, error: data.error || "Giriş başarısız" }
     } catch (e: any) {
       return { success: false, error: e.message }
     }
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true }
       }
 
-      return { success: false, error: data.error || "Registration failed" }
+      return { success: false, error: data.error || "Kayıt başarısız" }
     } catch (e: any) {
       return { success: false, error: e.message }
     }

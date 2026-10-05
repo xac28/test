@@ -19,11 +19,11 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please fill all fields")
+      Alert.alert("Hata", "Tüm alanları doldur")
       return
     }
     if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters")
+      Alert.alert("Hata", "Şifre en az 6 karakter olmalı")
       return
     }
 
@@ -39,7 +39,7 @@ export default function RegisterScreen() {
     if (result.success) {
       router.replace("/(tabs)")
     } else {
-      Alert.alert("Registration Failed", result.error || "Something went wrong")
+      Alert.alert("Kayıt başarısız", result.error || "Bir şeyler ters gitti")
     }
   }
 
@@ -54,21 +54,21 @@ export default function RegisterScreen() {
             <Text style={styles.logoEmoji}>🌱</Text>
           </View>
           <Text style={styles.brand}>AYA</Text>
-          <Text style={styles.tagline}>Begin your journey</Text>
+          <Text style={styles.tagline}>Yolculuğuna başla</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Create Account</Text>
-          <Text style={styles.cardSubtitle}>Join our global yoga community</Text>
+          <Text style={styles.cardTitle}>Hesap oluştur</Text>
+          <Text style={styles.cardSubtitle}>Dünya çapındaki yoga topluluğumuza katıl</Text>
 
           <View style={styles.form}>
             <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>Ad soyad</Text>
               <View style={[styles.inputContainer, focusedField === "name" && styles.inputFocused]}>
                 <Text style={styles.inputIcon}>👤</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Your name"
+                  placeholder="Adın"
                   placeholderTextColor={colors.sage[300]}
                   value={name}
                   onChangeText={setName}
@@ -79,7 +79,7 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>E-posta</Text>
               <View style={[styles.inputContainer, focusedField === "email" && styles.inputFocused]}>
                 <Text style={styles.inputIcon}>📧</Text>
                 <TextInput
@@ -97,12 +97,12 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Şifre</Text>
               <View style={[styles.inputContainer, focusedField === "password" && styles.inputFocused]}>
                 <Text style={styles.inputIcon}>🔒</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Min 6 characters"
+                  placeholder="En az 6 karakter"
                   placeholderTextColor={colors.sage[300]}
                   secureTextEntry
                   value={password}
@@ -142,7 +142,7 @@ export default function RegisterScreen() {
               disabled={loading || !acceptedTerms}
               activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>{loading ? "Creating account..." : "Create Account"}</Text>
+              <Text style={styles.buttonText}>{loading ? "Hesap oluşturuluyor…" : "Create Account"}</Text>
             </TouchableOpacity>
 
             <View style={styles.divider}>
@@ -152,7 +152,7 @@ export default function RegisterScreen() {
             </View>
 
             <TouchableOpacity onPress={() => router.push("/login")} style={styles.secondaryBtn}>
-              <Text style={styles.secondaryBtnText}>Sign In Instead</Text>
+              <Text style={styles.secondaryBtnText}>Zaten hesabım var, giriş yap</Text>
             </TouchableOpacity>
           </View>
         </View>

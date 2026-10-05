@@ -30,7 +30,7 @@ export default function RoomScreen() {
           <Text style={styles.iconEmoji}>🎥</Text>
         </View>
         
-        <Text style={styles.title}>LiveKit Ready</Text>
+        <Text style={styles.title}>LiveKit hazır</Text>
         <Text style={styles.subtitle}>Session ID: {bookingId?.slice(0, 8)}...</Text>
         
         {/* Info card */}
@@ -39,23 +39,23 @@ export default function RoomScreen() {
             <Text style={styles.infoIcon}>📹</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.infoTitle}>1080p @ 60 FPS</Text>
-              <Text style={styles.infoDesc}>Enterprise-grade video quality</Text>
+              <Text style={styles.infoDesc}>Profesyonel video kalitesi</Text>
             </View>
           </View>
           <View style={styles.infoDivider} />
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>🔊</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoTitle}>HD Audio</Text>
-              <Text style={styles.infoDesc}>Echo cancellation & noise suppression</Text>
+              <Text style={styles.infoTitle}>HD ses</Text>
+              <Text style={styles.infoDesc}>Yankı ve gürültü engelleme</Text>
             </View>
           </View>
           <View style={styles.infoDivider} />
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>⚡</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoTitle}>Ultra-Low Latency</Text>
-              <Text style={styles.infoDesc}>LiveKit WebRTC infrastructure</Text>
+              <Text style={styles.infoTitle}>Çok düşük gecikme</Text>
+              <Text style={styles.infoDesc}>LiveKit WebRTC altyapısı</Text>
             </View>
           </View>
         </View>
@@ -67,7 +67,7 @@ export default function RoomScreen() {
         </Text>
 
         <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace("/(tabs)")}>
-          <Text style={styles.primaryBtnText}>Return to Practice</Text>
+          <Text style={styles.primaryBtnText}>Pratiğe dön</Text>
         </TouchableOpacity>
 
         {bookingId ? (

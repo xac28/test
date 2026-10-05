@@ -208,7 +208,7 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="lg:hidden border-t border-rule bg-cream absolute w-full left-0 shadow-lg">
+        <div className="lg:hidden border-t border-rule bg-cream absolute w-full left-0 shadow-lg max-h-[calc(100dvh-4.25rem)] overflow-y-auto overscroll-contain" data-testid="mobile-menu">
           <nav className="max-w-7xl mx-auto px-6 py-4 flex flex-col">
             {navLinks.map((l) => (
               <Link key={l.href} href={l.href} className="py-3.5 border-b border-rule text-lg font-display flex items-center gap-2">

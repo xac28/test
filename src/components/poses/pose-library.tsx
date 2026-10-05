@@ -63,7 +63,7 @@ export function PoseCard({ slug }: { slug: string }) {
         aria-pressed={pinned}
         aria-label={pinned ? `${p.name} hareketini durdur` : `${p.name} hareketini izle`}
         onClick={() => { clearTimeout(timer.current); setPinned((v) => !v) }}
-        className={`absolute top-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-3 min-h-[36px] text-xs font-semibold shadow-md backdrop-blur border transition ${pinned ? "bg-ink text-cream border-ink" : "bg-paper/90 text-ink border-rule hover:border-ink"}`}
+        className={`absolute top-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-3 min-h-[40px] text-xs font-semibold shadow-md backdrop-blur border transition ${pinned ? "bg-ink text-cream border-ink" : "bg-paper/90 text-ink border-rule hover:border-ink"}`}
       >
         {pinned ? <Square size={13} fill="currentColor" /> : <Play size={13} fill="currentColor" />}
         <span>{pinned ? "Durdur" : "Hareketi izle"}</span>

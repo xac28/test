@@ -625,6 +625,7 @@ a.bg-ink:active, button.bg-ink:not(:disabled):active, a.bg-accent:active, button
 
 /* touch screens: small links and icon buttons get an invisible, larger hit area (WCAG 2.5.8 / 44 px guidance) */
 @media (pointer: coarse) {
-  .tap-area { position: relative; }
+  .tap-area:not(.absolute):not(.fixed):not(.relative):not(.sticky) { position: relative; }
   .tap-area::after { content: ""; position: absolute; inset: -12px -6px; }
+  .tap-area-lg::after { content: ""; position: absolute; inset: -12px; }
 }

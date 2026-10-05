@@ -78,7 +78,7 @@ export default function HomeView({ data }: { data: HomeData }) {
             <div className="lg:col-span-6">
               <div className="relative h-[420px] sm:h-[520px] lg:h-[600px]">
                 <YogiScene poses={HERO_POSES} className="absolute inset-0" label={setHeroPose} />
-                <Link href={`/pozlar/${heroPose}`} data-testid="hero-pose-chip" className="absolute left-1/2 -translate-x-1/2 bottom-2 inline-flex items-center gap-2 bg-paper/90 backdrop-blur border border-rule shadow-md rounded-full pl-4 pr-3 py-2 text-sm font-medium hover:border-ink transition">
+                <Link href={`/pozlar/${heroPose}`} data-testid="hero-pose-chip" className="absolute left-1/2 -translate-x-1/2 bottom-2 inline-flex items-center gap-2 bg-paper/90 backdrop-blur border border-rule shadow-md rounded-full pl-4 pr-3 py-2 min-h-[44px] text-sm font-medium hover:border-ink transition">
                   <span className="w-2 h-2 rounded-full bg-clay-500 animate-pulse" aria-hidden /> {POSE_BY_SLUG[heroPose]?.name} <span className="text-sage-500 italic hidden sm:inline">{POSE_BY_SLUG[heroPose]?.sanskrit}</span> <ArrowRight size={14} />
                 </Link>
               </div>

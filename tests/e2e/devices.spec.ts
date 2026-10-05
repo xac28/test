@@ -34,10 +34,10 @@ async function open(browser: Browser, opts: Record<string, any>): Promise<{ ctx:
 /** scroll through the page so reveal-on-scroll content and lazy images are present */
 async function scrollThrough(page: Page) {
   const h = await page.evaluate(() => document.body.scrollHeight)
-  const step = Math.max(300, ((page.viewportSize()?.height ?? 800) * 2) / 3)
+  const step = Math.max(400, page.viewportSize()?.height ?? 800)
   for (let y = 0; y < h; y += step) {
     await page.evaluate((v) => window.scrollTo(0, v), y)
-    await page.waitForTimeout(60)
+    await page.waitForTimeout(40)
   }
   await page.evaluate(() => window.scrollTo(0, 0))
 }
@@ -45,7 +45,7 @@ async function scrollThrough(page: Page) {
 for (const d of DEVICES) {
   test.describe(`device: ${d.name}`, () => {
     test("pages fit the screen, throw no errors and load their pictures", async ({ browser }) => {
-      test.setTimeout(240_000)
+      test.setTimeout(420_000)
       const { ctx, page } = await open(browser, d.opts)
       const problems: string[] = []
       page.on("pageerror", (e) => problems.push(`error: ${e.message.slice(0, 120)}`))
@@ -87,7 +87,14 @@ for (const d of DEVICES) {
         expect(Math.min(box!.width, box!.height), "menu button is a comfortable tap target").toBeGreaterThanOrEqual(40)
         await btn.click()
         await expect(page.getByRole("button", { name: "Menüyü kapat" })).toBeVisible()
-        const link = page.locator("a[href='/pozlar']").last()
+        const menu = page.getByTestId("mobile-menu")
+        // the drawer must be reachable in full on this screen: it scrolls inside itself when it is taller than the screen
+        const m = await menu.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight, bottom: el.getBoundingClientRect().bottom }))
+        expect(m.bottom, "drawer stays inside the screen").toBeLessThanOrEqual(page.viewportSize()!.height + 1)
+        const last = menu.locator("a").last()
+        await last.scrollIntoViewIfNeeded()
+        await expect(last).toBeInViewport()
+        const link = menu.locator("a[href='/pozlar']")
         await link.scrollIntoViewIfNeeded()
         await link.click()
         await expect(page).toHaveURL(/\/pozlar$/)

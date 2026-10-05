@@ -153,7 +153,7 @@ export function PoseViewer({ slug, className = "", playKey = 0, onPlayEnd }: { s
   }, [playKey])
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`${/\b(absolute|fixed)\b/.test(className) ? "" : "relative"} ${className}`}>
       <div ref={mount} className="absolute inset-0" data-testid="pose-viewer" data-state={state} />
       {state === "loading" && <div className="absolute inset-0 flex items-center justify-center text-sm text-sage-500">3B model yükleniyor…</div>}
       {state === "error" && <div className="absolute inset-0 flex items-center justify-center text-sm text-sage-500 px-6 text-center">Bu cihazda 3B görünüm açılamadı; yukarıdaki görseli kullanabilirsin.</div>}

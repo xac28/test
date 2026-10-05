@@ -124,6 +124,20 @@ test.describe("discovery pages: styles, poses, how it works, FAQ", () => {
     await expect(page.getByText(/platform dışı|platformun dışına|WhatsApp/i).first()).toBeVisible()
   })
 
+  test("the teacher list is paged: 24 at a time, more on request", async ({ page }) => {
+    await page.goto("/teachers")
+    const grid = page.getByTestId("teacher-grid")
+    await expect(grid).toBeVisible()
+    const first = await grid.locator("> *").count()
+    expect(first).toBeLessThanOrEqual(24)
+    const more = page.getByTestId("teachers-more")
+    if (await more.count()) {
+      expect(first).toBe(24)
+      await more.click()
+      await expect.poll(() => grid.locator("> *").count()).toBeGreaterThan(24)
+    }
+  })
+
   test("people without a photo get an illustrated portrait, never bare initials", async ({ page }) => {
     await page.goto("/teachers")
     await expect(page.getByTestId("person-avatar").first()).toBeVisible()

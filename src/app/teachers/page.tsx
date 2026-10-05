@@ -37,9 +37,13 @@ interface DbTeacher {
   isDbTeacher: boolean;
 }
 
+const PAGE_SIZE = 24;
+
 export default function TeachersPage() {
   const { t, locale } = useI18n();
   const [filters, setFilters] = useState<Filters>({ style: null, level: null, exp: null });
+  const [visible, setVisible] = useState(PAGE_SIZE); // long lists are shown a page at a time
+  useEffect(() => setVisible(PAGE_SIZE), [filters]);
   const [dbTeachers, setDbTeachers] = useState<DbTeacher[]>([]);
 
   // Fetch real teachers from DB
@@ -161,11 +165,20 @@ export default function TeachersPage() {
               <p className="font-display text-3xl">{locale === 'tr' ? 'Filtrelerinize uyan eğitmen yok' : 'No teachers match your filters'}</p>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
-              {filtered.map((teacher) => (
-                <TeacherCard key={teacher.id} teacher={teacher} />
-              ))}
-            </div>
+            <>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14" data-testid="teacher-grid">
+                {filtered.slice(0, visible).map((teacher) => (
+                  <TeacherCard key={teacher.id} teacher={teacher} />
+                ))}
+              </div>
+              {filtered.length > visible && (
+                <div className="mt-14 text-center">
+                  <button type="button" data-testid="teachers-more" onClick={() => setVisible((v) => v + PAGE_SIZE)} className="btn-ghost">
+                    {locale === 'tr' ? `Daha fazla göster (${filtered.length - visible} eğitmen daha)` : `Show more (${filtered.length - visible} more teachers)`}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

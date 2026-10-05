@@ -19,10 +19,24 @@ export default function Navbar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const [drawerMax, setDrawerMax] = useState<number | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
   const [exploreOpen, setExploreOpen] = useState(false);
   const exploreRef = useRef<HTMLDivElement>(null);
+  // the drawer must end at the bottom of the screen wherever the header currently is (a notice bar can sit above it)
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const measure = () => {
+      const b = headerRef.current?.getBoundingClientRect().bottom ?? 68;
+      setDrawerMax(Math.max(200, window.innerHeight - b));
+    };
+    measure();
+    window.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    return () => { window.removeEventListener('scroll', measure); window.removeEventListener('resize', measure); };
+  }, [mobileOpen]);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const role = session?.user?.role;
@@ -86,7 +100,7 @@ export default function Navbar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   return (
-    <header className="sticky top-0 z-50 bg-cream border-b border-rule">
+    <header ref={headerRef} className="sticky top-0 z-50 bg-cream border-b border-rule">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between gap-8">
         <Link href="/" aria-label="AYA ana sayfa" className="tap-area text-ink text-[1.65rem] leading-none">
           <Wordmark />
@@ -208,7 +222,7 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="lg:hidden border-t border-rule bg-cream absolute w-full left-0 shadow-lg max-h-[calc(100dvh-4.25rem)] overflow-y-auto overscroll-contain" data-testid="mobile-menu">
+        <div className="lg:hidden border-t border-rule bg-cream absolute w-full left-0 shadow-lg overflow-y-auto overscroll-contain" style={drawerMax ? { maxHeight: drawerMax } : { maxHeight: 'calc(100dvh - 4.25rem)' }} data-testid="mobile-menu">
           <nav className="max-w-7xl mx-auto px-6 py-4 flex flex-col">
             {navLinks.map((l) => (
               <Link key={l.href} href={l.href} className="py-3.5 border-b border-rule text-lg font-display flex items-center gap-2">

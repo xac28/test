@@ -58,6 +58,41 @@ test.describe("discovery pages: styles, poses, how it works, FAQ", () => {
     await expect(page.locator("canvas").first()).toBeAttached({ timeout: 20_000 })
   })
 
+  test("pose cards let the 3D character perform the movement on hover or on the play button", async ({ page }) => {
+    await page.goto("/pozlar")
+    const card = page.getByTestId("pose-card").first()
+    await card.scrollIntoViewIfNeeded()
+    await card.locator("a").hover()
+    await expect(card.getByTestId("pose-card-motion")).toBeVisible({ timeout: 10_000 })
+    await expect(card.getByTestId("pose-motion").locator("canvas")).toBeAttached({ timeout: 25_000 })
+    await page.mouse.move(5, 5)
+    await expect(card.getByTestId("pose-card-motion")).toHaveCount(0)
+
+    // the play button works without a mouse hover (touch, keyboard) and toggles
+    const second = page.getByTestId("pose-card").nth(1)
+    await second.scrollIntoViewIfNeeded()
+    await second.getByTestId("pose-play").click()
+    await expect(second).toHaveAttribute("data-playing", "1")
+    await expect(second.getByTestId("pose-motion").locator("canvas")).toBeAttached({ timeout: 25_000 })
+    await page.mouse.move(5, 5)
+    await expect(second).toHaveAttribute("data-playing", "1") // pinned by the button
+    await second.getByTestId("pose-play").click()
+    await expect(second).toHaveAttribute("data-playing", "0")
+    await expect(page).toHaveURL(/\/pozlar$/) // pressing play must not open the pose
+  })
+
+  test("the pose page plays the movement from start to finish", async ({ page }) => {
+    const errors: string[] = []
+    page.on("pageerror", (e) => errors.push(e.message))
+    await page.goto("/pozlar/savasana")
+    const btn = page.getByTestId("pose-play-motion")
+    await expect(btn).toContainText("baştan sona")
+    await btn.click()
+    await expect(page.getByTestId("pose-viewer").locator("canvas")).toBeAttached({ timeout: 25_000 })
+    await expect(btn).toContainText("tekrar oynat", { timeout: 60_000 })
+    expect(errors).toEqual([])
+  })
+
   test("unknown pose and style slugs are 404s", async ({ page }) => {
     expect((await page.goto("/pozlar/yok-boyle-bir-poz"))!.status()).toBe(404)
     expect((await page.goto("/yoga-stilleri/yok"))!.status()).toBe(404)

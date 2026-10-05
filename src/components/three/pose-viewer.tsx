@@ -4,12 +4,17 @@ import { useEffect, useRef, useState } from "react"
 import * as THREE from "three"
 import { OrbitControls } from "three/addons/controls/OrbitControls.js"
 import { loadYogi } from "@/lib/yogi-model"
-import { applyPose, placeOnFloor, prepareFigure } from "@/lib/pose-rig"
+import { prepareFigure } from "@/lib/pose-rig"
+import { buildMotion } from "@/lib/pose-motion"
 import { RIGS } from "@/lib/pose-rigs"
 
 /** Interactive 3D view of one pose: drag to turn it around, scroll/pinch to zoom. */
-export function PoseViewer({ slug, className = "" }: { slug: string; className?: string }) {
+export function PoseViewer({ slug, className = "", playKey = 0, onPlayEnd }: { slug: string; className?: string; playKey?: number; onPlayEnd?: () => void }) {
   const mount = useRef<HTMLDivElement>(null)
+  const playRef = useRef<(() => void) | null>(null)
+  const pending = useRef(false)
+  const endRef = useRef(onPlayEnd)
+  endRef.current = onPlayEnd
   const [state, setState] = useState<"loading" | "ready" | "error">("loading")
 
   useEffect(() => {
@@ -57,11 +62,15 @@ export function PoseViewer({ slug, className = "" }: { slug: string; className?:
 
       const fig = prepareFigure(model)
       scene.add(model)
-      applyPose(fig, { ...pose, yaw: 0 })
-      placeOnFloor(fig, { ...pose, yaw: 0 })
+      const motion = buildMotion(fig, slug)
+      motion.end()
       const box = new THREE.Box3().setFromObject(model, true)
       const c = box.getCenter(new THREE.Vector3())
       const size = box.getSize(new THREE.Vector3())
+      // while the movement plays the camera also has to take in the standing start
+      const uSize = motion.bounds.getSize(new THREE.Vector3())
+      const uC = motion.bounds.getCenter(new THREE.Vector3())
+      const zk = Math.min(1.8, Math.max(1, Math.max(uSize.x, uSize.y, uSize.z) / Math.max(size.x, size.y, size.z)))
 
       const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 40)
       const R = Math.max(size.x, size.y, size.z)
@@ -90,13 +99,41 @@ export function PoseViewer({ slug, className = "" }: { slug: string; className?:
       let visible = true
       const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting))
       io.observe(el)
+      const clock = new THREE.Clock()
+      let playing = false
+      let t = 0
+      let blend = 0 // 0 = framed on the finished pose, 1 = framed on the whole movement
+      const offset = new THREE.Vector3()
+      playRef.current = () => {
+        t = 0
+        playing = true
+        controls!.autoRotate = false
+      }
       const frame = () => {
         raf = requestAnimationFrame(frame)
+        const dt = Math.min(clock.getDelta(), 0.05)
         if (!visible) return
+        if (playing) {
+          t += dt
+          motion.at(t)
+          if (t >= motion.finishAt) { playing = false; motion.end(); controls!.autoRotate = false; endRef.current?.() }
+        }
+        const want = playing ? 1 : 0
+        if (Math.abs(want - blend) > 0.001) {
+          const prevF = 1 + (zk - 1) * blend
+          blend += (want - blend) * Math.min(1, dt * 4)
+          const f = (1 + (zk - 1) * blend) / prevF
+          offset.copy(camera.position).sub(controls!.target)
+          controls!.target.copy(c).lerp(uC, blend)
+          camera.position.copy(controls!.target).add(offset.multiplyScalar(f))
+          controls!.minDistance = dist * 0.55 * (1 + (zk - 1) * blend)
+          controls!.maxDistance = dist * 1.6 * (1 + (zk - 1) * blend)
+        }
         controls!.update()
         renderer!.render(scene, camera)
       }
       frame()
+      if (pending.current) { pending.current = false; playRef.current?.() } // play was pressed while the model was still loading
       setState("ready")
       ;(el as any).__cleanup = () => { ro.disconnect(); io.disconnect() }
     })()
@@ -108,6 +145,12 @@ export function PoseViewer({ slug, className = "" }: { slug: string; className?:
       if (renderer) { renderer.dispose(); renderer.domElement.remove() }
     }
   }, [slug])
+
+  useEffect(() => {
+    if (playKey <= 0) return
+    if (playRef.current) playRef.current()
+    else pending.current = true
+  }, [playKey])
 
   return (
     <div className={`relative ${className}`}>

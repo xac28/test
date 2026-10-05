@@ -53,7 +53,7 @@ export async function GET(req: Request) {
   }
 
   if (view === "users") {
-    const groups = await db.policyViolation.groupBy({ by: ["userId"], where: { counted: true, forgiven: false }, _count: { _all: true }, _max: { createdAt: true }, orderBy: { _count: { userId: "desc" } }, skip, take: size })
+    const groups = await db.policyViolation.groupBy({ by: ["userId"], where: { counted: true, forgiven: false }, _count: { _all: true }, _max: { createdAt: true }, orderBy: [{ _count: { userId: "desc" } }, { _max: { createdAt: "desc" } }], skip, take: size })
     const total = (await db.policyViolation.groupBy({ by: ["userId"], where: { counted: true, forgiven: false } })).length
     const users = groups.length ? await db.user.findMany({ where: { id: { in: groups.map((x) => x.userId) } }, select: { id: true, name: true, email: true, banned: true, suspendedUntil: true, suspensionReason: true } }) : []
     const u = new Map(users.map((x) => [x.id, x]))

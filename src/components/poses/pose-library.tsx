@@ -1,30 +1,74 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Link from "next/link"
-import { useMemo, useState } from "react"
-import { Search } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Play, Search, Square } from "lucide-react"
 import { POSES, POSE_CATEGORIES, POSE_LEVELS, PoseCategory, PoseLevel, poseImage } from "@/lib/yoga-poses"
 import { STYLES } from "@/lib/yoga-styles"
 import { fold } from "@/lib/ai-knowledge"
 
+const PoseMotion = dynamic(() => import("@/components/three/pose-motion"), { ssr: false })
+
+/**
+ * A pose card. Hovering it with a mouse (or pressing its play button, which also works on touch screens and with the
+ * keyboard) lets the 3D character perform the pose from start to finish, in a loop; the still picture is shown otherwise.
+ */
 export function PoseCard({ slug }: { slug: string }) {
   const p = POSES.find((x) => x.slug === slug)!
+  const [hover, setHover] = useState(false)
+  const [pinned, setPinned] = useState(false)
+  const [ready, setReady] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const active = hover || pinned
+
+  useEffect(() => { if (!active) setReady(false) }, [active])
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  const enter = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => setHover(true), 140) // sweeping the mouse over the grid should not start every figure
+  }
+  const leave = () => {
+    clearTimeout(timer.current)
+    setHover(false)
+  }
+
   return (
-    <Link href={`/pozlar/${p.slug}`} data-testid="pose-card" className="group block rounded-2xl overflow-hidden bg-paper border border-rule card-lift">
-      <div className="aspect-[4/5] bg-gradient-to-br from-clay-100 to-teal-100 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={poseImage(p.slug)} alt={`${p.name} (${p.sanskrit}) duruşu`} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-      </div>
-      <div className="p-5">
-        <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wider">
-          <span className="text-teal-600">{p.category}</span>
-          <span className={p.level === "Başlangıç" ? "text-teal-600" : p.level === "Orta" ? "text-saffron-600" : "text-clay-600"}>{p.level}</span>
+    <div data-testid="pose-card" data-playing={active ? "1" : "0"} onPointerEnter={enter} onPointerLeave={leave} className="group relative rounded-2xl overflow-hidden bg-paper border border-rule card-lift">
+      <Link href={`/pozlar/${p.slug}`} className="block">
+        <div className="relative aspect-[4/5] bg-gradient-to-br from-clay-100 to-teal-100 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={poseImage(p.slug)} alt={`${p.name} (${p.sanskrit}) duruşu`} loading="lazy" className={`w-full h-full object-cover transition-all duration-500 ${active ? (ready ? "opacity-0" : "opacity-100") : "group-hover:scale-105"}`} />
+          {active && (
+            <div className="absolute inset-0 animate-fade-in" data-testid="pose-card-motion" data-ready={ready ? "1" : "0"}>
+              <PoseMotion slug={p.slug} onReady={() => setReady(true)} />
+            </div>
+          )}
         </div>
-        <h3 className="font-display text-2xl mt-1.5 group-hover:text-clay-600 transition-colors">{p.name}</h3>
-        <p className="text-sm italic text-sage-500">{p.sanskrit}</p>
-        <p className="text-sm text-sage-600 mt-2 line-clamp-2">{p.summary}</p>
-      </div>
-    </Link>
+        <div className="p-5">
+          <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wider">
+            <span className="text-teal-600">{p.category}</span>
+            <span className={p.level === "Başlangıç" ? "text-teal-600" : p.level === "Orta" ? "text-saffron-600" : "text-clay-600"}>{p.level}</span>
+          </div>
+          <h3 className="font-display text-2xl mt-1.5 group-hover:text-clay-600 transition-colors">{p.name}</h3>
+          <p className="text-sm italic text-sage-500">{p.sanskrit}</p>
+          <p className="text-sm text-sage-600 mt-2 line-clamp-2">{p.summary}</p>
+        </div>
+      </Link>
+      <button
+        type="button"
+        data-testid="pose-play"
+        aria-pressed={pinned}
+        aria-label={pinned ? `${p.name} hareketini durdur` : `${p.name} hareketini izle`}
+        onClick={() => { clearTimeout(timer.current); setPinned((v) => !v) }}
+        className={`absolute top-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-3 min-h-[36px] text-xs font-semibold shadow-md backdrop-blur border transition ${pinned ? "bg-ink text-cream border-ink" : "bg-paper/90 text-ink border-rule hover:border-ink"}`}
+      >
+        {pinned ? <Square size={13} fill="currentColor" /> : <Play size={13} fill="currentColor" />}
+        <span>{pinned ? "Durdur" : "Hareketi izle"}</span>
+      </button>
+    </div>
   )
 }
 

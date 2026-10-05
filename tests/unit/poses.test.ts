@@ -4,6 +4,7 @@ import path from "path"
 import { POSES, POSE_BY_SLUG, POSE_CATEGORIES, POSE_LEVELS, poseImage } from "../../src/lib/yoga-poses"
 import { STYLES, STYLE_BY_SLUG } from "../../src/lib/yoga-styles"
 import { RIGS } from "../../src/lib/pose-rigs"
+import { MOTION_PATH, motionPath } from "../../src/lib/pose-motion"
 
 describe("yoga pose library", () => {
   it("has unique slugs, known categories and levels", () => {
@@ -37,5 +38,15 @@ describe("yoga pose library", () => {
 
   it("has no rig without a pose", () => {
     for (const slug of Object.keys(RIGS)) expect(POSE_BY_SLUG[slug], `rig ${slug}`).toBeTruthy()
+  })
+
+  it("every movement path ends in its pose and only walks through known poses", () => {
+    for (const slug of Object.keys(RIGS)) {
+      const path = motionPath(slug)
+      expect(path.length, slug).toBeGreaterThanOrEqual(2)
+      expect(path[path.length - 1], slug).toBe(slug)
+      for (const step of path) expect(RIGS[step], `${slug} via ${step}`).toBeTruthy()
+    }
+    for (const slug of Object.keys(MOTION_PATH)) expect(RIGS[slug], `path for unknown pose ${slug}`).toBeTruthy()
   })
 })

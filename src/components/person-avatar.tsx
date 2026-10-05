@@ -1,3 +1,7 @@
+"use client"
+
+import { useState } from "react"
+
 /**
  * Friendly illustrated avatar used wherever a person has no photo: the same name always gives the same face,
  * so teachers and members stay recognisable without an upload. Pure SVG, no network.
@@ -64,9 +68,10 @@ export function PersonAvatar({ name, seed, size = 40, className = "", rounded = 
 
 /** The person's photo when there is one that loads, otherwise the illustrated avatar. */
 export function Portrait({ src, name, seed, size = 40, className = "" }: { src?: string | null; name?: string | null; seed?: string; size?: number; className?: string }) {
-  if (src) {
+  const [failed, setFailed] = useState(false)
+  if (src && !failed) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" width={size} height={size} style={{ width: size, height: size }} className={`rounded-full object-cover shrink-0 ${className}`} />
+    return <img src={src} alt="" width={size} height={size} style={{ width: size, height: size }} onError={() => setFailed(true)} className={`rounded-full object-cover shrink-0 ${className}`} />
   }
   return <PersonAvatar name={name} seed={seed} size={size} className={className} />
 }

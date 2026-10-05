@@ -69,8 +69,8 @@ export default function PosePage({ params }: { params: { slug: string } }) {
 
             <div className="mt-10 flex flex-wrap gap-x-10 gap-y-4 text-sm">
               <div><p className="eyebrow mb-2">Odak noktaları</p><p className="text-sage-700">{p.focus.join(" · ")}</p></div>
-              <div><p className="eyebrow mb-2">Şunlarla dengele</p><p className="flex gap-3">{p.counter.map((c) => <Link key={c} href={`/pozlar/${c}`} className="underline underline-offset-4 hover:text-clay-600">{POSE_BY_SLUG[c].name}</Link>)}</p></div>
-              <div><p className="eyebrow mb-2">Stiller</p><p className="flex gap-3 flex-wrap">{p.styles.map((s) => STYLE_BY_SLUG[s] && <Link key={s} href={`/yoga-stilleri/${s}`} className="underline underline-offset-4 hover:text-clay-600">{STYLE_BY_SLUG[s].name}</Link>)}</p></div>
+              <div><p className="eyebrow mb-2">Şunlarla dengele</p><p className="flex gap-3">{p.counter.map((c) => <Link key={c} href={`/pozlar/${c}`} className="tap-area underline underline-offset-4 hover:text-clay-600">{POSE_BY_SLUG[c].name}</Link>)}</p></div>
+              <div><p className="eyebrow mb-2">Stiller</p><p className="flex gap-3 flex-wrap">{p.styles.map((s) => STYLE_BY_SLUG[s] && <Link key={s} href={`/yoga-stilleri/${s}`} className="tap-area underline underline-offset-4 hover:text-clay-600">{STYLE_BY_SLUG[s].name}</Link>)}</p></div>
             </div>
           </div>
         </section>
@@ -82,8 +82,8 @@ export default function PosePage({ params }: { params: { slug: string } }) {
           </section>
         )}
         <nav aria-label="Önceki ve sonraki poz" className="max-w-7xl mx-auto px-6 lg:px-12 py-10 flex justify-between gap-4 text-sm font-semibold">
-          <Link href={`/pozlar/${prev.slug}`} className="underline underline-offset-4 hover:text-clay-600">← {prev.name}</Link>
-          <Link href={`/pozlar/${next.slug}`} className="underline underline-offset-4 hover:text-clay-600">{next.name} →</Link>
+          <Link href={`/pozlar/${prev.slug}`} className="tap-area underline underline-offset-4 hover:text-clay-600">← {prev.name}</Link>
+          <Link href={`/pozlar/${next.slug}`} className="tap-area underline underline-offset-4 hover:text-clay-600">{next.name} →</Link>
         </nav>
         <CtaBand title={`${p.name}'i bir eğitmenle çalış.`} text="Canlı geri bildirim hizalamanı hızla geliştirir. İlk deneme dersi yarı fiyat." href="/teachers" label="Eğitmen bul" secondary={{ href: "/login?mode=register", label: "Ücretsiz üye ol" }} />
       </main>

@@ -176,7 +176,7 @@ export function AiAssistant() {
       {!isOpen && hint && (
         <div role="status" className="fixed bottom-[76px] right-5 z-[89] bg-paper border border-rule rounded-lg px-3.5 py-2 shadow-md text-xs text-sage-700 max-w-[220px] animate-slide-up">
           Hangi eğitmen sana uygun? Rehbere sor.
-          <button onClick={() => setHint(false)} aria-label="Kapat" className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-ink text-cream flex items-center justify-center"><X size={11} /></button>
+          <button onClick={() => setHint(false)} aria-label="Kapat" className="tap-area absolute -top-2 -right-2 w-5 h-5 rounded-full bg-ink text-cream flex items-center justify-center"><X size={11} /></button>
         </div>
       )}
 

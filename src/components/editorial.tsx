@@ -105,7 +105,7 @@ export function SectionHead({
         <h2 className="font-display text-4xl md:text-5xl leading-[1.05] max-w-2xl">{title}</h2>
       </div>
       {href && linkLabel && (
-        <Link href={href} className="group inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-clay-600">
+        <Link href={href} className="tap-area group inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-clay-600">
           {linkLabel} <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
         </Link>
       )}

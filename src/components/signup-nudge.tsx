@@ -63,7 +63,7 @@ export function SignupNudge() {
           <Link href="/login?mode=register" onClick={close} data-testid="signup-nudge-cta" className="cta shrink-0 inline-flex items-center gap-1.5 bg-accent text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-accent-dark">
             {L("Üye ol", "Join")} <ArrowRight size={14} />
           </Link>
-          <button onClick={close} aria-label={L("Kapat", "Dismiss")} className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded text-cream/60 hover:text-cream">
+          <button onClick={close} aria-label={L("Kapat", "Dismiss")} className="tap-area absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded text-cream/60 hover:text-cream">
             <X size={14} />
           </button>
         </motion.aside>

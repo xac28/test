@@ -88,7 +88,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-cream border-b border-rule">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between gap-8">
-        <Link href="/" aria-label="AYA ana sayfa" className="text-ink text-[1.65rem] leading-none">
+        <Link href="/" aria-label="AYA ana sayfa" className="tap-area text-ink text-[1.65rem] leading-none">
           <Wordmark />
         </Link>
 
@@ -200,7 +200,7 @@ export default function Navbar() {
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={mobileOpen ? 'Menüyü kapat' : 'Menüyü aç'}
             aria-expanded={mobileOpen}
-            className="lg:hidden p-2 -mr-2 text-ink"
+            className="lg:hidden p-2.5 -mr-2.5 text-ink"
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>

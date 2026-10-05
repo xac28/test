@@ -622,3 +622,9 @@ a.bg-ink:active, button.bg-ink:not(:disabled):active, a.bg-accent:active, button
 .card-lift { transition: transform 0.25s ease, box-shadow 0.25s ease; }
 .card-lift:hover { transform: translateY(-5px); box-shadow: 0 22px 44px -18px rgba(23, 49, 58, 0.3); }
 @media (prefers-reduced-motion: reduce) { .btn-cta, .btn-deep, .card-lift { transition: none; } .btn-cta:hover, .btn-deep:hover, .card-lift:hover { transform: none; } }
+
+/* touch screens: small links and icon buttons get an invisible, larger hit area (WCAG 2.5.8 / 44 px guidance) */
+@media (pointer: coarse) {
+  .tap-area { position: relative; }
+  .tap-area::after { content: ""; position: absolute; inset: -12px -6px; }
+}

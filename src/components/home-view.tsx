@@ -87,7 +87,7 @@ export default function HomeView({ data }: { data: HomeData }) {
               ) : (
                 <div className="mt-3 bg-teal-900 text-cream/80 px-5 py-4 text-sm rounded-2xl">
                   {L('Şu anda canlı yayın yok.', 'Nobody is live right now.')}{' '}
-                  <Link href="/live" className="text-cream underline underline-offset-4">{L('Yayın takvimine bak', 'See live')}</Link>
+                  <Link href="/live" className="tap-area text-cream underline underline-offset-4">{L('Yayın takvimine bak', 'See live')}</Link>
                 </div>
               )}
             </div>
@@ -98,7 +98,7 @@ export default function HomeView({ data }: { data: HomeData }) {
         <div className="border-b border-rule py-4 font-display text-2xl text-sage-600">
           <Marquee
             items={['Hatha', 'Vinyasa', 'Yin', 'Restoratif', 'Nefes', 'Meditasyon', 'Yoga Nidra'].map((c) => (
-              <Link key={c} href={`/atolyeler?category=${encodeURIComponent(c)}`} className="hover:text-clay-600 italic">
+              <Link key={c} href={`/atolyeler?category=${encodeURIComponent(c)}`} className="tap-area hover:text-clay-600 italic">
                 {c} <span className="text-clay-400 not-italic px-3">✦</span>
               </Link>
             ))}
@@ -115,7 +115,7 @@ export default function HomeView({ data }: { data: HomeData }) {
                   <div className={`aspect-[5/4] bg-gradient-to-br ${TONE_CLASS[st.tone]} relative`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={poseImage(st.cover)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" aria-hidden />
+                    <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/40 to-transparent" aria-hidden />
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                       <h3 className="font-display text-4xl">{st.name}</h3>
                       <p className="text-sm text-white/85 mt-1 line-clamp-2">{st.tagline}</p>
@@ -295,7 +295,7 @@ export default function HomeView({ data }: { data: HomeData }) {
                     {L('Panele git', 'Go to dashboard')} <ArrowRight size={18} />
                   </Link>
                 )}
-                <Link href="/teachers" className="link-grow text-sm font-semibold text-cream">{L('Önce eğitmenlere göz at', 'Meet the teachers first')}</Link>
+                <Link href="/teachers" className="tap-area link-grow text-sm font-semibold text-cream">{L('Önce eğitmenlere göz at', 'Meet the teachers first')}</Link>
               </div>
             </Reveal>
             <Stagger className="lg:col-span-6 grid sm:grid-cols-2 gap-4" gap={0.1}>

@@ -28,7 +28,7 @@ export default function TeacherCard({ teacher }: { teacher: Teacher }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="font-display text-2xl leading-snug">
-            <Link href={`/teachers/${teacher.slug}`} className="hover:underline underline-offset-4 decoration-1">{teacher.name}</Link>
+            <Link href={`/teachers/${teacher.slug}`} className="tap-area hover:underline underline-offset-4 decoration-1">{teacher.name}</Link>
           </h3>
           <p className="eyebrow mt-1">
             {teacher.country && teacher.country !== 'Unknown' ? `${teacher.country} · ` : ''}

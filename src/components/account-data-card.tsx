@@ -40,7 +40,7 @@ export function AccountDataCard() {
   return (
     <section className="glass-card p-8 rounded-3xl border border-sage-100/50 space-y-6" data-testid="account-data">
       <div>
-        <h2 className="text-2xl font-display text-sage-900">Verilerim ve hesabım</h2>
+        <h2 className="text-[15px] font-semibold text-ink">Verilerim ve hesabım</h2>
         <p className="text-sage-600 mt-1 text-sm">Kişisel verilerinin bir kopyasını indirebilir ya da hesabını kapatabilirsin.</p>
       </div>
       <div className="flex flex-wrap items-center gap-4">

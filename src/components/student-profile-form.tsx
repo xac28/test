@@ -81,8 +81,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
     <form onSubmit={handleSubmit} className="glass-card p-8 md:p-10 rounded-3xl border border-sage-100 space-y-8">
       {/* Kişisel bilgiler */}
       <div>
-        <h3 className="text-lg font-display text-sage-800 mb-5 flex items-center gap-2">
-          <span className="w-8 h-8 bg-sage-100 rounded-full flex items-center justify-center text-sm font-semibold text-sage-700">1</span>
+        <h3 className="text-[15px] font-semibold text-ink mb-4 flex items-center gap-2">
           Kişisel bilgiler
         </h3>
 
@@ -95,7 +94,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Ad *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Ad *</label>
             <input
               required
               value={form.firstName}
@@ -105,7 +104,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Soyad *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Soyad *</label>
             <input
               required
               value={form.lastName}
@@ -115,7 +114,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Doğum tarihi *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Doğum tarihi *</label>
             <input
               required
               type="date"
@@ -125,7 +124,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Telefon *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Telefon *</label>
             <input
               required
               type="tel"
@@ -136,7 +135,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Adres</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Adres</label>
             <input
               value={form.address}
               onChange={e => updateForm("address", e.target.value)}
@@ -145,7 +144,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Ülke *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Ülke *</label>
             <select
               required
               value={form.country}
@@ -157,7 +156,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Pasaport / kimlik numarası</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Pasaport / kimlik numarası</label>
             <input
               value={form.passportId}
               onChange={e => updateForm("passportId", e.target.value)}
@@ -170,8 +169,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
 
       {/* Interests */}
       <div>
-        <h3 className="text-lg font-display text-sage-800 mb-5 flex items-center gap-2">
-          <span className="w-8 h-8 bg-sage-100 rounded-full flex items-center justify-center text-sm font-semibold text-sage-700">2</span>
+        <h3 className="text-[15px] font-semibold text-ink mb-4 flex items-center gap-2">
           İlgi alanları
         </h3>
         <p className="text-sage-500 text-sm mb-4">Öğrenmek istediğin yoga stillerini seç</p>

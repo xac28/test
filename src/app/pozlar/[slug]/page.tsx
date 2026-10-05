@@ -1,3 +1,5 @@
+import { JsonLd } from "@/components/json-ld"
+import { SITE_URL } from "@/lib/site"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { AlertTriangle, ArrowLeft, Check, Clock, Wind } from "lucide-react"
@@ -14,7 +16,14 @@ export function generateStaticParams() {
 }
 export function generateMetadata({ params }: { params: { slug: string } }) {
   const p = POSE_BY_SLUG[params.slug]
-  return p ? { title: `${p.name} (${p.sanskrit})`, description: p.summary } : {}
+  return p
+    ? {
+        title: `${p.name} (${p.sanskrit})`,
+        description: p.summary,
+        alternates: { canonical: `/pozlar/${p.slug}` },
+        openGraph: { title: `${p.name} (${p.sanskrit}) · AYA`, description: p.summary, images: [{ url: `/poses/${p.slug}.webp`, width: 900, height: 1125, alt: `${p.name} duruşu` }] },
+      }
+    : {}
 }
 
 export default function PosePage({ params }: { params: { slug: string } }) {
@@ -27,6 +36,10 @@ export default function PosePage({ params }: { params: { slug: string } }) {
 
   return (
     <>
+      <JsonLd data={{
+        "@context": "https://schema.org", "@type": "HowTo", name: `${p.name} (${p.sanskrit}) nasıl yapılır?`, description: p.summary, image: `${SITE_URL}/poses/${p.slug}.webp`,
+        step: p.steps.map((text, i) => ({ "@type": "HowToStep", position: i + 1, text })),
+      }} />
       <Navbar />
       <main>
         <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-8">

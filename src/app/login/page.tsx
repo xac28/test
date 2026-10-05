@@ -176,6 +176,12 @@ function LoginContent() {
               </div>
 
               {mode === "login" && (
+                <div className="-mt-2 text-right">
+                  <Link href="/forgot-password" data-testid="forgot-link" className="tap-area text-sm text-sage-600 underline underline-offset-4 hover:text-ink">Şifremi unuttum</Link>
+                </div>
+              )}
+
+              {mode === "login" && (
                 <label className="flex items-center justify-between text-sm cursor-pointer">
                   <span className="flex items-center gap-2.5">
                     <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 accent-orange-700" />

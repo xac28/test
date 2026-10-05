@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next';
+import { SITE_URL, SITE_DESCRIPTION } from '@/lib/site';
+import { SkipLink } from '@/components/skip-link';
 import { Inter, Newsreader } from 'next/font/google';
 import { I18nProvider } from '@/i18n';
 import { Providers } from '@/components/providers';
@@ -26,9 +28,12 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: 'AYA — Yoga ve meditasyonda canlı dersler', template: '%s · AYA' },
-  description:
-    'AYA: sertifikalı eğitmenlerle birebir dersler, canlı yayınlar, atölyeler ve yoga, nefes ve meditasyon üzerine yazılar.',
+  description: SITE_DESCRIPTION,
+  applicationName: 'AYA',
+  openGraph: { type: 'website', siteName: 'AYA', locale: 'tr_TR', title: 'AYA — Yoga ve meditasyonda canlı dersler', description: SITE_DESCRIPTION },
+  twitter: { card: 'summary_large_image', title: 'AYA — Yoga ve meditasyonda canlı dersler', description: SITE_DESCRIPTION },
 };
 
 export const viewport: Viewport = {
@@ -39,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr" className={`${inter.variable} ${newsreader.variable}`}>
       <body className={inter.className}>
+        <SkipLink />
         <Providers>
           <I18nProvider>
             <ErrorBoundary>

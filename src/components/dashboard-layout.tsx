@@ -37,6 +37,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: "Bildirimler", href: "/dashboard/notifications", icon: Bell },
     { name: "Raporlarım", href: "/dashboard/reports", icon: Flag },
     { name: "Canlı Destek", href: "/dashboard/support", icon: LifeBuoy },
+    { name: "Hesap ve veriler", href: "/dashboard/profile", icon: Settings },
   ]
 
   const adminMode = pathname.startsWith("/admin")

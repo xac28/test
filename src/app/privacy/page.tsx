@@ -2,6 +2,8 @@ import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
 import LanguagePicker from "@/components/LanguagePicker"
 
+export const metadata = { title: "Gizlilik politikası", description: "AYA'nın kişisel verileri nasıl işlediği." }
+
 export default function PrivacyPage() {
   return (
     <>

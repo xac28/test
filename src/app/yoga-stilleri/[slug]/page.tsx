@@ -1,3 +1,4 @@
+import { JsonLd } from "@/components/json-ld"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Check, Dumbbell, Gauge, Timer } from "lucide-react"
@@ -13,7 +14,7 @@ export function generateStaticParams() {
 }
 export function generateMetadata({ params }: { params: { slug: string } }) {
   const s = STYLE_BY_SLUG[params.slug]
-  return s ? { title: `${s.name} yoga`, description: s.tagline } : {}
+  return s ? { title: `${s.name} yoga`, description: s.tagline, alternates: { canonical: `/yoga-stilleri/${s.slug}` }, openGraph: { title: `${s.name} yoga · AYA`, description: s.tagline, images: [{ url: `/poses/${s.cover}.webp`, width: 900, height: 1125 }] } } : {}
 }
 
 export default function StylePage({ params }: { params: { slug: string } }) {
@@ -22,6 +23,7 @@ export default function StylePage({ params }: { params: { slug: string } }) {
   const others = STYLES.filter((x) => x.slug !== s.slug)
   return (
     <>
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: s.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) }} />
       <Navbar />
       <main>
         <section className={`relative overflow-hidden border-b border-rule bg-gradient-to-br ${TONE_CLASS[s.tone]}`}>

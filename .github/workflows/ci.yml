@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: aya
+          MYSQL_USER: aya
+          MYSQL_PASSWORD: aya
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot" --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      DATABASE_URL: mysql://aya:aya@127.0.0.1:3306/aya
+      NEXTAUTH_URL: http://localhost:3000
+      AUTH_SECRET: ci-secret
+      AUTH_TRUST_HOST: "true"
+      CRON_SECRET: ci-cron
+      LIVEKIT_URL: ws://localhost:7880
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma db push --skip-generate
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npx next lint
+      - name: Unit tests
+        run: npx vitest run
+      - name: Production build
+        run: npx next build
+      - name: API tests (against the built app)
+        run: |
+          npx next start -p 3000 &
+          for i in $(seq 1 60); do curl -fs localhost:3000/api/health && break; sleep 1; done
+          npm run test:api

@@ -1,5 +1,7 @@
 import { db } from "@/lib/db"
 import { notSuspended } from "@/lib/policy"
+import { JsonLd } from "@/components/json-ld"
+import { SITE_URL, SITE_DESCRIPTION } from "@/lib/site"
 import HomeView, { HomeData } from "@/components/home-view"
 import { listActiveBroadcasts } from "@/lib/live-rooms"
 import { seatsLeft, workshopState } from "@/lib/workshops"
@@ -73,5 +75,13 @@ async function loadHome(): Promise<HomeData> {
 }
 
 export default async function HomePage() {
-  return <HomeView data={await loadHome()} />
+  return (
+    <>
+      <JsonLd data={{ "@context": "https://schema.org", "@graph": [
+        { "@type": "Organization", name: "AYA", url: SITE_URL, logo: `${SITE_URL}/icon.svg`, description: SITE_DESCRIPTION },
+        { "@type": "WebSite", name: "AYA", url: SITE_URL, inLanguage: "tr" },
+      ] }} />
+      <HomeView data={await loadHome()} />
+    </>
+  )
 }

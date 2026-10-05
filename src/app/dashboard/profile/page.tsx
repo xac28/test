@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { StudentProfileForm } from "@/components/student-profile-form"
+import { AccountDataCard } from "@/components/account-data-card"
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -16,9 +17,9 @@ export default async function ProfilePage() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="glass-card p-8 rounded-3xl border border-sage-100/50">
-        <p className="text-sage-500 text-sm font-medium tracking-wider uppercase mb-1">Your Profile</p>
-        <h1 className="text-4xl font-display text-sage-900 gradient-text">Complete Your Profile</h1>
-        <p className="text-sage-500 mt-2">Help us personalize your yoga journey</p>
+        <p className="text-sage-500 text-sm font-medium tracking-wider uppercase mb-1">Profilin</p>
+        <h1 className="text-4xl font-display text-sage-900 gradient-text">Complete Profilin</h1>
+        <p className="text-sage-500 mt-2">Yoga yolculuğunu sana göre şekillendirmemize yardım et</p>
       </div>
 
       <StudentProfileForm
@@ -35,6 +36,8 @@ export default async function ProfilePage() {
           profileCompleted: user.profileCompleted,
         }))}
       />
+
+      <AccountDataCard />
     </div>
   )
 }

@@ -71,6 +71,9 @@ model User {
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  passwordResets PasswordResetToken[]
+  // set when the person deleted their own account (the row stays, anonymised, so bookings and payments keep their references)
+  deletedAt     DateTime?
 
   accounts      Account[]
   sessions      Session[]
@@ -837,4 +840,18 @@ model PolicyViolation {
 
   @@index([userId, createdAt])
   @@index([createdAt])
+}
+
+// One-time links for "forgot my password". Only the SHA-256 of the token is stored.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  ip        String?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

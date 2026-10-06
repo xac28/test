@@ -139,24 +139,42 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     let v: LocalVideoTrack | null = null
     let a: LocalAudioTrack | null = null
     ;(async () => {
-      try {
-        v = await createLocalVideoTrack(captureOf(getPreset(DEFAULT_PRESET_ID)))
-        a = await createLocalAudioTrack({ echoCancellation: true, noiseSuppression: true, autoGainControl: true })
-        if (cancelled) {
-          v.stop()
-          a.stop()
-          return
-        }
+      // Try video and audio independently so one failing doesn't block the other
+      const [vResult, aResult] = await Promise.allSettled([
+        createLocalVideoTrack(captureOf(getPreset(DEFAULT_PRESET_ID))),
+        createLocalAudioTrack({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }),
+      ])
+
+      if (cancelled) return
+
+      if (vResult.status === "fulfilled") {
+        v = vResult.value
         setVideoTrack(v)
-        setAudioTrack(a)
-        await loadDevices()
-      } catch (e: any) {
-        setMediaError(
-          e?.name === "NotAllowedError"
-            ? "Kamera ve mikrofon izni verilmedi. Tarayıcı adres çubuğundaki izin simgesinden izin verip sayfayı yenileyin."
-            : "Kamera veya mikrofon açılamadı: " + (e?.message || "bilinmeyen hata")
-        )
       }
+      if (aResult.status === "fulfilled") {
+        a = aResult.value
+        setAudioTrack(a)
+      }
+
+      // Build warning messages for what failed
+      const vErr = vResult.status === "rejected" ? vResult.reason : null
+      const aErr = aResult.status === "rejected" ? aResult.reason : null
+
+      if (vErr && aErr) {
+        const isPermission = vErr?.name === "NotAllowedError" || aErr?.name === "NotAllowedError"
+        setMediaError(
+          isPermission
+            ? "Kamera ve mikrofon izni verilmedi. Tarayıcı adres çubuğundaki izin simgesinden izin verip sayfayı yenileyin."
+            : "Kamera ve mikrofon açılamadı. Cihazlarınızı kontrol edin."
+        )
+      } else if (vErr) {
+        // Camera failed but mic works — show soft warning, allow audio-only / screen-share broadcast
+        setMediaError("Kamera bulunamadı — ekran paylaşımı veya yalnızca ses ile yayın yapabilirsiniz.")
+      } else if (aErr) {
+        setMediaError("Mikrofon bulunamadı — yalnızca kamera ile yayın yapabilirsiniz.")
+      }
+
+      await loadDevices()
     })()
     return () => {
       cancelled = true
@@ -268,7 +286,7 @@ export function Studio({ trial = false }: { trial?: boolean }) {
   )
 
   const goLive = async () => {
-    if (!room || !videoTrack) return
+    if (!room || (!videoTrack && !audioTrack)) return
     setStartError(null)
     setPhase("starting")
     try {
@@ -530,8 +548,18 @@ export function Studio({ trial = false }: { trial?: boolean }) {
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video ref={previewRef} data-testid="studio-preview" autoPlay muted playsInline className={`w-full h-full object-contain -scale-x-100 ${camOn ? "" : "invisible"}`} />
             {!videoTrack && !mediaError && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin" /></div>}
-            {!camOn && <div className="absolute inset-0 flex items-center justify-center text-white/60"><CameraOff size={40} /></div>}
-            {mediaError && <p role="alert" className="absolute inset-0 flex items-center justify-center text-center text-sm text-amber-200 px-8">{mediaError}</p>}
+            {!camOn && videoTrack && <div className="absolute inset-0 flex items-center justify-center text-white/60"><CameraOff size={40} /></div>}
+            {/* Camera missing but mic works: show info overlay, not a blocking error */}
+            {!videoTrack && mediaError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8">
+                <CameraOff size={36} className="text-white/30" />
+                <p role="status" className="text-center text-sm text-white/60">{mediaError}</p>
+              </div>
+            )}
+            {/* Both devices failed: show blocking alert */}
+            {!videoTrack && !audioTrack && mediaError && (
+              <p role="alert" className="absolute inset-0 flex items-center justify-center text-center text-sm text-amber-200 px-8">{mediaError}</p>
+            )}
             {isLive && (recState === "recording") && (
               <span data-testid="studio-rec" className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-black/70 text-xs px-2.5 py-1 rounded-full border border-red-500/40">
                 <Circle size={9} className="fill-red-500 text-red-500 animate-pulse" /> KAYITTA {formatDuration(recElapsed)}
@@ -551,9 +579,15 @@ export function Studio({ trial = false }: { trial?: boolean }) {
             <button data-testid="toggle-mic" onClick={toggleMic} disabled={!audioTrack} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${micOn ? "bg-white/10 hover:bg-white/20" : "bg-red-500/30 text-red-200"}`}>
               {micOn ? <Mic size={16} /> : <MicOff size={16} />} {micOn ? "Mikrofon açık" : "Mikrofon kapalı"}
             </button>
-            <button data-testid="toggle-cam" onClick={toggleCam} disabled={!videoTrack} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${camOn ? "bg-white/10 hover:bg-white/20" : "bg-red-500/30 text-red-200"}`}>
-              {camOn ? <Camera size={16} /> : <CameraOff size={16} />} {camOn ? "Kamera açık" : "Kamera kapalı"}
-            </button>
+            {videoTrack ? (
+              <button data-testid="toggle-cam" onClick={toggleCam} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${camOn ? "bg-white/10 hover:bg-white/20" : "bg-red-500/30 text-red-200"}`}>
+                {camOn ? <Camera size={16} /> : <CameraOff size={16} />} {camOn ? "Kamera açık" : "Kamera kapalı"}
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-white/5 text-white/30 cursor-default">
+                <CameraOff size={16} /> Kamera yok
+              </span>
+            )}
             {isLive && (
               <>
                 <button data-testid="toggle-share" onClick={toggleShare} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${sharing ? "bg-accent" : "bg-white/10 hover:bg-white/20"}`}>
@@ -635,7 +669,7 @@ export function Studio({ trial = false }: { trial?: boolean }) {
               <button
                 data-testid="go-live"
                 onClick={goLive}
-                disabled={phase === "starting" || !videoTrack || !audioTrack || !room}
+                disabled={phase === "starting" || (!videoTrack && !audioTrack) || !room}
                 className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold px-8 py-3 rounded-full"
               >
                 {phase === "starting" ? <><Loader2 size={18} className="animate-spin" /> Başlatılıyor…</> : <><Radio size={18} /> Yayına başla</>}

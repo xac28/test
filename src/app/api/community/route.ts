@@ -12,7 +12,7 @@ import { notifyAdminsInApp } from "@/lib/notifications"
 
 export const dynamic = "force-dynamic"
 
-// GET /api/community?cursor=<postId>&author=<userId>&mine=1 — the photo feed (public); `mine` also lists own pending/removed posts
+// GET /api/community?cursor=<postId>&author=<userId>&mine=1&teachers=1 — the photo feed (public); `mine` also lists own pending/removed posts
 export async function GET(req: Request) {
   const blocked = applyRateLimit(req, RATE_LIMIT_API)
   if (blocked) return blocked
@@ -22,7 +22,10 @@ export async function GET(req: Request) {
     const cursor = url.searchParams.get("cursor")
     const author = url.searchParams.get("author")
     const mine = url.searchParams.get("mine") === "1" && viewer
-    const where: any = mine ? { authorId: viewer!.id } : { status: "VISIBLE", ...(author ? { authorId: author } : {}), author: { banned: false } }
+    const teachers = url.searchParams.get("teachers") === "1"
+    const where: any = mine
+      ? { authorId: viewer!.id }
+      : { status: "VISIBLE", ...(author ? { authorId: author } : {}), author: { banned: false, ...(teachers ? { role: "TEACHER" } : {}) } }
     const rows = await db.post.findMany({
       where, include: postInclude, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

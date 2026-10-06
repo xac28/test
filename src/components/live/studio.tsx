@@ -11,6 +11,7 @@ import {
   Track,
   VideoPreset,
   createLocalAudioTrack,
+  createLocalScreenTracks,
   createLocalVideoTrack,
 } from "livekit-client"
 import {
@@ -101,6 +102,7 @@ export function Studio({ trial = false }: { trial?: boolean }) {
   const [camOn, setCamOn] = useState(true)
   const [micOn, setMicOn] = useState(true)
   const [sharing, setSharing] = useState(false)
+  const [screenTrack, setScreenTrack] = useState<LocalVideoTrack | null>(null)
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
   const [liveRoomId, setLiveRoomId] = useState<string | null>(null)
@@ -183,14 +185,21 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     }
   }, [loadDevices])
 
+  // Camera preview — skip when screen share is active so both don't fight over the element
   useEffect(() => {
     const el = previewRef.current
-    if (!el || !videoTrack) return
+    if (!el || !videoTrack || sharing) return
     videoTrack.attach(el)
-    return () => {
-      videoTrack.detach(el)
-    }
-  }, [videoTrack])
+    return () => { videoTrack.detach(el) }
+  }, [videoTrack, sharing])
+
+  // Screen share preview
+  useEffect(() => {
+    const el = previewRef.current
+    if (!el || !screenTrack) return
+    screenTrack.attach(el)
+    return () => { screenTrack.detach(el) }
+  }, [screenTrack])
 
   // opened from "Atölyeyi başlat": use the workshop's title and tell the host it is a members-only session
   const [workshopTitle, setWorkshopTitle] = useState<string | null>(null)
@@ -281,12 +290,13 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     async (r: Room) => {
       if (videoTrack) await r.localParticipant.publishTrack(videoTrack, publishOptsOf(preset))
       if (audioTrack) await r.localParticipant.publishTrack(audioTrack, { source: Track.Source.Microphone, name: "mic", dtx: true })
+      if (screenTrack) await r.localParticipant.publishTrack(screenTrack, { source: Track.Source.ScreenShare, name: "screen", contentHint: "detail" } as any)
     },
-    [videoTrack, audioTrack, preset]
+    [videoTrack, audioTrack, screenTrack, preset]
   )
 
   const goLive = async () => {
-    if (!room || (!videoTrack && !audioTrack)) return
+    if (!room || (!videoTrack && !audioTrack && !screenTrack)) return
     setStartError(null)
     setPhase("starting")
     try {
@@ -349,6 +359,7 @@ export function Studio({ trial = false }: { trial?: boolean }) {
       }).catch(() => {})
     }
     await live.disconnect().catch(() => {})
+    if (screenTrack) { screenTrack.stop(); setScreenTrack(null) }
     setSharing(false)
     setPhase("ended")
   }
@@ -383,12 +394,42 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     setCamOn(!camOn)
   }
   const toggleShare = async () => {
-    if (!room) return
+    if (sharing) {
+      // Stop sharing
+      try {
+        if (isLive && room && screenTrack) {
+          await room.localParticipant.unpublishTrack(screenTrack, true)
+        }
+      } catch {}
+      screenTrack?.stop()
+      setScreenTrack(null)
+      setSharing(false)
+      return
+    }
+
     try {
-      await room.localParticipant.setScreenShareEnabled(!sharing, { audio: true, contentHint: "detail" })
-      setSharing(!sharing)
+      const tracks = await createLocalScreenTracks({ audio: false })
+      const vt = tracks[0] as LocalVideoTrack
+      if (!vt) return
+
+      // When the OS "Stop sharing" overlay is clicked, clean up automatically
+      vt.mediaStreamTrack.addEventListener("ended", () => {
+        setScreenTrack(null)
+        setSharing(false)
+      })
+
+      if (isLive && room) {
+        await room.localParticipant.publishTrack(vt, {
+          source: Track.Source.ScreenShare,
+          name: "screen",
+          contentHint: "detail",
+        } as any)
+      }
+
+      setScreenTrack(vt)
+      setSharing(true)
     } catch {
-      /* user cancelled the picker */
+      /* user cancelled picker */
     }
   }
   useEffect(() => {
@@ -546,9 +587,14 @@ export function Studio({ trial = false }: { trial?: boolean }) {
           )}
           <div className="relative aspect-video bg-black rounded-xl overflow-hidden max-w-5xl">
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video ref={previewRef} data-testid="studio-preview" autoPlay muted playsInline className={`w-full h-full object-contain -scale-x-100 ${camOn ? "" : "invisible"}`} />
-            {!videoTrack && !mediaError && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin" /></div>}
-            {!camOn && videoTrack && <div className="absolute inset-0 flex items-center justify-center text-white/60"><CameraOff size={40} /></div>}
+            <video ref={previewRef} data-testid="studio-preview" autoPlay muted playsInline className={`w-full h-full object-contain ${sharing ? "" : "-scale-x-100"} ${!sharing && !camOn ? "invisible" : ""}`} />
+            {!videoTrack && !screenTrack && !mediaError && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin" /></div>}
+            {!camOn && videoTrack && !sharing && <div className="absolute inset-0 flex items-center justify-center text-white/60"><CameraOff size={40} /></div>}
+            {sharing && screenTrack && (
+              <span className="absolute top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 bg-black/70 text-xs px-2.5 py-1 rounded-full border border-white/20 whitespace-nowrap">
+                <MonitorUp size={12} /> Ekran paylaşılıyor
+              </span>
+            )}
             {/* Camera missing but mic works: show info overlay, not a blocking error */}
             {!videoTrack && mediaError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8">
@@ -588,16 +634,14 @@ export function Studio({ trial = false }: { trial?: boolean }) {
                 <CameraOff size={16} /> Kamera yok
               </span>
             )}
+            <button data-testid="toggle-share" onClick={toggleShare} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${sharing ? "bg-accent" : "bg-white/10 hover:bg-white/20"}`}>
+              <MonitorUp size={16} /> {sharing ? "Paylaşımı durdur" : "Ekran paylaş"}
+            </button>
             {isLive && (
-              <>
-                <button data-testid="toggle-share" onClick={toggleShare} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${sharing ? "bg-accent" : "bg-white/10 hover:bg-white/20"}`}>
-                  <MonitorUp size={16} /> {sharing ? "Paylaşımı durdur" : "Ekran paylaş"}
-                </button>
-                <button data-testid="record-stream" onClick={toggleRecording} disabled={recState === "starting" || recState === "stopping"} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm disabled:opacity-60 ${recState === "recording" ? "bg-red-500/30 text-red-200" : "bg-white/10 hover:bg-white/20"}`}>
-                  {recState === "recording" ? <SquareStop size={16} /> : <Circle size={16} className="text-red-400" />}
-                  {recState === "starting" ? "Başlatılıyor…" : recState === "stopping" ? "Yükleniyor…" : recState === "recording" ? "Kaydı bitir" : "Dersi kaydet"}
-                </button>
-              </>
+              <button data-testid="record-stream" onClick={toggleRecording} disabled={recState === "starting" || recState === "stopping"} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm disabled:opacity-60 ${recState === "recording" ? "bg-red-500/30 text-red-200" : "bg-white/10 hover:bg-white/20"}`}>
+                {recState === "recording" ? <SquareStop size={16} /> : <Circle size={16} className="text-red-400" />}
+                {recState === "starting" ? "Başlatılıyor…" : recState === "stopping" ? "Yükleniyor…" : recState === "recording" ? "Kaydı bitir" : "Dersi kaydet"}
+              </button>
             )}
           </div>
           {recError && <p role="alert" className="text-sm text-red-300 max-w-5xl">{recError}</p>}
@@ -669,7 +713,7 @@ export function Studio({ trial = false }: { trial?: boolean }) {
               <button
                 data-testid="go-live"
                 onClick={goLive}
-                disabled={phase === "starting" || (!videoTrack && !audioTrack) || !room}
+                disabled={phase === "starting" || (!videoTrack && !audioTrack && !screenTrack) || !room}
                 className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold px-8 py-3 rounded-full"
               >
                 {phase === "starting" ? <><Loader2 size={18} className="animate-spin" /> Başlatılıyor…</> : <><Radio size={18} /> Yayına başla</>}

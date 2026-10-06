@@ -17,13 +17,18 @@ import {
 import {
   Camera,
   CameraOff,
+  ChevronDown,
+  ChevronUp,
   Circle,
   Loader2,
+  Maximize2,
   MessageSquare,
   Mic,
   MicOff,
+  Minimize2,
   MonitorUp,
   Radio,
+  Settings2,
   ShieldBan,
   SignalHigh,
   Square as SquareStop,
@@ -120,7 +125,11 @@ export function Studio({ trial = false }: { trial?: boolean }) {
   const [recSaved, setRecSaved] = useState(false)
 
   const previewRef = useRef<HTMLVideoElement>(null)
+  const pipRef = useRef<HTMLVideoElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const recorderRef = useRef<RoomRecorder | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showSettings, setShowSettings] = useState(true)
   const preset = getPreset(presetId)
 
   useEffect(() => {
@@ -200,6 +209,30 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     screenTrack.attach(el)
     return () => { screenTrack.detach(el) }
   }, [screenTrack])
+
+  // PiP camera when screen sharing
+  useEffect(() => {
+    const el = pipRef.current
+    if (!el || !videoTrack || !sharing) return
+    videoTrack.attach(el)
+    return () => { videoTrack.detach(el) }
+  }, [videoTrack, sharing])
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const h = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener("fullscreenchange", h)
+    return () => document.removeEventListener("fullscreenchange", h)
+  }, [])
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }
 
   // opened from "Atölyeyi başlat": use the workshop's title and tell the host it is a members-only session
   const [workshopTitle, setWorkshopTitle] = useState<string | null>(null)
@@ -524,7 +557,7 @@ export function Studio({ trial = false }: { trial?: boolean }) {
         <Radio size={36} className="text-white/60" />
         <h1 className="font-display text-4xl">Yayın bitti</h1>
         <p className="text-white/60">Süre {uptime} · en yüksek izleyici sayısı {peak}</p>
-        {recSaved && <p className="text-emerald-300 text-sm">Ders kaydınız hazır. Panelinizdeki “Ders Kayıtları” bölümünden indirebilirsiniz (30 gün saklanır).</p>}
+        {recSaved && <p className="text-emerald-300 text-sm">Ders kaydınız hazır. Panelinizdeki "Ders Kayıtları" bölümünden indirebilirsiniz (30 gün saklanır).</p>}
         <div className="flex gap-3">
           <Link href="/teach" className="bg-accent hover:bg-accent-dark px-6 py-2.5 rounded-full text-sm font-semibold">Panele dön</Link>
           <button onClick={() => window.location.reload()} className="border border-white/30 hover:bg-white/10 px-6 py-2.5 rounded-full text-sm font-semibold">Yeni yayın</button>
@@ -533,253 +566,439 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     )
   }
 
-  const Tab = ({ id, icon, label }: { id: typeof tab; icon: React.ReactNode; label: string }) => (
-    <button
-      onClick={() => setTab(id)}
-      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold uppercase tracking-wider border-b-2 ${tab === id ? "border-accent text-white" : "border-transparent text-white/50 hover:text-white/80"}`}
-    >
-      {icon} {label}
-    </button>
-  )
-
   return (
-    <div className="min-h-screen bg-stage text-white flex flex-col">
+    <div className="h-screen bg-[#0e0e10] text-white flex flex-col overflow-hidden">
       <StaffNoticeBanner notice={live.staffNotice} onDismiss={live.dismissStaffNotice} />
-      {/* top bar */}
-      <header className="h-14 shrink-0 flex items-center gap-4 px-4 border-b border-white/10 bg-stage-2">
-        <Link href="/teach" className="font-display text-xl tracking-[0.2em]">AYA</Link>
-        <span className="text-white/30">/</span>
-        <span className="text-sm text-white/70">Yayın stüdyosu</span>
 
-        <div className="ml-auto flex items-center gap-3">
-          {(supervised || trial) && (
-            <span data-testid="studio-supervised" title="Deneme sürecindesin: yayınların yetkililer tarafından canlı izlenebilir." className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-saffron-300 text-ink">
-              Deneme · denetimli yayın
-            </span>
-          )}
+      {/* ── Top bar ──────────────────────────────────────────────────── */}
+      <header className="h-12 shrink-0 flex items-center gap-3 px-4 bg-[#18181b] border-b border-white/[0.07] z-20">
+        <Link href="/teach" className="font-display text-lg tracking-[0.2em] text-white/50 hover:text-white transition-colors shrink-0">AYA</Link>
+        <span className="text-white/15 text-lg">|</span>
+
+        {/* Stream title: inline edit pre-live, static when live */}
+        {isLive ? (
+          <span className="text-sm text-white/75 font-medium truncate max-w-[200px] lg:max-w-sm">{title}</span>
+        ) : (
+          <input
+            data-testid="stream-title-input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={120}
+            placeholder="Yayın başlığı…"
+            className="text-sm bg-transparent border-none focus:outline-none text-white/75 placeholder:text-white/25 min-w-0 w-40 lg:w-64 truncate"
+          />
+        )}
+
+        {(supervised || trial) && (
+          <span data-testid="studio-supervised" className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-saffron-300/15 text-saffron-300 border border-saffron-300/25">
+            Deneme · denetimli
+          </span>
+        )}
+
+        <div className="ml-auto flex items-center gap-2">
           {isLive && (
             <>
-              <span data-testid="studio-live-badge" className="inline-flex items-center gap-1.5 bg-accent text-[11px] font-bold tracking-wider uppercase px-2 py-1 rounded">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Canlı
+              <span className={`hidden lg:inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md border ${GRADE_STYLE[uplink.grade].cls}`}>
+                <Wifi size={11} /> {GRADE_STYLE[uplink.grade].label}
               </span>
-              <span data-testid="studio-uptime" className="text-sm tabular-nums text-white/80">{uptime}</span>
-              <span data-testid="studio-viewers" className="inline-flex items-center gap-1.5 text-sm text-white/80"><Users size={15} /> {live.viewerCount}</span>
-              <span className={`hidden sm:inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded border ${GRADE_STYLE[uplink.grade].cls}`}>
-                <Wifi size={13} /> {GRADE_STYLE[uplink.grade].label}
+              <span data-testid="studio-viewers" className="flex items-center gap-1.5 text-sm text-white/60 tabular-nums">
+                <Users size={13} className="text-white/35" /> {live.viewerCount}
               </span>
-              <button data-testid="end-stream" onClick={endLive} className="bg-red-600 hover:bg-red-700 text-sm font-semibold px-4 py-1.5 rounded-lg">Yayını bitir</button>
+              <span data-testid="studio-uptime" className="text-sm tabular-nums text-white/60 font-mono hidden sm:block">{uptime}</span>
+              <span data-testid="studio-live-badge" className="inline-flex items-center gap-1.5 bg-red-600 text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> CANLI
+              </span>
+              <button data-testid="end-stream" onClick={endLive} className="text-sm font-semibold px-3 py-1.5 rounded-lg bg-white/8 hover:bg-red-600 border border-white/10 hover:border-red-500 transition-colors">
+                Yayını bitir
+              </button>
             </>
           )}
           {!isLive && (
-            <span className="text-xs uppercase tracking-wider text-white/50 flex items-center gap-1.5"><Circle size={9} className="fill-white/40 text-white/40" /> Çevrimdışı</span>
+            <span className="text-[11px] text-white/30 flex items-center gap-1.5 uppercase tracking-wider">
+              <Circle size={8} className="fill-white/20 text-white/20" /> Çevrimdışı
+            </span>
           )}
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
-        {/* left: preview + setup */}
-        <main className="flex-1 min-w-0 p-4 lg:overflow-y-auto space-y-4">
+      {/* ── Body ────────────────────────────────────────────────────────── */}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+
+        {/* ── Left: preview + controls ───────────────────────────────── */}
+        <main className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
+
+          {/* Trial notice */}
           {(trial || supervised) && !isLive && (
-            <div data-testid="studio-trial-note" className="max-w-5xl rounded-xl border border-saffron-300/40 bg-saffron-300/10 px-4 py-3 text-sm text-saffron-100">
-              <p className="font-semibold text-saffron-300">Deneme sürecindesin</p>
-              <p className="mt-0.5 text-white/75">Yayın açabilirsin; yayınların yetkililer tarafından canlı izlenir ve gerekirse sana mesaj gönderebilirler. Sohbet, ilk başta 5 saniyelik yavaş modla açılır. Başarılı bir yayından sonra “Onaylı öğretmen” rozetini alırsın.</p>
+            <div data-testid="studio-trial-note" className="shrink-0 mx-3 mt-2.5 rounded-lg border border-saffron-300/25 bg-saffron-300/8 px-3.5 py-2.5">
+              <p className="font-semibold text-saffron-300 text-[11px] uppercase tracking-wider mb-0.5">Deneme sürecindesin</p>
+              <p className="text-white/55 text-xs leading-relaxed">Yayınların yetkililer tarafından canlı izlenir. Başarılı yayın sonrası Onaylı öğretmen rozetini alırsın.</p>
             </div>
           )}
-          <div className="relative aspect-video bg-black rounded-xl overflow-hidden max-w-5xl">
+
+          {/* ── Preview area (takes all remaining height) ───────────── */}
+          <div
+            ref={containerRef}
+            className="flex-1 min-h-0 relative bg-black group overflow-hidden"
+          >
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video ref={previewRef} data-testid="studio-preview" autoPlay muted playsInline className={`w-full h-full object-contain ${sharing ? "" : "-scale-x-100"} ${!sharing && !camOn ? "invisible" : ""}`} />
-            {!videoTrack && !screenTrack && !mediaError && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin" /></div>}
-            {!camOn && videoTrack && !sharing && <div className="absolute inset-0 flex items-center justify-center text-white/60"><CameraOff size={40} /></div>}
-            {sharing && screenTrack && (
-              <span className="absolute top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 bg-black/70 text-xs px-2.5 py-1 rounded-full border border-white/20 whitespace-nowrap">
-                <MonitorUp size={12} /> Ekran paylaşılıyor
-              </span>
-            )}
-            {/* Camera missing but mic works: show info overlay, not a blocking error */}
-            {!videoTrack && mediaError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8">
-                <CameraOff size={36} className="text-white/30" />
-                <p role="status" className="text-center text-sm text-white/60">{mediaError}</p>
+            <video
+              ref={previewRef}
+              data-testid="studio-preview"
+              autoPlay
+              muted
+              playsInline
+              className={`w-full h-full object-contain ${sharing ? "" : "-scale-x-100"} ${!sharing && !camOn && videoTrack ? "opacity-0" : ""}`}
+            />
+
+            {/* Loading spinner */}
+            {!videoTrack && !screenTrack && !mediaError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <Loader2 className="animate-spin text-white/20" size={32} />
               </div>
             )}
-            {/* Both devices failed: show blocking alert */}
-            {!videoTrack && !audioTrack && mediaError && (
-              <p role="alert" className="absolute inset-0 flex items-center justify-center text-center text-sm text-amber-200 px-8">{mediaError}</p>
-            )}
-            {isLive && (recState === "recording") && (
-              <span data-testid="studio-rec" className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-black/70 text-xs px-2.5 py-1 rounded-full border border-red-500/40">
-                <Circle size={9} className="fill-red-500 text-red-500 animate-pulse" /> KAYITTA {formatDuration(recElapsed)}
-              </span>
-            )}
-            <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-3">
-              <div className="flex items-center gap-2 bg-black/60 rounded-full px-3 py-1.5">
-                {micOn ? <Mic size={14} /> : <MicOff size={14} className="text-red-400" />}
-                <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden"><div className="h-full bg-emerald-400 transition-[width] duration-75" style={{ width: `${micOn ? micLevel * 100 : 0}%` }} /></div>
+
+            {/* Camera off placeholder */}
+            {!sharing && !camOn && videoTrack && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0e0e10]">
+                <CameraOff size={44} className="text-white/15" />
+                <span className="text-xs text-white/25">Kamera kapalı</span>
               </div>
-              <span className="text-[11px] bg-black/60 rounded px-2 py-1 text-white/80">{preset.label} · {preset.width}×{preset.height} · {preset.fps} fps</span>
-            </div>
-          </div>
-
-          {/* in-stream controls */}
-          <div className="flex flex-wrap items-center gap-2 max-w-5xl">
-            <button data-testid="toggle-mic" onClick={toggleMic} disabled={!audioTrack} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${micOn ? "bg-white/10 hover:bg-white/20" : "bg-red-500/30 text-red-200"}`}>
-              {micOn ? <Mic size={16} /> : <MicOff size={16} />} {micOn ? "Mikrofon açık" : "Mikrofon kapalı"}
-            </button>
-            {videoTrack ? (
-              <button data-testid="toggle-cam" onClick={toggleCam} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${camOn ? "bg-white/10 hover:bg-white/20" : "bg-red-500/30 text-red-200"}`}>
-                {camOn ? <Camera size={16} /> : <CameraOff size={16} />} {camOn ? "Kamera açık" : "Kamera kapalı"}
-              </button>
-            ) : (
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-white/5 text-white/30 cursor-default">
-                <CameraOff size={16} /> Kamera yok
-              </span>
-            )}
-            <button data-testid="toggle-share" onClick={toggleShare} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${sharing ? "bg-accent" : "bg-white/10 hover:bg-white/20"}`}>
-              <MonitorUp size={16} /> {sharing ? "Paylaşımı durdur" : "Ekran paylaş"}
-            </button>
-            {isLive && (
-              <button data-testid="record-stream" onClick={toggleRecording} disabled={recState === "starting" || recState === "stopping"} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm disabled:opacity-60 ${recState === "recording" ? "bg-red-500/30 text-red-200" : "bg-white/10 hover:bg-white/20"}`}>
-                {recState === "recording" ? <SquareStop size={16} /> : <Circle size={16} className="text-red-400" />}
-                {recState === "starting" ? "Başlatılıyor…" : recState === "stopping" ? "Yükleniyor…" : recState === "recording" ? "Kaydı bitir" : "Dersi kaydet"}
-              </button>
-            )}
-          </div>
-          {recError && <p role="alert" className="text-sm text-red-300 max-w-5xl">{recError}</p>}
-          {recSaved && isLive && <p className="text-sm text-emerald-300 max-w-5xl">Kayıt yüklendi. “Ders Kayıtları” bölümünden indirebilirsiniz (30 gün saklanır).</p>}
-
-          {/* setup / quality */}
-          <section className="max-w-5xl rounded-xl border border-white/10 bg-stage-2 p-4 space-y-4">
-            <h2 className="text-xs font-semibold tracking-[0.18em] uppercase text-white/60">Yayın ayarları</h2>
-
-            {workshopTitle && (
-              <p className="text-sm rounded-md border border-accent/40 bg-accent/10 px-3 py-2" data-testid="workshop-banner">
-                Atölye oturumu: <strong>{workshopTitle}</strong> — yalnızca onaylı katılımcılar izleyebilir.
-              </p>
             )}
 
-            {!isLive && (
-              <label className="block">
-                <span className="text-xs text-white/60">Yayın başlığı</span>
-                <input data-testid="stream-title-input" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className="mt-1 w-full bg-white/10 border border-white/10 focus:border-white/40 focus:outline-none rounded-lg px-3 py-2 text-sm" />
-              </label>
-            )}
-
-            <div>
-              <span className="text-xs text-white/60 flex items-center gap-1.5"><SignalHigh size={13} /> Yayın kalitesi</span>
-              <div data-testid="preset-list" className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {BROADCAST_PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    data-testid={`preset-${p.id}`}
-                    onClick={() => changePreset(p.id)}
-                    aria-pressed={presetId === p.id}
-                    className={`text-left rounded-lg border px-3 py-2 transition ${presetId === p.id ? "border-accent bg-accent/15" : "border-white/10 hover:border-white/30 bg-white/5"}`}
-                  >
-                    <span className="block font-semibold text-sm">{p.label}{p.id === DEFAULT_PRESET_ID ? <span className="ml-1.5 text-[10px] uppercase text-emerald-300">önerilen</span> : null}</span>
-                    <span className="block text-[11px] text-white/50 leading-tight mt-0.5">{formatBitrate(p.maxBitrate)} · {p.fps} fps</span>
-                  </button>
-                ))}
+            {/* No camera / soft warning */}
+            {!videoTrack && !screenTrack && mediaError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0e0e10] px-8">
+                <CameraOff size={36} className="text-white/15" />
+                <p role="status" className="text-center text-xs text-white/35 max-w-xs">{mediaError}</p>
               </div>
-              <p className="text-[11px] text-white/45 mt-2">{preset.hint}. İzleyiciler kendi bağlantılarına göre Otomatik, 1080p, 720p veya 360p seçebilir.</p>
-            </div>
+            )}
 
-            <div className="grid sm:grid-cols-2 gap-3">
-              <label className="block">
-                <span className="text-xs text-white/60">Kamera</span>
-                <select data-testid="camera-select" value={camId} onChange={(e) => changeCamera(e.target.value)} className="mt-1 w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm">
-                  <option value="">Varsayılan kamera</option>
-                  {devices.cams.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Kamera"}</option>)}
-                </select>
-              </label>
-              <label className="block">
-                <span className="text-xs text-white/60">Mikrofon</span>
-                <select data-testid="mic-select" value={micId} onChange={(e) => changeMic(e.target.value)} className="mt-1 w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm">
-                  <option value="">Varsayılan mikrofon</option>
-                  {devices.mics.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Mikrofon"}</option>)}
-                </select>
-              </label>
-            </div>
-          </section>
+            {/* Both failed */}
+            {!videoTrack && !audioTrack && !screenTrack && mediaError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-[#0e0e10] px-8">
+                <p role="alert" className="text-center text-sm text-amber-300/80 max-w-sm">{mediaError}</p>
+              </div>
+            )}
 
-          {!isLive && (
-            <div className="max-w-5xl space-y-3">
-              {startError && <p role="alert" className="text-sm text-red-300">{startError}</p>}
-              {resume && (
-                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm">
-                  <span className="text-amber-200">Devam eden bir yayınınız var: “{resume.title}”</span>
-                  <button data-testid="resume-stream" onClick={resumeLive} className="ml-auto bg-amber-400 text-black font-semibold px-4 py-1.5 rounded-lg">Yayına dön</button>
-                </div>
+            {/* ── PiP camera when screen sharing ─────────────────────── */}
+            {sharing && videoTrack && (
+              <div className="absolute bottom-14 right-3 w-44 aspect-video rounded-xl overflow-hidden border border-white/15 shadow-2xl bg-black ring-1 ring-black/50">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video ref={pipRef} autoPlay muted playsInline className={`w-full h-full object-cover -scale-x-100 ${!camOn ? "opacity-0" : ""}`} />
+                {!camOn && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#0e0e10]">
+                    <CameraOff size={16} className="text-white/25" />
+                  </div>
+                )}
+                <span className="absolute bottom-1.5 left-1.5 text-[9px] text-white/50 bg-black/60 px-1.5 py-0.5 rounded">Kamera</span>
+              </div>
+            )}
+
+            {/* ── Top-left badges ─────────────────────────────────────── */}
+            <div className="absolute top-3 left-3 flex items-center gap-2">
+              {isLive && recState === "recording" && (
+                <span data-testid="studio-rec" className="inline-flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-[11px] px-2.5 py-1.5 rounded-full border border-red-500/40">
+                  <Circle size={8} className="fill-red-500 text-red-500 animate-pulse" /> REC {formatDuration(recElapsed)}
+                </span>
               )}
+            </div>
+
+            {/* ── Top-right: quality label + fullscreen ───────────────── */}
+            <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <span className="text-[11px] bg-black/60 backdrop-blur-sm rounded-md px-2 py-1 text-white/50 border border-white/10">
+                {preset.label} · {preset.width}×{preset.height} · {preset.fps}fps
+              </span>
+              <button
+                onClick={toggleFullscreen}
+                title={isFullscreen ? "Pencere moduna dön" : "Tam ekran"}
+                className="w-8 h-8 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-md border border-white/10 text-white/50 hover:text-white hover:border-white/25 transition-colors"
+              >
+                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </button>
+            </div>
+
+            {/* ── Screen share badge (centre top) ─────────────────────── */}
+            {sharing && screenTrack && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/65 backdrop-blur-sm text-[11px] px-3 py-1.5 rounded-full border border-white/12">
+                <MonitorUp size={12} className="text-accent" />
+                <span className="text-white/75">Ekran paylaşılıyor</span>
+              </div>
+            )}
+
+            {/* ── Floating control dock (visible on hover) ─────────────── */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-3 pt-8 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all duration-200">
+
+              {/* Mic level bar (inline in dock) */}
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="flex items-center gap-1.5 text-white/40">
+                  {micOn ? <Mic size={12} /> : <MicOff size={12} className="text-red-400/70" />}
+                </div>
+                <div className="flex-1 max-w-[120px] h-1 bg-white/12 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full transition-[width] duration-75" style={{ width: `${micOn ? micLevel * 100 : 0}%` }} />
+                </div>
+                {isLive && uplink.grade !== "good" && (
+                  <span className={`text-[10px] ml-auto ${uplink.grade === "poor" ? "text-red-400" : "text-amber-400"}`}>
+                    ⚠ {uplink.grade === "poor" ? "Bağlantı zayıf" : "Bağlantı orta"}
+                  </span>
+                )}
+              </div>
+
+              {/* Main controls row */}
+              <div className="flex items-center gap-1.5">
+                {/* Mic */}
+                <button
+                  data-testid="toggle-mic"
+                  onClick={audioTrack ? toggleMic : undefined}
+                  disabled={!audioTrack}
+                  title={micOn ? "Mikrofonu kapat" : "Mikrofonu aç"}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-sm border text-sm font-medium transition-colors disabled:opacity-40 ${micOn ? "bg-white/10 border-white/10 hover:bg-white/15 text-white" : "bg-red-500/20 border-red-500/30 text-red-300"}`}
+                >
+                  {micOn ? <Mic size={15} /> : <MicOff size={15} />}
+                  <span className="hidden sm:inline text-xs">{micOn ? "Mikrofon" : "Sessiz"}</span>
+                </button>
+
+                {/* Camera */}
+                {videoTrack ? (
+                  <button
+                    data-testid="toggle-cam"
+                    onClick={toggleCam}
+                    title={camOn ? "Kamerayı kapat" : "Kamerayı aç"}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-sm border text-sm font-medium transition-colors ${camOn ? "bg-white/10 border-white/10 hover:bg-white/15 text-white" : "bg-red-500/20 border-red-500/30 text-red-300"}`}
+                  >
+                    {camOn ? <Camera size={15} /> : <CameraOff size={15} />}
+                    <span className="hidden sm:inline text-xs">{camOn ? "Kamera" : "Kamera kapalı"}</span>
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-white/4 border border-white/8 text-white/20 cursor-default">
+                    <CameraOff size={15} />
+                    <span className="hidden sm:inline text-xs">Kamera yok</span>
+                  </span>
+                )}
+
+                {/* Screen share */}
+                <button
+                  data-testid="toggle-share"
+                  onClick={toggleShare}
+                  title={sharing ? "Ekran paylaşımını durdur" : "Ekranı paylaş"}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-sm border text-sm font-medium transition-colors ${sharing ? "bg-accent border-accent/60 text-white shadow-lg shadow-accent/20" : "bg-white/10 border-white/10 hover:bg-white/15 text-white"}`}
+                >
+                  <MonitorUp size={15} />
+                  <span className="hidden sm:inline text-xs">{sharing ? "Paylaşımı durdur" : "Ekran paylaş"}</span>
+                </button>
+
+                {/* Record (live only) */}
+                {isLive && (
+                  <button
+                    data-testid="record-stream"
+                    onClick={toggleRecording}
+                    disabled={recState === "starting" || recState === "stopping"}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-sm border text-sm font-medium transition-colors disabled:opacity-50 ${recState === "recording" ? "bg-red-500/25 border-red-500/40 text-red-200" : "bg-white/10 border-white/10 hover:bg-white/15 text-white"}`}
+                  >
+                    {recState === "recording" ? <SquareStop size={15} /> : <Circle size={15} className="text-red-400" />}
+                    <span className="hidden sm:inline text-xs">
+                      {recState === "starting" ? "Başlatılıyor…" : recState === "stopping" ? "Yükleniyor…" : recState === "recording" ? `Kaydı bitir` : "Kaydet"}
+                    </span>
+                  </button>
+                )}
+
+                <div className="flex-1" />
+
+                {/* Settings toggle (pre-live) */}
+                {!isLive && (
+                  <button
+                    onClick={() => setShowSettings(s => !s)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/10 bg-white/8 hover:bg-white/12 text-white/60 hover:text-white text-sm transition-colors"
+                  >
+                    <Settings2 size={14} />
+                    <span className="hidden sm:inline text-xs">Ayarlar</span>
+                    {showSettings ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Settings drawer (collapsible, pre-live) ─────────────────── */}
+          {!isLive && showSettings && (
+            <div className="shrink-0 border-t border-white/[0.07] bg-[#18181b] overflow-y-auto" style={{ maxHeight: "clamp(180px, 30vh, 280px)" }}>
+              <div className="p-4 space-y-4">
+                {workshopTitle && (
+                  <p className="text-xs rounded-lg border border-accent/30 bg-accent/8 px-3 py-2" data-testid="workshop-banner">
+                    <span className="text-accent font-semibold">Atölye:</span>{" "}
+                    <span className="text-white/70">{workshopTitle} — yalnızca onaylı katılımcılar izleyebilir.</span>
+                  </p>
+                )}
+
+                {/* Quality presets */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2 flex items-center gap-1.5">
+                    <SignalHigh size={11} /> Yayın kalitesi
+                  </p>
+                  <div data-testid="preset-list" className="flex flex-wrap gap-1.5">
+                    {BROADCAST_PRESETS.map((p) => (
+                      <button
+                        key={p.id}
+                        data-testid={`preset-${p.id}`}
+                        onClick={() => changePreset(p.id)}
+                        aria-pressed={presetId === p.id}
+                        className={`shrink-0 rounded-lg border px-3 py-2 text-left transition-colors ${presetId === p.id ? "border-accent bg-accent/15 text-white" : "border-white/10 hover:border-white/20 bg-white/5 text-white/60 hover:text-white"}`}
+                      >
+                        <span className="block text-sm font-semibold leading-none">
+                          {p.label}
+                          {p.id === DEFAULT_PRESET_ID && <span className="ml-1.5 text-[9px] text-emerald-400">✓ önerilen</span>}
+                        </span>
+                        <span className="block text-[10px] text-white/40 mt-0.5">{formatBitrate(p.maxBitrate)} · {p.fps}fps</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-white/30 mt-1.5">{preset.hint}</p>
+                </div>
+
+                {/* Device selectors */}
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">Kamera</span>
+                    <select data-testid="camera-select" value={camId} onChange={(e) => changeCamera(e.target.value)} className="mt-1.5 w-full bg-white/6 border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors">
+                      <option value="">Varsayılan kamera</option>
+                      {devices.cams.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Kamera"}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">Mikrofon</span>
+                    <select data-testid="mic-select" value={micId} onChange={(e) => changeMic(e.target.value)} className="mt-1.5 w-full bg-white/6 border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors">
+                      <option value="">Varsayılan mikrofon</option>
+                      {devices.mics.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Mikrofon"}</option>)}
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Go Live bar (pre-live) ───────────────────────────────────── */}
+          {!isLive && (
+            <div className="shrink-0 px-4 py-3 bg-[#111113] border-t border-white/[0.07] flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                {startError && <p role="alert" className="text-xs text-red-400">{startError}</p>}
+                {resume && !startError && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-amber-300/80 truncate">Devam eden yayın: &ldquo;{resume.title}&rdquo;</span>
+                    <button data-testid="resume-stream" onClick={resumeLive} className="shrink-0 bg-amber-400 text-black font-bold text-xs px-3 py-1.5 rounded-lg">Devam et</button>
+                  </div>
+                )}
+                {!resume && !startError && (
+                  <p className="text-[11px] text-white/25">
+                    <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-white/50 transition-colors">Yayın sözleşmesi</Link> kabul edilmiş sayılır · Kayıt yalnızca "Kaydet" düğmesiyle başlar
+                  </p>
+                )}
+              </div>
               <button
                 data-testid="go-live"
                 onClick={goLive}
                 disabled={phase === "starting" || (!videoTrack && !audioTrack && !screenTrack) || !room}
-                className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold px-8 py-3 rounded-full"
+                className="shrink-0 inline-flex items-center gap-2 bg-accent hover:bg-accent-dark disabled:opacity-40 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors shadow-lg shadow-accent/25"
               >
-                {phase === "starting" ? <><Loader2 size={18} className="animate-spin" /> Başlatılıyor…</> : <><Radio size={18} /> Yayına başla</>}
+                {phase === "starting"
+                  ? <><Loader2 size={15} className="animate-spin" /> Başlatılıyor…</>
+                  : <><Radio size={15} /> Yayına başla</>
+                }
               </button>
-              <p className="text-xs text-white/40">Yayına başlayarak <Link href="/terms" target="_blank" className="underline">sözleşmeyi</Link> kabul etmiş sayılırsınız. Ders kaydı yalnızca siz “Dersi kaydet” düğmesine bastığınızda alınır ve odadaki herkes bilgilendirilir.</p>
+            </div>
+          )}
+
+          {/* ── Live stats micro-bar ─────────────────────────────────────── */}
+          {isLive && (
+            <div className="shrink-0 px-4 py-1.5 bg-[#111113] border-t border-white/[0.07] flex items-center gap-4 text-[10px] text-white/30">
+              {uplink.width && <span>{uplink.width}×{uplink.height} · {uplink.fps}fps</span>}
+              {uplink.bitrate && <span>{formatBitrate(uplink.bitrate)}</span>}
+              {uplink.rtt !== undefined && <span>RTT {Math.round(uplink.rtt)}ms</span>}
+              {recError && <span className="text-red-400 ml-auto">{recError}</span>}
+              {recSaved && <span className="text-emerald-400 ml-auto">✓ Kayıt yüklendi (30 gün saklanır)</span>}
             </div>
           )}
         </main>
 
-        {/* right: chat / settings / viewers */}
-        <aside className="lg:w-[22rem] shrink-0 border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col h-[30rem] lg:h-auto min-h-0">
-          <div className="flex border-b border-white/10 bg-stage-2">
-            <Tab id="chat" icon={<MessageSquare size={14} />} label="Sohbet" />
-            <Tab id="viewers" icon={<Users size={14} />} label={`İzleyici (${live.viewerCount})`} />
-            <Tab id="settings" icon={<ShieldBan size={14} />} label="Denetim" />
+        {/* ── Right panel: chat / viewers / moderation ─────────────────── */}
+        <aside className="w-[17rem] lg:w-72 xl:w-80 shrink-0 border-l border-white/[0.07] flex flex-col bg-[#18181b] min-h-0">
+          {/* Tab bar */}
+          <div className="shrink-0 flex bg-[#1a1a1e] border-b border-white/[0.07]">
+            {(["chat", "viewers", "settings"] as const).map((id) => {
+              const cfg = {
+                chat: { icon: <MessageSquare size={13} />, label: "Sohbet" },
+                viewers: { icon: <Users size={13} />, label: `(${live.viewerCount})` },
+                settings: { icon: <ShieldBan size={13} />, label: "Denetim" },
+              }
+              return (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold uppercase tracking-wider border-b-2 transition-colors ${tab === id ? "border-accent text-white" : "border-transparent text-white/35 hover:text-white/65"}`}
+                >
+                  {cfg[id].icon} {cfg[id].label}
+                </button>
+              )
+            })}
           </div>
 
           {tab === "chat" && (
-            <LiveChatPanel className="flex-1" messages={live.messages} settings={live.settings} isHost connected={isLive} onSend={live.sendChat} onKick={kick} />
+            <LiveChatPanel className="flex-1 min-h-0" messages={live.messages} settings={live.settings} isHost connected={isLive} onSend={live.sendChat} onKick={kick} />
           )}
 
           {tab === "viewers" && (
-            <div className="flex-1 overflow-y-auto bg-stage-2 p-3 space-y-1" data-testid="viewer-list">
-              {!isLive && <p className="text-sm text-white/40 p-3">Yayın başlayınca izleyiciler burada görünür.</p>}
-              {isLive && live.viewers.length === 0 && <p className="text-sm text-white/40 p-3">Henüz izleyici yok.</p>}
+            <div className="flex-1 overflow-y-auto p-3 space-y-0.5" data-testid="viewer-list">
+              {!isLive && <p className="text-xs text-white/30 text-center py-8">Yayın başlayınca izleyiciler görünür.</p>}
+              {isLive && live.viewers.length === 0 && <p className="text-xs text-white/30 text-center py-8">Henüz izleyici yok.</p>}
               {live.viewers.map((v) => (
-                <div key={v.identity} className="flex items-center justify-between rounded-lg hover:bg-white/5 px-3 py-2 text-sm">
-                  <span>{v.name}</span>
-                  <button onClick={() => kick(v.identity, v.name)} className="text-xs text-red-300 hover:text-red-200">Çıkar</button>
+                <div key={v.identity} className="flex items-center justify-between rounded-lg hover:bg-white/5 px-3 py-2">
+                  <span className="text-sm text-white/75">{v.name}</span>
+                  <button onClick={() => kick(v.identity, v.name)} className="text-[11px] text-red-400/60 hover:text-red-300 transition-colors">Çıkar</button>
                 </div>
               ))}
             </div>
           )}
 
           {tab === "settings" && (
-            <div className="flex-1 overflow-y-auto bg-stage-2 p-4 space-y-5 text-sm">
+            <div className="flex-1 overflow-y-auto p-4 space-y-5 text-sm">
               <div>
-                <h3 className="text-xs font-semibold tracking-[0.18em] uppercase text-white/60 mb-2">Sohbet</h3>
-                <label className="flex items-center justify-between">
-                  <span>Sohbet açık</span>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-3">Sohbet moderasyonu</h3>
+                <label className="flex items-center justify-between py-1.5 border-b border-white/[0.06]">
+                  <span className="text-white/65 text-sm">Sohbet açık</span>
                   <input data-testid="chat-enabled" type="checkbox" checked={live.settings.chatEnabled} disabled={!isLive} onChange={(e) => moderate({ action: "chat-settings", chatEnabled: e.target.checked })} className="w-4 h-4 accent-orange-600" />
                 </label>
-                <label className="flex items-center justify-between mt-3">
-                  <span>Yavaş mod</span>
-                  <select data-testid="slow-mode" value={live.settings.slowModeSec} disabled={!isLive} onChange={(e) => moderate({ action: "chat-settings", slowModeSec: Number(e.target.value) })} className="bg-white/10 border border-white/10 rounded px-2 py-1">
+                <label className="flex items-center justify-between py-1.5">
+                  <span className="text-white/65 text-sm">Yavaş mod</span>
+                  <select data-testid="slow-mode" value={live.settings.slowModeSec} disabled={!isLive} onChange={(e) => moderate({ action: "chat-settings", slowModeSec: Number(e.target.value) })} className="bg-white/8 border border-white/10 rounded-lg px-2 py-1 text-xs text-white/70 focus:outline-none">
                     {SLOW_MODE_OPTIONS.map((s) => <option key={s} value={s} className="text-black">{s === 0 ? "Kapalı" : `${s} sn`}</option>)}
                   </select>
                 </label>
-                {!isLive && <p className="text-xs text-white/40 mt-2">Bu ayarlar yayın sırasında değiştirilebilir.</p>}
+                {!isLive && <p className="text-xs text-white/30 mt-2">Yayın sırasında değiştirilebilir.</p>}
               </div>
 
               <div>
-                <h3 className="text-xs font-semibold tracking-[0.18em] uppercase text-white/60 mb-2">Yayın sağlığı</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-3">Yayın sağlığı</h3>
                 {!isLive ? (
-                  <p className="text-xs text-white/40">Yayın başlayınca gönderim istatistikleri burada görünür.</p>
+                  <p className="text-xs text-white/30">Yayın başlayınca istatistikler görünür.</p>
                 ) : (
-                  <dl data-testid="health" className="grid grid-cols-2 gap-y-1.5 text-xs">
-                    <dt className="text-white/50">Durum</dt><dd className={GRADE_STYLE[uplink.grade].cls.split(" ")[1]}>{GRADE_STYLE[uplink.grade].label}</dd>
-                    <dt className="text-white/50">Çözünürlük</dt><dd>{uplink.width && uplink.height ? `${uplink.width}×${uplink.height}` : "—"}</dd>
-                    <dt className="text-white/50">Kare hızı</dt><dd>{uplink.fps ?? "—"} fps</dd>
-                    <dt className="text-white/50">Gönderim</dt><dd>{formatBitrate(uplink.bitrate ?? 0)}</dd>
-                    <dt className="text-white/50">Gecikme (RTT)</dt><dd>{uplink.rtt !== undefined ? `${Math.round(uplink.rtt)} ms` : "—"}</dd>
-                    <dt className="text-white/50">Sınırlama</dt><dd>{uplink.limitation && uplink.limitation !== "none" ? (uplink.limitation === "bandwidth" ? "Bant genişliği" : uplink.limitation === "cpu" ? "İşlemci" : uplink.limitation) : "Yok"}</dd>
+                  <dl data-testid="health" className="space-y-2 text-xs">
+                    {[
+                      ["Durum", <span key="g" className={GRADE_STYLE[uplink.grade].cls.split(" ")[1]}>{GRADE_STYLE[uplink.grade].label}</span>],
+                      ["Çözünürlük", uplink.width && uplink.height ? `${uplink.width}×${uplink.height}` : "—"],
+                      ["Kare hızı", `${uplink.fps ?? "—"} fps`],
+                      ["Gönderim", formatBitrate(uplink.bitrate ?? 0)],
+                      ["RTT", uplink.rtt !== undefined ? `${Math.round(uplink.rtt)} ms` : "—"],
+                    ].map(([label, val]) => (
+                      <div key={String(label)} className="flex justify-between">
+                        <dt className="text-white/35">{label}</dt>
+                        <dd className="text-white/70">{val}</dd>
+                      </div>
+                    ))}
                   </dl>
                 )}
-                {isLive && uplink.grade === "poor" && <p className="text-xs text-amber-300 mt-3">Bağlantınız zayıf. Kaliteyi 480p veya 360p’ye düşürmeyi deneyin.</p>}
+                {isLive && uplink.grade === "poor" && (
+                  <p className="text-xs text-amber-400/80 mt-3 bg-amber-400/8 border border-amber-400/20 rounded-lg px-3 py-2">
+                    Bağlantı zayıf. Kaliteyi 480p veya 360p&apos;ye düşürmeyi deneyin.
+                  </p>
+                )}
               </div>
             </div>
           )}

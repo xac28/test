@@ -77,7 +77,7 @@ export async function runReminders(now = new Date()): Promise<ReminderResult> {
   return out
 }
 
-export interface AdminDigest { items: { label: string; count: number; href: string }[]; total: number; emailed: boolean }
+export interface AdminDigest { items: { label: string; count: number; href: string }[]; overdue: { label: string; count: number; href: string }[]; total: number; emailed: boolean }
 
 /** A morning summary for the admins: what is waiting for a decision. Nothing is sent on a quiet day. */
 export async function runAdminDigest(now = new Date()): Promise<AdminDigest> {
@@ -104,19 +104,21 @@ export async function runAdminDigest(now = new Date()): Promise<AdminDigest> {
     { label: "Stoğu azalan ürün", count: lowStock, href: "/admin?tab=products" },
   ].filter((i) => i.count > 0)
   const total = items.reduce((n, i) => n + i.count, 0)
+  const overdue = await overdueItems(now)
   let emailed = false
   if (total > 0) {
-    await notifyAdminsInApp("Günlük özet", items.map((i) => `${i.count} ${i.label.toLowerCase()}`).join(", ").slice(0, 380), "/admin")
+    const late = overdue.length ? ` · GECİKEN: ${overdue.map((i) => `${i.count} ${i.label.toLowerCase()}`).join(", ")}` : ""
+    await notifyAdminsInApp("Günlük özet", (items.map((i) => `${i.count} ${i.label.toLowerCase()}`).join(", ") + late).slice(0, 380), "/admin")
     if (process.env.ADMIN_EMAIL) {
       const r = await sendEmail({
         to: process.env.ADMIN_EMAIL,
         subject: `AYA günlük özet: ${total} bekleyen iş`,
-        html: frame(`<p>Günaydın! Bekleyen işler:</p><ul>${items.map((i) => `<li><a href="${SITE_URL}${i.href}" style="color:#1f62bf">${i.count} · ${esc(i.label)}</a></li>`).join("")}</ul><p style="color:#5a6f87;font-size:13px">Son 24 saatte ${newUsers} yeni üye.</p>`),
+        html: frame(`<p>Günaydın! Bekleyen işler:</p><ul>${items.map((i) => `<li><a href="${SITE_URL}${i.href}" style="color:#1f62bf">${i.count} · ${esc(i.label)}</a></li>`).join("")}</ul>${overdue.length ? `<p style="color:#b42318"><strong>Geciken işler</strong></p><ul>${overdue.map((i) => `<li><a href="${SITE_URL}${i.href}" style="color:#b42318">${i.count} · ${esc(i.label)}</a></li>`).join("")}</ul>` : ""}<p style="color:#5a6f87;font-size:13px">Son 24 saatte ${newUsers} yeni üye.</p>`),
       })
       emailed = !!r.success
     }
   }
-  return { items, total, emailed }
+  return { items, overdue, total, emailed }
 }
 
 /** ISO week label: 2026-W41 */
@@ -284,6 +286,66 @@ export async function runWinback(now = new Date(), limit = 100): Promise<Winback
       const r = await sendEmail({ to: u.email, subject: "AYA: seni özledik", html: m.html, text: m.text })
       if (r.success) out.emailed++
     }
+  }
+  return out
+}
+
+
+// ───────────────────────── service levels: things that wait too long ─────────────────────────
+
+/** How long each kind of request may wait before it counts as overdue. */
+export const SLA = { applicationHours: 48, applicantReassureHours: 72, supportHours: 24, reportHours: 72, payoutHours: 72, postHours: 24 }
+
+/** What has waited past its limit right now (counts only; used by the daily summary). */
+export async function overdueItems(now = new Date()): Promise<{ label: string; count: number; href: string }[]> {
+  const ago = (h: number) => new Date(now.getTime() - h * HOUR)
+  const [applications, support, reports, payouts, posts] = await Promise.all([
+    db.teacherApplication.count({ where: { status: "PENDING", submittedAt: { lte: ago(SLA.applicationHours) } } }),
+    db.supportTicket.count({ where: { status: "OPEN", awaitingStaff: true, lastMessageAt: { lte: ago(SLA.supportHours) } } }),
+    db.report.count({ where: { status: { in: OPEN_STATUSES }, createdAt: { lte: ago(SLA.reportHours) } } }),
+    db.payoutRequest.count({ where: { status: "PENDING", createdAt: { lte: ago(SLA.payoutHours) } } }),
+    db.post.count({ where: { status: "PENDING", createdAt: { lte: ago(SLA.postHours) } } }),
+  ])
+  return [
+    { label: `Eğitmen başvurusu ${SLA.applicationHours} saattir bekliyor`, count: applications, href: "/admin?tab=applications" },
+    { label: `Destek talebi ${SLA.supportHours} saattir yanıtsız`, count: support, href: "/admin?tab=support" },
+    { label: `Rapor ${SLA.reportHours} saattir açık`, count: reports, href: "/admin?tab=reports" },
+    { label: `Ödeme talebi ${SLA.payoutHours} saattir bekliyor`, count: payouts, href: "/admin?tab=payouts" },
+    { label: `Fotoğraf ${SLA.postHours} saattir onay bekliyor`, count: posts, href: "/admin?tab=community" },
+  ].filter((i) => i.count > 0)
+}
+
+export interface SlaResult { adminAlerts: number; applicantNudges: number }
+
+/**
+ * Teacher applications: the admins get one alert per application that waited 48 hours, and the applicant one reassurance after
+ * 72 hours ("still being reviewed"). Both are claimed first, so nothing is sent twice.
+ */
+export async function runSlaWatch(now = new Date()): Promise<SlaResult> {
+  const out: SlaResult = { adminAlerts: 0, applicantNudges: 0 }
+  const ago = (h: number) => new Date(now.getTime() - h * HOUR)
+  const late = await db.teacherApplication.findMany({
+    where: { status: "PENDING", slaAlertedAt: null, submittedAt: { lte: ago(SLA.applicationHours) } },
+    select: { id: true, user: { select: { name: true } }, submittedAt: true },
+    take: 50,
+  })
+  for (const a of late) {
+    const claimed = await db.teacherApplication.updateMany({ where: { id: a.id, status: "PENDING", slaAlertedAt: null }, data: { slaAlertedAt: now } })
+    if (claimed.count !== 1) continue
+    out.adminAlerts++
+    const days = Math.max(2, Math.round((now.getTime() - a.submittedAt.getTime()) / DAY))
+    await notifyAdminsInApp("Eğitmen başvurusu bekliyor", `${a.user.name ?? "Bir aday"} ${days} gündür yanıt bekliyor.`, "/admin?tab=applications")
+  }
+  const waiting = await db.teacherApplication.findMany({
+    where: { status: "PENDING", applicantNudgedAt: null, submittedAt: { lte: ago(SLA.applicantReassureHours) } },
+    select: { id: true, user: { select: { id: true, email: true } } },
+    take: 50,
+  })
+  for (const a of waiting) {
+    const claimed = await db.teacherApplication.updateMany({ where: { id: a.id, status: "PENDING", applicantNudgedAt: null }, data: { applicantNudgedAt: now } })
+    if (claimed.count !== 1) continue
+    out.applicantNudges++
+    await tell(a.user, "Başvurun inceleniyor", "Eğitmen başvurun hâlâ ekibimizin incelemesinde; beklettiğimiz için üzgünüz. Sonuç çıktığında burada ve e-postayla haber vereceğiz.", "/become-teacher")
   }
   return out
 }

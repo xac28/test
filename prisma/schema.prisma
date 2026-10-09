@@ -350,6 +350,10 @@ model TeacherApplication {
   
   resumeUrl   String?
   experience  String?  @db.Text
+
+  // automation marks: the admins are alerted once when the application waits too long, the applicant is reassured once
+  slaAlertedAt     DateTime?
+  applicantNudgedAt DateTime?
 }
 
 model Booking {

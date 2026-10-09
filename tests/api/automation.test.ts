@@ -416,3 +416,51 @@ describe("unpaid orders and inactive students", () => {
     expect(await notes(away.id, "Seni özledik")).toBe(2)
   })
 })
+
+describe("waiting too long (service levels)", () => {
+  const apps: string[] = []
+  afterAll(async () => { await db.teacherApplication.deleteMany({ where: { id: { in: apps } } }).catch(() => {}) })
+
+  it("alerts the admins once per application after 48 h, reassures the applicant once after 72 h, and ignores decided ones", async () => {
+    const admin = await makeUser("ADMIN")
+    const mk = async (hoursAgo: number, status: "PENDING" | "APPROVED" = "PENDING") => {
+      const u = await makeUser("STUDENT")
+      const a = await db.teacherApplication.create({ data: { userId: u.id, status, submittedAt: new Date(Date.now() - hoursAgo * HOUR) } })
+      apps.push(a.id)
+      return { u, a }
+    }
+    const fresh = await mk(10)
+    const late = await mk(60)
+    const veryLate = await mk(80)
+    const decided = await mk(200, "APPROVED")
+
+    const before = await notes(admin.id, "Eğitmen başvurusu bekliyor")
+    const runs = await Promise.all([1, 2, 3].map(() => cron("/api/cron/reminders").then((r) => r.json())))
+    expect(runs.reduce((n, r) => n + r.sla.adminAlerts, 0)).toBeGreaterThanOrEqual(2)
+    expect(await notes(admin.id, "Eğitmen başvurusu bekliyor")).toBe(before + 2) // late + veryLate, once each despite three runs
+    const mark = (id: string) => db.teacherApplication.findUniqueOrThrow({ where: { id } })
+    expect((await mark(fresh.a.id)).slaAlertedAt).toBeNull()
+    expect((await mark(late.a.id)).slaAlertedAt).toBeTruthy()
+    expect((await mark(late.a.id)).applicantNudgedAt).toBeNull() // 60 h: not yet time to reassure
+    expect((await mark(veryLate.a.id)).applicantNudgedAt).toBeTruthy()
+    expect((await mark(decided.a.id)).slaAlertedAt).toBeNull()
+    expect(await notes(veryLate.u.id, "Başvurun inceleniyor")).toBe(1)
+    expect(await notes(late.u.id, "Başvurun inceleniyor")).toBe(0)
+    expect(await notes(fresh.u.id, "Başvurun inceleniyor")).toBe(0)
+
+    await cron("/api/cron/reminders")
+    expect(await notes(admin.id, "Eğitmen başvurusu bekliyor")).toBe(before + 2)
+    expect(await notes(veryLate.u.id, "Başvurun inceleniyor")).toBe(1)
+  })
+
+  it("the daily summary lists what is overdue", async () => {
+    const u = await makeUser("STUDENT")
+    const a = await db.teacherApplication.create({ data: { userId: u.id, status: "PENDING", submittedAt: new Date(Date.now() - 100 * HOUR) } })
+    apps.push(a.id)
+    const res = await (await cron("/api/cron/digests?weekly=0&winback=0")).json()
+    expect(Array.isArray(res.admin.overdue)).toBe(true)
+    const row = res.admin.overdue.find((i: any) => i.href === "/admin?tab=applications")
+    expect(row.count).toBeGreaterThanOrEqual(1)
+    expect(row.label).toContain("48 saattir")
+  })
+})

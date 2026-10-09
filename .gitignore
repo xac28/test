@@ -73,3 +73,14 @@ Thumbs.db
 node_modules
 tsconfig.tsbuildinfo
 
+
+# private runtime storage (lesson recordings etc.)
+/storage/
+/public/uploads/
+
+# test artifacts
+/test-results/
+/playwright-report/
+tour-output/
+output.txt
+/tour-output/

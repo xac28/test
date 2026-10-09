@@ -1,92 +1,82 @@
-# 🙏 Namaste
+# AYA
 
-> Your practice, anywhere you breathe.
+Yoga, nefes ve meditasyon için bir okul: sertifikalı eğitmenlerle **birebir dersler**, herkese açık **canlı yayınlar**, küçük gruplarla **atölyeler** ve **içerikler** (yazılar).
+Web (Next.js 14) + mobil uygulama (Expo, `namaste-mobile/` klasörü — adı değişmedi) + LiveKit ile canlı video.
 
-Namaste is a 1-on-1 yoga and meditation marketplace — like Cambly/Preply, but for breath, body, and mind.
+## Özellikler
 
-## ✨ What's in this MVP
+| Alan | Neler var |
+| --- | --- |
+| Birebir dersler | Eğitmen arama, rezervasyon, ödeme (Stripe / Iyzico), canlı oda |
+| **Canlı yayın** | `/live` rehber, `/live/[id]` izleyici (Otomatik / 1080p / 720p / 360p / yalnız ses, tiyatro modu, PiP, istatistikler, sohbet), `/live/studio` stüdyo (1080p60'a kadar 6 kalite ön ayarı, simulcast, cihaz seçimi, yayın sağlığı, sohbet yönetimi, ekran paylaşımı) |
+| **Ders kaydı** | Öğretmen "Dersi kaydet"e basar → tarayıcı odayı kaydeder, 5 sn'lik parçalar sunucuya yüklenir → yalnızca o dersin öğretmeni ve öğrencisi indirir → **30 gün** sonra otomatik silinir |
+| **Atölyeler** | `/atolyeler` — canlı (kontenjanlı) ve kayıtlı atölyeler; ücretli atölyede yer ayrılır, ödeme eğitmen tarafından onaylanınca katılım kesinleşir; atölye yayınları yalnızca onaylı katılımcılara açıktır |
+| **İçerikler** | `/icerikler` — yönetim panelinden yazılan, taslak/yayın akışı olan yazılar |
+| **Keşfet sayfaları** | `/yoga-stilleri` (+ `/yoga-stilleri/[stil]`: kimler için, derste neler olur, örnek ders akışı, gerekenler, SSS, stilin pozları) · `/pozlar` (aranabilir/filtrelenebilir poz kütüphanesi, 17 poz) ve `/pozlar/[poz]` (nasıl yapılır, faydalar, nefes, dikkat, kolay/zor seçenek, karşı poz, **3B döndürülebilir model**) · `/nasil-calisir` · `/sss` · `/hakkimizda` · `/ogretmenler-icin`. Tüm metinler özgündür (yoga.com'dan kopyalanmamıştır). Ana sayfa bu sayfalara yönlendiren bölümler içerir; menüde "Keşfet" açılır listesi var |
+| **3B karakter ve pozlar** | `public/models/yogi.glb` (Mixamo iskeletli karakter) üzerine `src/lib/pose-rig.ts` her kemiği dünya yönüne göre yatırır (`src/lib/pose-rigs.ts` poz başına bir tarif; ayak yere oturtulur). Ana sayfa hero'su pozlar arasında yumuşak geçiş yapar, poz sayfasında OrbitControls ile döndürülür. **Hareket:** poz kartının üstüne gelince (ya da kartın "Hareketi izle" düğmesine basınca; dokunmatik/klavye için) karakter pozu baştan sona yapar — ayakta duruştan çömelme/oturma/yatış gibi ara pozlardan geçerek (`src/lib/pose-motion.ts`, her poz için yol `MOTION_PATH`); poz sayfasında "Hareketi baştan sona oynat". Gövde her karede en alçak kemiğinden zemine oturtulur. Poz görselleri `node scripts/render-poses/render.mjs [poz]` ile üretilir (ffmpeg + Playwright Chromium gerekir; çıktı `public/poses/*.webp`) |
+| **Platform dışına çıkma denetimi** | Eğitmenler sosyal medya hesabı, telefon/WhatsApp, e-posta, bağlantı, "özel ders/kendi kursum" yönlendirmesi paylaşamaz (profil, mesaj, topluluk, video/atölye başlığı, oda sohbeti, rezervasyon notu, başvuru). Metin kaydedilmeden engellenir ve eğitmene gerekçe gösterilir. **Kademeli yaptırım** (`src/lib/policy-ladder.ts`): 1. ihlal uyarı → 2. ihlal 10 gün uzaklaştırma → 3. ihlal kalıcı ban; 30 dk içindeki yeniden denemeler sayılmaz, yönetici bir ihlali bağışlayabilir, uzaklaştırmayı kaldırabilir. Uzaklaştırılan eğitmen listelerden çıkar ve içerik üretemez. Yönetim panelinde **Politika İhlalleri** sekmesi (ihlal günlüğü, eğitmen durumu, mevcut içerikleri tarama, CSV). Kurallar `/community/rules` sayfasında |
+| **Hesap güvenliği ve veriler** | **Şifremi unuttum** (`/forgot-password` → e-postayla tek kullanımlık, 1 saat geçerli bağlantı → `/reset-password`; yanıt hesabın var olup olmadığını sızdırmaz, veritabanında yalnızca bağlantının SHA-256 özeti tutulur, dakikada 1 e-posta sınırı, yeni şifre sonrası diğer bağlantılar iptal olur). SMTP ayarsızsa bağlantı yalnızca sunucu konsoluna yazılır (geliştirme). **Verilerim ve hesabım** (`/dashboard/profile`): kişisel verileri JSON olarak indir (şifre ve iç destek notları dışarıda), hesabı sil (onay metni + şifre; yaklaşan ders/atölye, bekleyen ödeme ya da açık yayın varsa engellenir; kişisel veri ve içerik silinir, ders/ödeme kayıtları anonim kalır). Olaylar yönetim panelindeki günlüklere düşer |
+| **Deneme öğretmeni: denetimli yayın ve rozetler** | Deneme sürecindeki öğretmenler canlı yayın açabilir (atölye yayını ve rezervasyon hâlâ yalnız onaylılara); bu yayınlar **denetimli** işaretlenir, sohbet 5 sn yavaş modla başlar, tüm yöneticilere anlık bildirim gider. Yönetim paneli → **Canlı İzleme**: yayınları (denetimliler üstte; açık rapor ve politika ihlali sayılarıyla) listeler; **gizli izle** (izleyici listesinde/sayısında görünmeyen, yalnız alan jeton; her oturum denetim kaydına yazılır), öğretmene özel mesaj ya da odaya duyuru gönderme, yavaş mod/sohbeti kapatma, yayını kapatma ve aynı ekrandan **onayla / denemede tut** kararı. **Rozetler:** "Onaylı öğretmen" (kartlar, profil, panel, canlı yayın) ve "Deneme öğretmeni" (canlı yayın listesi/izleme sayfası/ana sayfa kartı/stüdyo/panel); izleyiciler denetimli yayını açıkça görür. API: `/api/admin/live-monitor` (+ `/[id]/watch`, `/[id]/notice`) |
+| **Yayın uygulaması (masaüstü, yalnız öğretmenler)** | `/teach/uygulama`: Windows kurulum dosyasının indirme bağlantısı (SHA-256 ile), "bağlantı kodu oluştur" ve bağlı bilgisayar listesi. **Yetki:** indirme ve eşleştirme yalnız öğretmen (deneme dâhil) ve yönetici hesaplarına açık; öğrenci/ziyaretçi/askıdaki/yasaklı/silinmiş hesap 401/403. Kurulum dosyası halka açık bir adreste durmaz, `/api/streamer/download` oturum ister. **Eşleştirme:** öğretmen sitede tek kullanımlık, 10 dk geçerli kod üretir (veritabanında yalnız SHA-256); uygulama kodu *cihaz jetonuna* (`ayas_…`, 30 gün, yalnız karması saklanır, en çok 5 cihaz, listeden tek tıkla iptal) çevirir; jeton Windows DPAPI ile (`safeStorage`) şifreli saklanır ve başka hiçbir API'de geçmez. Uygulama jetonla 12 saatlik normal oturum çerezi alır; her adımda sahibin hâlâ uygun öğretmen olduğu yeniden denetlenir (askı/yasak/silme anında keser). `minVersion` ile eski sürümler 426 ile emekli edilir. Uygulama (Electron, `streamer/`): context isolation + sandbox, yalnız sunucu adresine gezinme, izin beyaz listesi, yalnız https (localhost hariç), sertifika hatası reddedilir. Derleme: `STREAMER_SERVER_URL=https://… scripts/build-streamer.sh` (NSIS kurulum dosyası Linux'ta üretilir, `storage/downloads/` altına yayınlanır). Testler: `tests/api/streamer.test.ts`, `tests/unit/streamer-app.test.ts`, `tests/e2e/streamer-panel.spec.ts`, ve gerçek Electron ile `scripts/run-streamer-e2e.sh` |
+| **Çerezler ve güvenlik başlıkları** | Yalnızca zorunlu çerezler kullanılır (oturum, dil); sayfanın üstünde kapatılabilir bilgilendirme çubuğu ve `/cerezler` politika sayfası vardır. **Content-Security-Policy** `next.config.js` içinde: `CSP_MODE` (derleme zamanı) `report-only` (varsayılan: ihlaller `/api/csp-report` ile yönetim panelindeki sistem günlüğüne düşer, hiçbir şey engellenmez), `enforce` veya `off`. Canlıda günlük temizse `CSP_MODE=enforce` ile derleyin (yerel testte canlı yayın, kayıt, tur ve yönetim akışları zorunlu modda ihlalsiz geçti; Stripe/Iyzico/Google girişi denenmedi). `ENABLE_HSTS=true` (derleme zamanı) yalnızca HTTPS arkasında HSTS başlığını ekler |
+| **E-posta doğrulama** | Kayıtta 24 saat geçerli, tek kullanımlık doğrulama bağlantısı gider (`/verify-email`); panelde doğrulanmamışlara hatırlatma ve "yeniden gönder" (dakikada 1). Google ile girenler otomatik doğrulanır. `REQUIRE_EMAIL_VERIFICATION=true` yapılırsa doğrulanmamışlar eğitmen başvurusu, rezervasyon, atölyeye kayıt ve topluluk paylaşımı yapamaz (varsayılan kapalı; mevcut üyeleri kilitlememek için önce `node scripts/verify-existing-users.js` çalıştır). **Hesap ele geçirme önlemleri:** şifresiz (Google) bir hesabın e-postasıyla kayıt olmak artık o hesaba şifre koyamaz; Google ile ilk kez giren, daha önce o adrese başkası tarafından açılmış parolalı hesabı devralırsa eski parola silinir; silinen hesabın oturumları geçersiz olur |
+| **Arama motoru ve paylaşım** | `/sitemap.xml` (sayfalar, pozlar, stiller, onaylı eğitmenler, atölyeler, yazılar), `/robots.txt` (panel ve API kapalı), `/manifest.webmanifest`, favicon, her sayfaya başlık/açıklama, poz sayfalarında `HowTo`, stil sayfalarında `FAQPage`, ana sayfada `Organization` yapılandırılmış verisi, paylaşım görseli (`/opengraph-image`), özel 404 ve hata sayfaları, "İçeriğe geç" bağlantısı. Canlıya alırken `NEXT_PUBLIC_SITE_URL` değerini ayarlayın |
+| İzleme | `GET /api/health` — uygulama ve veritabanı yanıt veriyorsa 200, aksi halde 503 (yük dengeleyici / uptime izleyici için) |
+| Sözleşme | Kayıtta zorunlu kutu (web + mobil API), kabul etmemiş kullanıcılar için "sözleşme kapısı" (`/accept-terms`) |
+| **Bildirim (rapor) sistemi** | Canlı yayın, sohbet mesajı, eğitmen profili, atölye, ders, topluluk fotoğrafı ve yorum için "Bildir" penceresi (kategori + açıklama). Bildirilen kişi **sunucuda** hedefe göre belirlenir; kendini bildirme, 24 saatlik tekrar, saatlik 5 / günlük 15 sınırı engellenir. Aynı kişiyi son 14 günde **3 farklı kullanıcı** bildirirse tüm açık raporlar **Acil** olur. Bildirenler `/dashboard/reports` sayfasında yalnızca genel durumu görür (iç notlar asla gösterilmez); uyarılar panelde "Okudum" onayıyla gösterilir |
+| **Topluluk** | `/community` — fotoğraf paylaşımı (yalnızca kendi yüklediğin dosya kabul edilir), beğeni (iyimser arayüz, çift dokunuşa dayanıklı), yorum, silme ve bildirme. **Otomatik denetim** (`src/lib/profanity.ts`, aynı kod tarayıcıda canlı uyarı verir, sunucuda son sözü söyler): Türkçe/İngilizce küfür, hakaret, nefret ve tehdit; yazım oyunları (`s.i.k.t.i.r`, `$1kt1r`, `siiiktir`, boşluklu harfler); bağlantı / e-posta / telefon / IBAN / mesajlaşma hesabı; spam biçimi (BAĞIRMA, emoji yığını, tekrar). İhlalli metin **yayınlanmaz ve saklanmaz**, yanıtta kelime tekrar edilmez; olay maskeli özetle kaydedilir. Tekrarında kademeli susturma (saatte 3 ihlal → 15 dk, günde 6 → 24 sa + otomatik resmi uyarı + yöneticilere bildirim). Yorum taşkını/yinelenen yorum sınırı. Yeni üyelerin ilk fotoğrafları **yönetici onayı** bekler (görseli yazılım güvenilir yargılayamaz); 2 onaylı paylaşımdan sonra anında yayınlanır. Kurallar: `/community/rules` |
+| **Bildirimler** | Navbar'da zil (okunmamış sayısı, 30 sn'de bir yenilenir) ve `/dashboard/notifications`. Beğeniler tek satırda birleşir ("Ayşe ve 3 kişi daha…"). Beğeni, yorum, fotoğraf onayı/reddi, içerik kaldırma, uyarı, susturma ve rapor sonucu bildirim üretir. Mobil uygulama Expo push belirtecini `POST /api/notifications/push-token` ile kaydeder; push en iyi çabayla gönderilir |
+| **AYA Rehber (yardımcı yapay zeka)** | Sağ alttaki pencere. Yerleşik bilgi tabanı + yönlendirme + **yöneticilerin öğrettiği cevaplar** (öğretilenler önce kullanılır). Bilmediği soruyu "öğreneceğim" diyerek kaydeder (kişisel veriler maskelenir); yönetici **Yapay Zeka → Bilinmeyen sorular**'dan cevabı öğretir, soruyu soran üyelere bildirim gider. Her cevabın altında **"Yardımcı oldu mu?"**: 👎 → "Canlı destekle konuş". "canlı destek / yetkili / insanla konuşmak istiyorum" yazmak da sohbeti **canlı desteğe** açar |
+| **Canlı destek** | Üye ↔ yönetici görüşmesi (Rehber penceresinde ya da `/dashboard/support`). 4 sn'de bir yoklanır, yanıt gelince zil bildirimi; kullanıcı kapatıp 1-5 puan verir. Yönetici tarafı: kuyruk (yanıt bekleyen / açık / benim / kapalı), hazır yanıtlar, iç not (üye görmez), üstlen, öncelik, ilk yanıt süresi ve memnuniyet istatistiği, CSV, "bu cevabı Rehber'e öğret" |
+| **Değerlendirmeler** | Eğitmen profilinde öğrenci yorumları görünür; her yorumda **Bildir** düğmesi. Yazılı yorum topluluk filtresinden geçer. Yönetici **Değerlendirmeler** sekmesinden (ya da rapor çekmecesinden) kaldırır/geri yükler; kaldırılan yorum puan ortalamasından çıkar |
+| **Günlükler** | `/admin?tab=audit`: **Sistem olayları** (girişler, başarısız girişler, kayıtlar, yüklemeler, Rehber boşlukları, destek, güvenlik; seviye/tür/dönem/arama, saatlik grafik, canlı izleme, CSV, ayrıntı) ve **Yönetici işlemleri** (Türkçe etiketli, konu ve dönem filtreli, CSV) |
+| **Video yükleme** | Eğitmen panelinde "Kayıtlı dersler": dosya yükle (ilerleme çubuğu, ≤500 MB, MP4/WebM/MOV) ya da https bağlantısı; profilde yerinde oynatılır (Range/ileri sarma desteği). Bağlantılar doğrulanır (`javascript:`, başkasının dosyası, http reddedilir) |
+| **Yönetim paneli** | Türkçe, `/admin?tab=…` (URL ile senkron, kenar çubuğunda bekleyen iş sayıları): **Genel Bakış** (bekleyen işler, 14 günlük grafik, sistem sağlığı) · **Raporlar** (öncelik sırası, filtre/arama, toplu işlem, kanıt, iç not, uyar / yasakla / eğitmen onayını kaldır / yayını kapat / atölyeyi kaldır / içeriği kaldır, geçmiş) · **Canlı destek** · **Yapay zeka** (bilinmeyen sorular, geri bildirim, öğretilenler) · **Değerlendirmeler** · **Fotoğraflar** (onay kuyruğu, yorumlar, filtre istatistikleri, ek yasaklı kelimeler, filtre deneme kutusu, susturulanlar) · **Kullanıcılar** (sunucu tarafı arama, ayrıntı çekmecesi, uyarı, nedenli yasak, IP geçmişi) · Güvenlik (IP engelleri) · Denetim kayıtları · Başvurular · Deneme odaları · Atölyeler · İçerikler · Canlı oturumlar · Rezervasyonlar · Ders kayıtları (yalnızca üst bilgi, silme) · Ödeme talepleri · Finans. Tüm kritik işlemler gerekçe ister ve denetim kaydına yazılır; listeler CSV olarak indirilebilir |
+| Mobil | `namaste-mobile/` (Expo): Türkçe arayüz ve web ile aynı renkler; kayıt kutusu + kabul ekranı, şifremi unuttum, **poz kütüphanesi ve yoga stilleri** (`/api/poses`, `/api/styles`), topluluk akışı (beğeni), AYA Rehber, e-posta doğrulama hatırlatması, **verilerimi indir / hesabımı sil**, fotoğraf/video yükleme, ders odasında "Sorun bildir". Gerçek cihazda denenmedi (tür denetimi + Android paketleme doğrulandı); ayrıntı `namaste-mobile/README.md` |
 
-- **🌐 Bilingual UI (TR/EN)** — Language picker on first visit, toggle in navbar
-- **🏠 Landing page** — Hero, "How it works", and CTA sections
-- **🔍 Teacher discovery** — Browse all teachers, filter by yoga style, level, and experience
-- **👤 Teacher profile** — Bio, video intro placeholder, certifications, schedule
-- **📅 Booking widget** — Pick day → pick time slot → proceed to checkout
-- **💳 Checkout flow** — Trial vs regular class, prices in user's local currency (charged in USD), mock payment form with success state
-- **🌍 Timezone-aware** — All times shown in user's local timezone (UTC stored under the hood)
-- **🎨 Custom design** — Sage green & clay tones, Cormorant Garamond display font, subtle textures
-
-## 🚀 Getting started
-
-You'll need [Node.js](https://nodejs.org/) installed (version 18 or newer).
+## Kurulum
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Run the development server
-npm run dev
-
-# 3. Open in browser
-# → http://localhost:3000
+cp .env.example .env        # değerleri doldurun
+npx prisma db push          # MySQL / MariaDB şemasını oluşturur
+npm run seed:demo           # (isteğe bağlı) örnek eğitmen, atölye ve yazılar — şifre: Passw0rd!
+npm run dev                 # http://localhost:3000
 ```
 
-## 📁 Project structure
+Canlı video için bir LiveKit sunucusu gerekir (`livekit-server --dev` ya da Docker). İstemci `livekit-client` 2.18 olduğundan **LiveKit sunucusu ≥ 1.9** olmalıdır (depodaki `livekit-server.exe` 1.11'dir).
 
-```
-namaste/
-├── src/
-│   ├── app/                       # Next.js App Router pages
-│   │   ├── page.tsx               # Landing page
-│   │   ├── layout.tsx             # Root layout
-│   │   ├── globals.css            # Global styles
-│   │   ├── teachers/
-│   │   │   ├── page.tsx           # Teacher listing + filters
-│   │   │   └── [slug]/page.tsx    # Individual teacher profile
-│   │   └── checkout/page.tsx      # Booking checkout
-│   ├── components/                # Reusable UI components
-│   │   ├── Navbar.tsx
-│   │   ├── Footer.tsx
-│   │   ├── LanguagePicker.tsx     # First-visit language modal
-│   │   ├── TeacherCard.tsx
-│   │   └── BookingWidget.tsx      # Calendar + slot picker
-│   ├── i18n/                      # Internationalization
-│   │   ├── index.tsx              # Provider + useI18n hook
-│   │   ├── en.ts                  # English strings
-│   │   └── tr.ts                  # Turkish strings
-│   └── lib/                       # Helpers + mock data
-│       ├── teachers.ts            # Mock teacher data
-│       ├── constants.ts           # Yoga styles, levels
-│       ├── currency.ts            # USD ↔ local conversion
-│       └── time.ts                # Timezone helpers
-├── package.json
-├── tailwind.config.js
-├── tsconfig.json
-└── next.config.js
+## Testler
+
+```bash
+npm test                 # birim testleri (vitest)
+npm run test:api         # API entegrasyon testleri — çalışan sunucu + veritabanı gerekir
+npm run test:e2e         # tarayıcı testleri (Playwright) — sunucu + LiveKit gerekir
+npm run typecheck        # tsc
+npm run lint             # next lint (ESLint, next/core-web-vitals)
+AYA_RECORD_DIR=tour-output/videos npx playwright test tests/e2e/tour.spec.ts   # sitenin tamamını gezen, video kaydeden tur testi (ekran görüntüleri tour-output/ altına)
 ```
 
-## 🛣️ Roadmap (next steps)
+## Canlıya alma
 
-This is just the visual + flow MVP. To go to production we'll add:
+`DEPLOY.md`: Docker ile kurulum (`Dockerfile`, `docker-compose.yml`, `deploy/`), TLS (Caddy), zamanlanmış işler, yedek ve geri yükleme (`deploy/backup.sh`, `deploy/restore.sh`), güvenlik başlıkları ve yayın öncesi kontrol listesi. Üretimde sunucu açılırken yapılandırma eksikleri (`AUTH_SECRET`, SMTP, Stripe, LiveKit anahtarları…) günlüğe uyarı olarak yazılır.
 
-- [ ] **Auth** — NextAuth.js (Google, Apple, email)
-- [ ] **Database** — PostgreSQL + Prisma (real users, teachers, bookings)
-- [ ] **Payments** — Stripe Connect for international, Iyzico for Turkey
-- [ ] **Live video** — Daily.co or LiveKit for the actual classes
-- [ ] **Teacher onboarding** — Application form + admin approval flow
-- [ ] **Teacher dashboard** — Manage availability, bookings, payouts
-- [ ] **Student dashboard** — Upcoming classes, history, favorites
-- [ ] **Reviews** — Post-class rating system
-- [ ] **Notifications** — Email reminders (Resend/Postmark)
-- [ ] **Mobile app** — Expo/React Native, sharing the same backend
+## Notlar
 
-## 🎨 Design notes
+- Otomatik IP engeli yerel/özel ağ adreslerine (127.x, 10.x, 192.168.x, 172.16–31.x, IPv6 yerel) uygulanmaz; bir proxy arkasında herkesi kilitlemesin diye. Yönetici kendi IP'sini engelleyemez.
+- Yönetici API'leri ortak `requireAdmin` ile korunur (oturum çerezi ya da mobil Bearer): giriş yoksa 401, yönetici değilse 403.
+- Görseller: `public/photos/{hero,studio,meditation,join,breath}.jpg` önce kullanılır, yoksa stok fotoğraf, o da yüklenmezse renkli zemin. Mevcut dosyalar `node scripts/render-photos/render.js` ile three.js'ten üretilmiş özgün illüstrasyonlardır; kendi fotoğraflarını aynı adlarla üzerine kopyalayabilirsin.
+- AYA Rehber (`/api/ai/recommend`): model/ağ gerektirmez. `src/lib/ai-guide.ts` niyet ve yönlendirme, `src/lib/ai-knowledge.ts` sohbet + yoga/nefes/meditasyon/platform bilgi tabanıdır (yeni cevap eklemek için bir `E(...)` satırı yeter; testler `tests/unit/ai-*.test.ts`).
+- **Podcast / Shop / Bülten** (yönetim paneli: Podcast, Bülten, Ürünler, Siparişler sekmeleri): bölüm ekleme (ses yükleme, süre otomatik okunur, RSS: `/podcast/feed.xml`), ürün ve stok yönetimi, sepet + misafir sipariş (havale/EFT veya kapıda ödeme), sipariş durumları (ödeme → kargo takip no → teslim, iptalde stok geri gelir, 3 gün ödenmeyen havale siparişi `POST /api/cron/shop-maintenance` ile iptal), bülten aboneleri (CSV, silme, abonelikten çıkış bağlantısı) ve kampanya gönderimi; yazı/bölüm/ürün yayınlanırken “abonelere e-posta gönder” (her içerik için bir kez).
+- **Rehber (kendi yapay zekâ motorumuz)**: harici API/anahtar yok. Türkçe dil çözümleme, niyet + slot çıkarma, konuşma belleği, araçlarla gerçek veri (eğitmen/atölye/ürün/sipariş/takvim/canlı yayın/yazı/podcast), poz ve rutin üretici, sağlığa duyarlı öneriler, akışlı yanıt; kriz mesajları ve “insanla konuş” sabit yanıtlarla gider. Ayrıntı: DEPLOY.md §4b, kod: `src/lib/ai/brain`.
+- **Otomasyonlar** (cron, DEPLOY.md §4): ders/atölye hatırlatması (24 sa + 1 sa), ders sonrası yorum isteği, yönetici günlük özeti (geciken işler dahil), haftalık bülten özeti, stok geldi bildirimi (ürün “gelince haber ver”), yazı/bölüm/ürün yayınında bülten, **zamanlanmış yayın** (yazı/podcast/ürün), ödenmeyen havale siparişi hatırlatması, 1 aydır gelmeyen öğrenciye hatırlatma, bekleyen eğitmen başvurusu uyarıları.
+- **Yazım yardımcısı** (yönetim → İçerikler/Ürünler/Bülten): yazıdan özet önerisi, başlık önerileri, yazı kontrol listesi ve son içeriklerden bülten taslağı; harici servis yok, kendi metin analizimizle çalışır.
+- **Shop kartla ödeme**: iyzico anahtarları tanımlıysa kredi/banka kartı seçeneği açılır (DEPLOY.md §4c).
+- Kayıtlar `storage/recordings/` altında (özel klasör, statik sunulmaz). `POST /api/cron/cleanup-recordings` (CRON_SECRET ile) süresi dolanları siler — günde bir çağırın.
+- Yüklenen dosyalar `public/uploads/` altına yazılır ve `next start` altında da `/uploads/*` rotasıyla sunulur.
+- Tasarım belirteçleri `tailwind.config.js` içindedir: `clay` = mercan/terrakota (ana eylem), `teal` = derin deniz yeşili (güven, koyu zeminler), `saffron` = safran vurgu, `lotus`/`lilac` = yumuşak ikincil tonlar, `sage` = sıcak nötrler, `cream`/`paper`/`ink` = kâğıt ve mürekkep. Hazır sınıflar `globals.css` içinde: `btn-cta`, `btn-deep`, `btn-ghost`, `surface-*`, `card-lift`, `text-gradient`.
+- Eğitmen/kullanıcı fotoğrafı yoksa baş harf yerine `src/components/person-avatar.tsx` tohumlu illüstrasyon avatar çizer (aynı kişi hep aynı yüzü alır).
+- 3B model: `public/models/yogi.glb` three.js örneklerindeki Mixamo "Michelle" varlığıdır; kulaklık ve gözlük modele gömülüdür. Kendi karakterini aynı Mixamo iskeletiyle değiştirebilirsin.
 
-- **Palette:** Sage greens (`#516e42` to `#aec39d`) + warm clay accents (`#b6764c`) + cream background (`#faf6f0`)
-- **Display font:** Cormorant Garamond (italic for elegance, used in headlines)
-- **Body font:** Inter
-- **Avoid:** generic SaaS purple gradients, AI-aesthetic minimalism. We want warmth, breath, calm.
-
-## 🧘 Vision
-
-> Connect students and teachers anywhere on Earth for live yoga & meditation classes —
-> like Cambly and Preply, but exclusively for the practice of breath, body, and stillness.
+- CI: `.github/workflows/ci.yml` — tür denetimi, lint, birim testleri, üretim derlemesi ve (MySQL ile) API testleri. Tarayıcı testleri (Playwright) ve cihaz testleri (`tests/e2e/devices.spec.ts`) LiveKit ve Chromium gerektirdiği için yerelde koşulur.
+- Canlıya alırken yapılması gerekenler: HTTPS (sonra `next.config.js` içindeki HSTS satırını aç), gerçek `AUTH_SECRET`/`CRON_SECRET`, SMTP bilgileri (şifre sıfırlama e-postası için), Stripe/Iyzico anahtarları, `NEXT_PUBLIC_SITE_URL`, LiveKit için `wss://` adresi, `storage/` ve `public/uploads/` için kalıcı disk ve yedek.

@@ -11,18 +11,18 @@ const { width } = Dimensions.get("window")
 const ONBOARDING_DATA = [
   {
     image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1200&auto=format&fit=crop",
-    title: "Breathe.",
-    subtitle: "Your personal sanctuary for growth and peace.",
+    title: "Nefes al.",
+    subtitle: "Gelişim ve huzur için kişisel sığınağın.",
   },
   {
     image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1200&auto=format&fit=crop",
-    title: "Connect.",
-    subtitle: "Live 1-on-1 sessions with world-class teachers.",
+    title: "Bağlan.",
+    subtitle: "Dünya çapında eğitmenlerle birebir canlı dersler.",
   },
   {
     image: "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?q=80&w=1200&auto=format&fit=crop",
-    title: "Transform.",
-    subtitle: "Practice anywhere, anytime. Your journey begins here.",
+    title: "Dönüş.",
+    subtitle: "Her yerde, her an pratik yap. Yolculuğun burada başlıyor.",
   }
 ]
 
@@ -60,7 +60,8 @@ export default function WelcomeScreen() {
   if (isLoading) return null // Hide while checking auth
 
   if (user) {
-    return <Redirect href="/(tabs)" />
+    // Terms gate: accounts that have not accepted the current terms must do so first
+    return <Redirect href={user.termsAccepted === false ? "/accept-terms" : "/(tabs)"} />
   }
 
   return (
@@ -86,7 +87,7 @@ export default function WelcomeScreen() {
 
       <View style={styles.contentContainer}>
         <Animated.View style={[styles.textContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Text style={styles.brand}>NAMASTE</Text>
+          <Text style={styles.brand}>AYA</Text>
           
           <View style={{ height: 120, justifyContent: 'center' }}>
             <Text style={styles.title}>{ONBOARDING_DATA[activeIndex].title}</Text>
@@ -106,13 +107,13 @@ export default function WelcomeScreen() {
             activeOpacity={0.8}
             onPress={() => router.push("/login")}
           >
-            <Text style={styles.primaryButtonText}>Get Started</Text>
+            <Text style={styles.primaryButtonText}>Başla</Text>
           </TouchableOpacity>
           
           <View style={styles.secondaryContainer}>
-            <Text style={styles.secondaryText}>New to Namaste? </Text>
+            <Text style={styles.secondaryText}>AYA'ya yeni misin? </Text>
             <TouchableOpacity onPress={() => router.push("/register")} hitSlop={{top:10,bottom:10,left:10,right:10}}>
-              <Text style={styles.secondaryLink}>Create Account</Text>
+              <Text style={styles.secondaryLink}>Hesap oluştur</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

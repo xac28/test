@@ -147,7 +147,7 @@ export default function MessagesPage() {
         {/* Chat Area */}
         <div className={`w-full md:w-2/3 bg-white rounded-3xl shadow-sm border border-sage-100 flex flex-col overflow-hidden ${!activeConv ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
           {!activeConv ? (
-            <div className="text-center text-sage-400">
+            <div className="text-center text-sage-500">
               <MessageCircle size={48} className="mx-auto mb-4 opacity-20" />
               <p>Sohbet başlatmak için soldan bir konuşma seçin.</p>
             </div>
@@ -176,7 +176,7 @@ export default function MessagesPage() {
                     <div key={msg.id || i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                       <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${isMe ? 'bg-sage-600 text-white rounded-tr-sm' : 'bg-sage-100 text-ink rounded-tl-sm'}`}>
                         <p className="text-sm break-words">{msg.content}</p>
-                        <div className={`flex items-center justify-end gap-1 mt-1 ${isMe ? 'text-sage-200' : 'text-sage-400'}`}>
+                        <div className={`flex items-center justify-end gap-1 mt-1 ${isMe ? 'text-sage-200' : 'text-sage-500'}`}>
                           <span className="text-[10px]">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           {isMe && (msg.read ? <CheckCheck size={12} className="text-blue-200" /> : <Check size={12} />)}
                         </div>

@@ -1,159 +1,136 @@
 "use client"
+
+import { TeacherBadge } from "@/components/teacher-badge"
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense } from "react"
-import { X } from "lucide-react"
-import {
-  LiveKitRoom,
-  VideoConference,
-  RoomAudioRenderer,
-} from "@livekit/components-react"
-import { RoomOptions } from "livekit-client"
-import "@livekit/components-styles"
+import Link from "next/link"
+import { Radio, Users, Video } from "lucide-react"
+import { useSession } from "next-auth/react"
+import Navbar from "@/components/Navbar"
+import Footer from "@/components/Footer"
 
-interface LiveRoomData {
-  roomUrl: string
-  roomName: string
-  token: string
-  liveRoomId: string
-  role: string
+interface Broadcast {
+  id: string
+  title: string
+  startedAt: string
+  viewerCount: number
+  teacher: { id: string; name: string | null; image: string | null; trial?: boolean }
+  supervised?: boolean
+  workshop: { slug: string; title: string } | null
 }
 
-function LiveContent() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const liveRoomId = searchParams.get("id")
-  const [roomData, setRoomData] = useState<LiveRoomData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+function since(iso: string, now: number) {
+  const min = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000))
+  if (min < 1) return "az önce başladı"
+  if (min < 60) return `${min} dk önce başladı`
+  return `${Math.floor(min / 60)} sa ${min % 60} dk önce başladı`
+}
 
-  const roomOptions: RoomOptions = {
-    adaptiveStream: true,
-    dynacast: true,
-    videoCaptureDefaults: {
-      resolution: { width: 1920, height: 1080, frameRate: 60 },
-    },
-    audioCaptureDefaults: {
-      autoGainControl: true,
-      echoCancellation: true,
-      noiseSuppression: true,
-    },
-    publishDefaults: {
-      videoEncoding: { maxBitrate: 5_000_000, maxFramerate: 60 },
-    },
-  }
+export default function LiveDirectoryPage() {
+  const { data: session } = useSession()
+  const [list, setList] = useState<Broadcast[] | null>(null)
+  const [failed, setFailed] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
-    if (liveRoomId) {
-      // Reconnect to existing room — fetch token
-      setLoading(false)
-      setError("Reconnection not yet implemented. Start a new session from your dashboard.")
+    let alive = true
+    const load = async () => {
+      try {
+        const res = await fetch("/api/live")
+        if (!res.ok) throw new Error()
+        const data = await res.json()
+        if (alive) {
+          setList(data.broadcasts)
+          setFailed(false)
+          setNow(Date.now())
+        }
+      } catch {
+        if (alive) setFailed(true)
+      }
     }
-  }, [liveRoomId])
-
-  // This component receives data from the teach dashboard via state
-  useEffect(() => {
-    const stored = sessionStorage.getItem("liveRoomData")
-    if (stored) {
-      setRoomData(JSON.parse(stored))
-      sessionStorage.removeItem("liveRoomData")
-      setLoading(false)
-    } else if (!liveRoomId) {
-      setLoading(false)
-      setError("No live room data found. Please start from your teacher dashboard.")
+    load()
+    const id = setInterval(load, 10_000)
+    return () => {
+      alive = false
+      clearInterval(id)
     }
-  }, [liveRoomId])
+  }, [])
 
-  const handleEndSession = async () => {
-    if (roomData?.liveRoomId) {
-      await fetch("/api/room/instant", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ liveRoomId: roomData.liveRoomId }),
-      })
-    }
-    router.push("/teach")
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center gap-4">
-        <div className="w-16 h-16 border-4 border-sage-300 border-t-sage-600 rounded-full animate-spin" />
-        <p className="text-sage-300 text-lg font-display tracking-wide">Starting your live session...</p>
-      </div>
-    )
-  }
-
-  if (error || !roomData) {
-    return (
-      <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center gap-6">
-        <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center">
-          <X className="text-red-400" size={40} />
-        </div>
-        <h2 className="text-2xl text-white font-display">Unable to Start</h2>
-        <p className="text-sage-400 text-center max-w-md">{error}</p>
-        <button
-          onClick={() => router.push("/teach")}
-          className="mt-4 bg-sage-600 text-white px-6 py-3 rounded-full hover:bg-sage-500 transition"
-        >
-          Return to Dashboard
-        </button>
-      </div>
-    )
-  }
+  const isTeacher = session?.user?.role === "TEACHER" || session?.user?.role === "ADMIN"
 
   return (
-    <div className="h-screen w-screen bg-[#111] flex flex-col overflow-hidden" data-lk-theme="default">
-      <header className="h-14 bg-black/50 backdrop-blur border-b border-white/10 flex items-center justify-between px-6 z-10 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="font-display text-lg text-white tracking-widest">NAMASTE</span>
-          <span className="h-4 w-px bg-white/20" />
-          <span className="text-white/60 text-sm">Live Session</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-            </span>
-            <span className="text-white/80 text-sm font-medium">LIVE HD</span>
+    <>
+      <Navbar />
+      <main className="min-h-[70vh]">
+        <div className="max-w-6xl mx-auto px-6 lg:px-12 py-12">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+            <div>
+              <p className="eyebrow !text-accent mb-3">Şimdi yayında</p>
+              <h1 className="font-display font-light text-5xl md:text-6xl text-ink">Canlı yayınlar</h1>
+            </div>
+            {isTeacher && (
+              <Link href="/live/studio" className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white px-5 py-2.5 rounded-md text-sm font-semibold">
+                <Video size={16} /> Yayın stüdyosu
+              </Link>
+            )}
           </div>
-          <button
-            onClick={handleEndSession}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-full text-sm font-medium transition"
-          >
-            End Session
-          </button>
+
+          {failed && !list && <p className="text-ink/60">Yayınlar yüklenemedi. Biraz sonra tekrar deneyin.</p>}
+
+          {!failed && !list && (
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" aria-busy="true" aria-label="Yayınlar yükleniyor">
+              {[0, 1, 2].map((i) => (
+                <li key={i}>
+                  <div className="aspect-video rounded-xl shimmer" />
+                  <div className="mt-3 h-5 w-3/4 rounded shimmer" />
+                  <div className="mt-2 h-4 w-1/3 rounded shimmer" />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {list && list.length === 0 && (
+            <div data-testid="no-broadcasts" className="border border-dashed border-sage-300 rounded-2xl py-20 text-center">
+              <Radio className="mx-auto text-sage-500 mb-4" size={36} />
+              <p className="font-display text-2xl text-ink mb-1">Şu anda canlı yayın yok</p>
+              <p className="text-ink/60 text-sm">Bir eğitmen yayına başladığında burada görünür.</p>
+            </div>
+          )}
+
+          {list && list.length > 0 && (
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {list.map((b) => (
+                <li key={b.id}>
+                  <Link href={`/live/${b.id}`} data-testid="broadcast-card" className="group block">
+                    <div className="relative aspect-video overflow-hidden bg-stage flex items-center justify-center">
+                      {b.teacher.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={b.teacher.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition duration-500" />
+                      ) : (
+                        <span className="font-display text-6xl text-white/20">{(b.teacher.name || "E")[0]}</span>
+                      )}
+                      <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-accent text-white text-[11px] font-bold tracking-wider uppercase px-2 py-1 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Canlı
+                      </span>
+                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        <Users size={12} /> {b.viewerCount} izleyici
+                      </span>
+                    </div>
+                    <div className="mt-3">
+                      {b.workshop && (
+                        <p className="eyebrow !text-clay-600 mb-1">Atölye · yalnızca kayıtlı katılımcılar</p>
+                      )}
+                      <h2 className="font-display text-xl text-ink leading-snug group-hover:underline underline-offset-4 decoration-1">{b.title}</h2>
+                      <p className="text-sm text-ink/70 flex flex-wrap items-center gap-x-2 gap-y-1">{b.teacher.name} <TeacherBadge trial={!!b.teacher.trial} size="sm" /></p>
+                      <p className="text-xs text-ink/50 mt-0.5">{since(b.startedAt, now)}</p>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      </header>
-
-      <main className="flex-1 overflow-hidden relative">
-        <LiveKitRoom
-          video={true}
-          audio={true}
-          token={roomData.token}
-          serverUrl={roomData.roomUrl}
-          options={roomOptions}
-          onDisconnected={handleEndSession}
-          className="h-full w-full"
-        >
-          <VideoConference />
-          <RoomAudioRenderer />
-        </LiveKitRoom>
       </main>
-    </div>
-  )
-}
-
-export default function LivePage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center gap-4">
-        <div className="w-16 h-16 border-4 border-sage-300 border-t-sage-600 rounded-full animate-spin" />
-        <p className="text-sage-300 text-lg">Loading...</p>
-      </div>
-    }>
-      <LiveContent />
-    </Suspense>
+      <Footer />
+    </>
   )
 }

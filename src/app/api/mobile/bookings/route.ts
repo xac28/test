@@ -1,5 +1,6 @@
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { termsGate } from "@/lib/terms"
 import { resolveUser } from "@/lib/auth-utils"
 
 // GET /api/mobile/bookings
@@ -9,6 +10,9 @@ export async function GET(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     let bookings
 
@@ -48,6 +52,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
+
     const { teacherId, slot, type } = await req.json()
 
     if (!teacherId || !slot || !type) {
@@ -64,6 +71,10 @@ export async function POST(req: Request) {
     }
 
     // Server-side price calculation
+    if (teacher.isTrialMode) {
+      return NextResponse.json({ error: "Bu öğretmen henüz onaylanmadı.", code: "TEACHER_NOT_APPROVED" }, { status: 403 })
+    }
+
     let price = type === "trial" ? Math.round(teacher.hourlyRate * 0.5 * 100) / 100 : teacher.hourlyRate
     if (price < 0) price = 0
 

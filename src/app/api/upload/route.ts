@@ -1,50 +1,12 @@
+import { logEvent } from "@/lib/event-log"
 import { NextResponse } from "next/server"
+import { termsGate } from "@/lib/terms"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_UPLOAD } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
-
-// ── FIX #9: Magic byte kontrolü eklendi — MIME type taklit koruması ──
-
-// Magic byte signatures for common file types
-const MAGIC_BYTES: Record<string, number[][]> = {
-  "image/jpeg": [[0xFF, 0xD8, 0xFF]],
-  "image/png": [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
-  "image/webp": [[0x52, 0x49, 0x46, 0x46]], // RIFF header (followed by WEBP at offset 8)
-  "image/gif": [[0x47, 0x49, 0x46, 0x38]], // GIF8
-  "application/pdf": [[0x25, 0x50, 0x44, 0x46]], // %PDF
-  "video/mp4": [[0x00, 0x00, 0x00]], // ftyp box starts at offset 4, but first 3 bytes are size
-  "video/webm": [[0x1A, 0x45, 0xDF, 0xA3]], // EBML header
-  "video/ogg": [[0x4F, 0x67, 0x67, 0x53]], // OggS
-}
-
-function validateMagicBytes(buffer: ArrayBuffer, declaredMimeType: string): boolean {
-  const bytes = new Uint8Array(buffer)
-  
-  // Minimum file size check
-  if (bytes.length < 4) return false
-
-  const signatures = MAGIC_BYTES[declaredMimeType]
-  if (!signatures) {
-    // Bilinmeyen MIME type'lar için reject
-    return false
-  }
-
-  return signatures.some(sig => {
-    for (let i = 0; i < sig.length; i++) {
-      if (bytes[i] !== sig[i]) return false
-    }
-
-    // WebP için ek kontrol: offset 8'de "WEBP" string'i olmalı
-    if (declaredMimeType === "image/webp" && bytes.length >= 12) {
-      const webpMarker = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11])
-      return webpMarker === "WEBP"
-    }
-
-    return true
-  })
-}
+import { normalizeMime, validateMagicBytes } from "@/lib/upload-validation"
 
 // POST /api/upload — Upload a file (certificates, etc.)
 export async function POST(req: Request) {
@@ -57,36 +19,47 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
+
     const formData = await req.formData()
     const file = formData.get("file") as File | null
-    const type = formData.get("type") as string || "certificate" // 'avatar', 'certificate', or 'video'
+    const type = formData.get("type") as string || "certificate" // 'avatar', 'certificate', 'video', 'post', 'audio' or 'product'
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
 
-    // Validate file type
-    const allowedTypes = type === "avatar" 
+    // podcast audio and shop pictures are site content: only admins publish those
+    if ((type === "audio" || type === "product") && user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    // Validate file type (mobile clients report some types differently — normalise first)
+    const mime = normalizeMime(file.type)
+    const allowedTypes = type === "avatar" || type === "post" || type === "product"
       ? ["image/jpeg", "image/png", "image/webp"]
-      : type === "video" 
-      ? ["video/mp4", "video/webm", "video/ogg"]
+      : type === "audio"
+      ? ["audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav", "audio/webm"]
+      : type === "video"
+      ? ["video/mp4", "video/webm", "video/ogg", "video/quicktime"]
       : ["application/pdf", "image/jpeg", "image/png", "image/webp"]
-      
-    if (!allowedTypes.includes(file.type)) {
+
+    if (!allowedTypes.includes(mime)) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
     }
 
     // Max sizes
-    const maxSize = type === "video" ? 500 * 1024 * 1024 : 10 * 1024 * 1024 // 500MB for video, 10MB otherwise
-    if (file.size > maxSize) {
-      return NextResponse.json({ error: `File too large. Maximum ${type === "video" ? "500MB" : "10MB"}` }, { status: 400 })
+    const maxMb = type === "video" ? 500 : type === "audio" ? 200 : 10
+    if (file.size > maxMb * 1024 * 1024) {
+      return NextResponse.json({ error: `File too large. Maximum ${maxMb}MB` }, { status: 400 })
     }
 
     // Read file bytes
     const bytes = await file.arrayBuffer()
 
     // Magic byte validation — MIME type spoofing koruması
-    if (!validateMagicBytes(bytes, file.type)) {
+    if (!validateMagicBytes(bytes, mime)) {
       return NextResponse.json(
         { error: "File content does not match declared type. Upload rejected for security." }, 
         { status: 400 }
@@ -97,25 +70,33 @@ export async function POST(req: Request) {
     const safeOrigName = path.basename(file.name).replace(/[^a-zA-Z0-9._-]/g, "_")
 
     // Determine directory
-    const folder = type === "avatar" ? "avatars" : type === "video" ? "videos" : "certificates"
+    const folder = type === "avatar" ? "avatars" : type === "post" ? "posts" : type === "video" ? "videos" : type === "audio" ? "audio" : type === "product" ? "products" : "certificates"
     const uploadsDir = path.join(process.cwd(), "public", "uploads", folder)
     await mkdir(uploadsDir, { recursive: true })
 
     // Generate unique filename (orijinal dosya adı kullanılmıyor, güvenli prefix + timestamp)
-    const ext = path.extname(safeOrigName) || (type === "avatar" ? ".jpg" : type === "video" ? ".mp4" : ".pdf")
+    const mimeExt: Record<string, string> = {
+      "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "application/pdf": ".pdf",
+      "video/mp4": ".mp4", "video/webm": ".webm", "video/ogg": ".ogg", "video/quicktime": ".mov",
+      "audio/mpeg": ".mp3", "audio/mp4": ".m4a", "audio/ogg": ".ogg", "audio/wav": ".wav", "audio/webm": ".weba",
+    }
+    // Phone libraries often hand over names without (or with the wrong) extension: trust the validated type
+    const ext = mimeExt[mime] || path.extname(safeOrigName)
     
     // Extension whitelist kontrolü
-    const safeExtensions = type === "avatar" 
+    const safeExtensions = type === "avatar" || type === "post" || type === "product"
       ? [".jpg", ".jpeg", ".png", ".webp"]
+      : type === "audio"
+      ? [".mp3", ".m4a", ".ogg", ".wav", ".weba"]
       : type === "video"
-      ? [".mp4", ".webm", ".ogg"]
+      ? [".mp4", ".webm", ".ogg", ".mov"]
       : [".pdf", ".jpg", ".jpeg", ".png", ".webp"]
     
     if (!safeExtensions.includes(ext.toLowerCase())) {
       return NextResponse.json({ error: "Invalid file extension" }, { status: 400 })
     }
 
-    const prefix = type === "avatar" ? "avatar" : type === "video" ? "video" : "cert"
+    const prefix = type === "avatar" ? "avatar" : type === "post" ? "post" : type === "video" ? "video" : type === "audio" ? "audio" : type === "product" ? "product" : "cert"
     const filename = `${prefix}-${user.id}-${Date.now()}${ext.toLowerCase()}`
     const filepath = path.join(uploadsDir, filename)
 
@@ -134,6 +115,7 @@ export async function POST(req: Request) {
       })
     }
 
+    logEvent({ type: "UPLOAD", message: `Yükleme: ${type} (${Math.round(bytes.byteLength / 1024)} KB)`, userId: user.id, meta: { url: publicUrl, mime } })
     return NextResponse.json({ url: publicUrl, filename })
   } catch (error: any) {
     console.error("[UPLOAD_ERROR]", error)

@@ -1,41 +1,58 @@
-import type { Metadata } from 'next';
-import { Inter, Cormorant_Garamond } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { SITE_URL, SITE_DESCRIPTION } from '@/lib/site';
+import { SkipLink } from '@/components/skip-link';
+import { CookieNotice } from '@/components/cookie-notice';
+import { Inter, Newsreader } from 'next/font/google';
 import { I18nProvider } from '@/i18n';
 import { Providers } from '@/components/providers';
 import { AiAssistant } from '@/components/ai-assistant';
+import { SignupNudge } from '@/components/signup-nudge';
 import { ErrorBoundary } from '@/components/error-boundary';
 import './globals.css';
 
+// `latin-ext` carries ı ş ğ İ Ş Ğ — without it Turkish text silently falls back to a system font mid-word.
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-body',
   display: 'swap',
   preload: true,
 });
 
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
+const newsreader = Newsreader({
+  subsets: ['latin', 'latin-ext'],
   weight: ['300', '400', '500', '600'],
   style: ['normal', 'italic'],
   variable: '--font-display',
   display: 'swap',
   preload: true,
+  adjustFontFallback: false, // no override metrics are published for Newsreader; avoids a build warning
 });
 
 export const metadata: Metadata = {
-  title: 'Namaste — Your practice, anywhere you breathe.',
-  description: 'Live 1-on-1 yoga and meditation classes with certified teachers worldwide.',
+  metadataBase: new URL(SITE_URL),
+  title: { default: 'AYA — Yoga ve meditasyonda canlı dersler', template: '%s · AYA' },
+  description: SITE_DESCRIPTION,
+  applicationName: 'AYA',
+  openGraph: { type: 'website', siteName: 'AYA', locale: 'tr_TR', title: 'AYA — Yoga ve meditasyonda canlı dersler', description: SITE_DESCRIPTION },
+  twitter: { card: 'summary_large_image', title: 'AYA — Yoga ve meditasyonda canlı dersler', description: SITE_DESCRIPTION },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#f2f7fd',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
+    <html lang="tr" className={`${inter.variable} ${newsreader.variable}`}>
       <body className={inter.className}>
+        <SkipLink />
         <Providers>
           <I18nProvider>
+            <CookieNotice />
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
+            <SignupNudge />
             <AiAssistant />
           </I18nProvider>
         </Providers>

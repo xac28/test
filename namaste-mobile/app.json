@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Namaste",
+    "name": "AYA",
     "slug": "namaste",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,7 @@
     "scheme": "namaste",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#faf6f0",
+      "backgroundColor": "#f6f2ea",
       "resizeMode": "contain"
     },
     "assetBundlePatterns": [
@@ -18,24 +18,35 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.namaste.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Namaste needs camera for live yoga sessions",
-        "NSMicrophoneUsageDescription": "Namaste needs microphone for live sessions"
+        "NSCameraUsageDescription": "AYA, canlı derslerde ve fotoğraf/video çekerken kameranızı kullanır.",
+        "NSMicrophoneUsageDescription": "AYA, canlı derslerde ve video çekerken mikrofonunuzu kullanır.",
+        "NSPhotoLibraryUsageDescription": "AYA, profil fotoğrafı ve ders videoları yüklemeniz için galerinize erişir."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#faf6f0"
+        "backgroundColor": "#f6f2ea"
       },
       "package": "com.namaste.app",
       "permissions": [
         "CAMERA",
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO"
       ]
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AYA, profil fotoğrafı ve ders videoları yüklemeniz için galerinize erişir.",
+          "cameraPermission": "AYA, fotoğraf ve video çekmeniz için kameranızı kullanır.",
+          "microphonePermission": "AYA, video çekerken mikrofonunuzu kullanır."
+        }
+      ]
     ]
   }
 }

@@ -68,10 +68,10 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
         router.refresh()
       } else {
         const data = await res.json()
-        alert(data.error || "Failed to save profile")
+        alert(data.error || "Profil kaydedilemedi")
       }
     } catch {
-      alert("Network error")
+      alert("Bağlantı hatası, tekrar dene")
     } finally {
       setSaving(false)
     }
@@ -79,11 +79,10 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
 
   return (
     <form onSubmit={handleSubmit} className="glass-card p-8 md:p-10 rounded-3xl border border-sage-100 space-y-8">
-      {/* Personal Information */}
+      {/* Kişisel bilgiler */}
       <div>
-        <h3 className="text-lg font-display text-sage-800 mb-5 flex items-center gap-2">
-          <span className="w-8 h-8 bg-sage-100 rounded-full flex items-center justify-center text-sm font-semibold text-sage-700">1</span>
-          Personal Information
+        <h3 className="text-[15px] font-semibold text-ink mb-4 flex items-center gap-2">
+          Kişisel bilgiler
         </h3>
 
         <div className="mb-8 flex flex-col items-center justify-center">
@@ -95,27 +94,27 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">First Name *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Ad *</label>
             <input
               required
               value={form.firstName}
               onChange={e => updateForm("firstName", e.target.value)}
               className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-              placeholder="Jane"
+              placeholder="Ayşe"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Last Name *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Soyad *</label>
             <input
               required
               value={form.lastName}
               onChange={e => updateForm("lastName", e.target.value)}
               className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-              placeholder="Doe"
+              placeholder="Yılmaz"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Date of Birth *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Doğum tarihi *</label>
             <input
               required
               type="date"
@@ -125,7 +124,7 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Phone *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Telefon *</label>
             <input
               required
               type="tel"
@@ -136,28 +135,28 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Address</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Adres</label>
             <input
               value={form.address}
               onChange={e => updateForm("address", e.target.value)}
               className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
-              placeholder="Full address"
+              placeholder="Açık adres"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Country *</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Ülke *</label>
             <select
               required
               value={form.country}
               onChange={e => updateForm("country", e.target.value)}
               className="w-full rounded-xl border border-sage-200 bg-white/70 p-3.5 focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition text-sage-900 text-sm"
             >
-              <option value="">Select country</option>
+              <option value="">Ülke seç</option>
               {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-sage-700 mb-1.5 uppercase tracking-wide">Passport / ID Number</label>
+            <label className="block text-[13px] font-medium text-sage-700 mb-1.5">Pasaport / kimlik numarası</label>
             <input
               value={form.passportId}
               onChange={e => updateForm("passportId", e.target.value)}
@@ -170,11 +169,10 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
 
       {/* Interests */}
       <div>
-        <h3 className="text-lg font-display text-sage-800 mb-5 flex items-center gap-2">
-          <span className="w-8 h-8 bg-sage-100 rounded-full flex items-center justify-center text-sm font-semibold text-sage-700">2</span>
-          Areas of Interest
+        <h3 className="text-[15px] font-semibold text-ink mb-4 flex items-center gap-2">
+          İlgi alanları
         </h3>
-        <p className="text-sage-500 text-sm mb-4">Select the yoga styles you are interested in learning</p>
+        <p className="text-sage-500 text-sm mb-4">Öğrenmek istediğin yoga stillerini seç</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {YOGA_STYLES.map(style => {
             const isSelected = form.interests.includes(style)
@@ -204,11 +202,11 @@ export function StudentProfileForm({ initialData }: { initialData: ProfileData }
           disabled={saving}
           className="bg-sage-600 text-white px-8 py-3.5 rounded-2xl font-medium hover:bg-sage-700 transition disabled:opacity-50 btn-press shadow-md"
         >
-          {saving ? "Saving..." : "Save Profile"}
+          {saving ? "Kaydediliyor…" : "Profili kaydet"}
         </button>
         {saved && (
           <span className="text-green-600 text-sm font-medium animate-fade-in flex items-center gap-1">
-            ✓ Profile saved successfully
+            ✓ Profil kaydedildi
           </span>
         )}
       </div>

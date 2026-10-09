@@ -1,6 +1,6 @@
 export const tr = {
   langPicker: {
-    title: 'Namaste\'ye Hoş Geldiniz',
+    title: 'AYA\'ya Hoş Geldiniz',
     subtitle: 'Başlamak için dilinizi seçin',
     continueBtn: 'Devam Et',
   },
@@ -10,6 +10,12 @@ export const tr = {
     howItWorks: 'Nasıl Çalışır',
     signIn: 'Giriş Yap',
     signUp: 'Başla',
+    workshops: 'Atölyeler',
+    live: 'Canlı Yayın',
+    articles: 'İçerikler',
+    plans: 'Paketler',
+    messages: 'Mesajlar',
+    teachers: 'Eğitmenler',
   },
   hero: {
     eyebrow: 'Yoga ve Meditasyon, sana göre',
@@ -107,6 +113,7 @@ export const tr = {
     contact: 'İletişim',
     terms: 'Şartlar',
     privacy: 'Gizlilik',
+    cookies: 'Çerezler',
     rights: 'Tüm hakları saklıdır.',
   },
 };

@@ -1,12 +1,17 @@
 {
-  "name": "namaste",
+  "name": "aya",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start -H 0.0.0.0",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "test:api": "vitest run --config vitest.api.config.ts",
+    "seed:demo": "node scripts/seed-demo.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
@@ -32,17 +37,24 @@
     "nodemailer": "^7.0.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "stripe": "^22.1.0"
+    "stripe": "^22.1.0",
+    "three": "^0.170.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.170.0",
     "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.5",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.39",
     "prisma": "^5.14.0",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "vitest": "^2.1.9"
   }
 }

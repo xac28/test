@@ -2,58 +2,83 @@
 
 import Link from 'next/link';
 import { useI18n } from '@/i18n';
+import { Wordmark } from './Navbar';
 
 export default function Footer() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const year = new Date().getFullYear();
+  const tr = locale === 'tr';
+
+  const cols = [
+    {
+      title: tr ? 'Keşfet' : 'Discover',
+      links: [
+        { href: '/atolyeler', label: t.nav.workshops },
+        { href: '/live', label: t.nav.live },
+        { href: '/teachers', label: t.nav.teachers },
+        { href: '/icerikler', label: t.nav.articles },
+        { href: '/community', label: tr ? 'Topluluk' : 'Community' },
+        { href: '/shop', label: 'Shop' },
+        { href: '/podcast', label: 'Podcast' },
+        { href: '/duyurular', label: tr ? 'Duyurular' : 'News' },
+      ],
+    },
+    {
+      title: tr ? 'Yoga' : 'Yoga',
+      links: [
+        { href: '/yoga-stilleri', label: tr ? 'Yoga stilleri' : 'Yoga styles' },
+        { href: '/pozlar', label: tr ? 'Poz kütüphanesi' : 'Pose library' },
+        { href: '/nasil-calisir', label: tr ? 'Nasıl çalışır?' : 'How it works' },
+        { href: '/sss', label: tr ? 'Sık sorulan sorular' : 'FAQ' },
+      ],
+    },
+    {
+      title: t.footer.teachers,
+      links: [
+        { href: '/ogretmenler-icin', label: tr ? 'Eğitmenler için' : 'For teachers' },
+        { href: '/become-teacher', label: t.footer.becomeTeacher },
+        { href: '/live/studio', label: tr ? 'Yayın stüdyosu' : 'Broadcast studio' },
+        { href: '/pricing', label: t.footer.pricing },
+      ],
+    },
+    {
+      title: t.footer.legal,
+      links: [
+        { href: '/hakkimizda', label: tr ? 'Hakkımızda' : 'About' },
+        { href: '/community/rules', label: tr ? 'Topluluk kuralları' : 'Community rules' },
+        { href: '/terms', label: t.footer.terms },
+        { href: '/privacy', label: t.footer.privacy },
+        { href: '/cerezler', label: t.footer.cookies },
+      ],
+    },
+  ];
 
   return (
-    <footer className="bg-sage-900 text-cream/80 mt-24">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-          <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-3">
-              <svg viewBox="0 0 32 32" className="w-7 h-7 text-sage-300" fill="currentColor">
-                <path d="M16 4c-1 4-4 6-7 7 3 1 6 3 7 7 1-4 4-6 7-7-3-1-6-3-7-7z" opacity="0.7" />
-                <path d="M16 13c-.5 2-2 3-3.5 3.5 1.5.5 3 1.5 3.5 3.5.5-2 2-3 3.5-3.5-1.5-.5-3-1.5-3.5-3.5z" />
-              </svg>
-              <span className="font-display text-2xl italic text-cream">Namaste</span>
-            </div>
-            <p className="font-display italic text-cream/60 text-lg max-w-xs">
-              {t.footer.tagline}
+    <footer className="bg-sage-900 text-cream/80">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-16 pb-10">
+        <div className="grid md:grid-cols-12 gap-12 pb-12 border-b border-white/15">
+          <div className="md:col-span-4">
+            <Link href="/" className="text-cream text-4xl"><Wordmark /></Link>
+            <p className="font-display text-2xl leading-snug text-cream/90 mt-6 max-w-sm">
+              {tr ? 'Nefes, beden ve zihin için bir okul. Canlı, birebir ve herkese açık.' : 'A school for breath, body and mind. Live, one-to-one and open to all.'}
             </p>
           </div>
-
-          <div>
-            <h4 className="text-cream font-medium mb-4 text-sm uppercase tracking-wide">{t.footer.students}</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/teachers" className="hover:text-cream transition-colors">{t.footer.findTeacher}</Link></li>
-              <li><Link href="/pricing" className="hover:text-cream transition-colors">{t.footer.pricing}</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-cream font-medium mb-4 text-sm uppercase tracking-wide">{t.footer.teachers}</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/become-teacher" className="hover:text-cream transition-colors">{t.footer.becomeTeacher}</Link></li>
-              <li><Link href="/become-teacher" className="hover:text-cream transition-colors">{t.footer.teacherFaq}</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-cream font-medium mb-4 text-sm uppercase tracking-wide">{t.footer.company}</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/" className="hover:text-cream transition-colors">{t.footer.about}</Link></li>
-              <li><Link href="/" className="hover:text-cream transition-colors">{t.footer.contact}</Link></li>
-              <li><Link href="/terms" className="hover:text-cream transition-colors">{t.footer.terms}</Link></li>
-              <li><Link href="/privacy" className="hover:text-cream transition-colors">{t.footer.privacy}</Link></li>
-            </ul>
-          </div>
+          {cols.map((c) => (
+            <div key={c.title} className="md:col-span-2">
+              <h4 className="eyebrow !text-cream/50 mb-4">{c.title}</h4>
+              <ul className="space-y-2.5 text-sm">
+                {c.links.map((l) => (
+                  <li key={l.href + l.label}>
+                    <Link href={l.href} className="hover:text-cream underline-offset-4 hover:underline">{l.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-
-        <div className="pt-8 border-t border-sage-700 text-xs text-cream/50 flex justify-between items-center">
-          <p>© {year} Namaste. {t.footer.rights}</p>
-          <p className="font-display italic">🙏</p>
+        <div className="pt-6 text-xs text-cream/50 flex flex-wrap justify-between gap-2">
+          <p>© {year} AYA. {t.footer.rights}</p>
+          <p>{tr ? 'Dersler yalnızca öğretmen ve öğrenci tarafından indirilebilen kayıtlarla, 30 gün saklanır.' : 'Lesson recordings are available only to teacher and student and kept for 30 days.'}</p>
         </div>
       </div>
     </footer>

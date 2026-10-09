@@ -1,18 +1,13 @@
 import { db } from "@/lib/db"
 import { PodcastView } from "@/components/section-pages"
-import { PODCAST_CATEGORY } from "@/lib/articles"
+import { toEpisodeData } from "@/lib/podcast-server"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Podcast · Konuşmalar" }
+export const metadata = { title: "Podcast · Konuşmalar", alternates: { types: { "application/rss+xml": "/podcast/feed.xml" } } }
 
 export default async function PodcastPage() {
-  const rows = await db.article
-    .findMany({
-      where: { status: "PUBLISHED", category: PODCAST_CATEGORY },
-      select: { slug: true, title: true, excerpt: true, category: true, coverUrl: true, publishedAt: true, author: { select: { name: true } } },
-      orderBy: { publishedAt: "desc" },
-      take: 30,
-    })
+  const rows = await db.podcastEpisode
+    .findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 50 })
     .catch(() => [])
-  return <PodcastView items={rows.map((a) => ({ ...a, publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null }))} />
+  return <PodcastView items={rows.map(toEpisodeData)} />
 }

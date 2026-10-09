@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import {
-  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images, LifeBuoy, Bot, Star, ShieldBan, Eye,
+  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images, LifeBuoy, Bot, Star, ShieldBan, Eye, Mic, Package, ShoppingBag, Mail,
 } from "lucide-react"
 
-export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number; pendingPosts: number; openSupport: number; aiUnknown: number; reviewReports: number; policyToday: number; supervisedLive: number }
+export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number; pendingPosts: number; openSupport: number; aiUnknown: number; reviewReports: number; policyToday: number; supervisedLive: number; shopOrders: number }
 
 export interface TabDef {
   id: string
@@ -31,10 +31,14 @@ export const ADMIN_TABS: TabDef[] = [
   { id: "trials", label: "Deneme Odaları", icon: PlaySquare, group: "Topluluk", badge: (b) => (b.trials ? { value: b.trials, tone: "amber" } : null) },
   { id: "workshops", label: "Atölyeler", icon: Sparkles, group: "Topluluk" },
   { id: "articles", label: "İçerikler", icon: BookOpen, group: "Topluluk" },
+  { id: "podcast", label: "Podcast", icon: Mic, group: "Topluluk" },
+  { id: "newsletter", label: "Bülten", icon: Mail, group: "Topluluk" },
   { id: "rooms", label: "Canlı Oturumlar", icon: Video, group: "Operasyon", badge: (b) => (b.liveNow ? { value: b.liveNow, tone: "green" } : null) },
   { id: "bookings", label: "Rezervasyonlar", icon: Calendar, group: "Operasyon" },
   { id: "recordings", label: "Ders Kayıtları", icon: Film, group: "Operasyon" },
   { id: "payouts", label: "Ödeme Talepleri", icon: Wallet, group: "Operasyon", badge: (b) => (b.payouts ? { value: b.payouts, tone: "amber" } : null) },
+  { id: "orders", label: "Siparişler", icon: ShoppingBag, group: "Operasyon", badge: (b) => (b.shopOrders ? { value: b.shopOrders, tone: "amber" } : null) },
+  { id: "products", label: "Ürünler", icon: Package, group: "Operasyon" },
   { id: "financials", label: "Finans", icon: DollarSign, group: "Operasyon" },
 ]
 export const ADMIN_TAB_IDS = ADMIN_TABS.map((t) => t.id)

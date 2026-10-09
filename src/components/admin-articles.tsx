@@ -24,6 +24,7 @@ interface Draft {
   category: string;
   coverUrl: string;
   status: 'DRAFT' | 'PUBLISHED';
+  notify?: boolean;
 }
 
 const EMPTY: Draft = { title: '', excerpt: '', body: '', category: ARTICLE_ADMIN_CATEGORIES[0], coverUrl: '', status: 'DRAFT' };
@@ -114,6 +115,7 @@ export function AdminArticles() {
             <textarea data-testid="article-body-input" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} rows={14} className={`${field} font-mono`} />
             <p className="text-xs text-sage-500 mt-1.5">Biçim: <code>## Başlık</code>, <code>### Alt başlık</code>, <code>&gt; Alıntı</code>, <code>- madde</code>. Paragrafları boş satırla ayırın.</p>
           </div>
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" data-testid="article-notify" checked={!!draft.notify} onChange={(e) => setDraft({ ...draft, notify: e.target.checked })} /> <span>Yayınlarken bülten abonelerine e-posta gönder<span className="block text-xs text-sage-500">Duyuru ve haberler için önerilir. Her yazı için yalnızca bir kez gönderilir.</span></span></label>
           {error && <p role="alert" className="text-sm text-clay-600">{error}</p>}
           <div className="flex flex-wrap gap-3">
             <button data-testid="publish-article" disabled={busy} onClick={() => save('PUBLISHED')} className="bg-ink text-cream px-6 py-2.5 text-sm font-semibold rounded-md disabled:opacity-60">{draft.id && draft.status === 'PUBLISHED' ? 'Güncelle' : 'Yayınla'}</button>

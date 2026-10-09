@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 export async function GET(req: Request) {
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
-  const [applications, trials, payouts, reports, urgentReports, liveNow, pendingPosts, openSupport, aiUnknown, reviewReports, policyToday, supervisedLive] = await Promise.all([
+  const [applications, trials, payouts, reports, urgentReports, liveNow, pendingPosts, openSupport, aiUnknown, reviewReports, policyToday, supervisedLive, shopOrders] = await Promise.all([
     db.teacherApplication.count({ where: { status: "PENDING" } }),
     db.teacher.count({ where: { isTrialMode: true } }),
     db.payoutRequest.count({ where: { status: "PENDING" } }),
@@ -22,6 +22,7 @@ export async function GET(req: Request) {
     db.report.count({ where: { targetType: "REVIEW", status: { in: OPEN_STATUSES } } }),
     db.policyViolation.count({ where: { counted: true, forgiven: false, createdAt: { gte: new Date(Date.now() - 86_400_000) } } }),
     db.liveRoom.count({ where: { isActive: true, supervised: true } }),
+    db.order.count({ where: { status: { in: ["PENDING_PAYMENT", "PAID"] } } }),
   ])
-  return NextResponse.json({ applications, trials, payouts, reports, urgentReports, liveNow, pendingPosts, openSupport, aiUnknown, reviewReports, policyToday, supervisedLive })
+  return NextResponse.json({ applications, trials, payouts, reports, urgentReports, liveNow, pendingPosts, openSupport, aiUnknown, reviewReports, policyToday, supervisedLive, shopOrders })
 }

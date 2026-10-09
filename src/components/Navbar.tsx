@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield, ChevronDown, ShoppingBag } from 'lucide-react';
+import { CART_EVENT, cartCount } from '@/lib/cart';
 import { ARTICLE_CATEGORIES } from '@/lib/articles';
 import { useI18n } from '@/i18n';
 import { NotificationBell } from '@/components/notification-bell';
@@ -25,6 +26,14 @@ export default function Navbar() {
   const [drawerMax, setDrawerMax] = useState<number | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
+  const [cartN, setCartN] = useState(0);
+  useEffect(() => {
+    const sync = () => setCartN(cartCount());
+    sync();
+    window.addEventListener(CART_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => { window.removeEventListener(CART_EVENT, sync); window.removeEventListener('storage', sync); };
+  }, []);
   const [openId, setOpenId] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -100,7 +109,7 @@ export default function Navbar() {
     { id: 'yazilar', label: tr ? 'Yazılar' : 'Articles', href: '/icerikler', items: ARTICLE_CATEGORIES.map((c) => ({ href: `/icerikler?category=${encodeURIComponent(c)}`, label: c })) },
     { id: 'dersler', label: tr ? 'Dersler' : 'Lessons', href: '/live', live: liveCount > 0, items: [
       { href: '/live', label: tr ? 'Canlı' : 'Live' },
-      { href: session?.user ? homePathFor(role) : '/login', label: tr ? 'Kayıt' : 'Recordings' },
+      { href: '/dersler/kayit', label: tr ? 'Kayıt' : 'Recordings' },
     ] },
     { id: 'atolye', label: tr ? 'Atölye' : 'Workshops', href: '/atolyeler', items: [
       { href: '/atolyeler?mode=LIVE', label: tr ? 'Canlı' : 'Live' },
@@ -166,6 +175,12 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-4">
+          {cartN > 0 && (
+            <Link href="/shop/sepet" aria-label={`Sepet (${cartN})`} data-testid="nav-cart" className="relative tap-area p-2 text-ink hover:text-teal-700">
+              <ShoppingBag size={20} />
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center">{cartN}</span>
+            </Link>
+          )}
           {/* language */}
           <div className="hidden sm:flex items-center text-xs font-semibold tracking-wider" role="group" aria-label="Dil">
             {(['tr', 'en'] as const).map((l, i) => (

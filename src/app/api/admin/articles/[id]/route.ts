@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { validateArticleInput } from "@/lib/articles"
+import { notifyNewContent } from "@/lib/content-notify"
 
 async function adminOnly(req: Request) {
   const user = await resolveUser(req)
@@ -19,7 +20,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 // PATCH — edit / publish / unpublish
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    if (!(await adminOnly(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const admin = await adminOnly(req)
+    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const existing = await db.article.findUnique({ where: { id: params.id } })
     if (!existing) return NextResponse.json({ error: "Yazı bulunamadı" }, { status: 404 })
     const body = await req.json().catch(() => ({}))
@@ -34,7 +36,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         ...(v.data.status === "DRAFT" ? { publishedAt: null } : {}),
       },
     })
-    return NextResponse.json({ success: true, article })
+    const newsletter = body?.notify === true && article.status === "PUBLISHED" ? await notifyNewContent("article", article.id, admin.id).catch((e) => (console.error("[ARTICLE_NOTIFY]", e), null)) : null
+    return NextResponse.json({ success: true, article, newsletter })
   } catch (error) {
     console.error("[ADMIN_ARTICLE_PATCH_ERROR]", error)
     return NextResponse.json({ error: "Internal error" }, { status: 500 })

@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { validateArticleInput } from "@/lib/articles"
+import { notifyNewContent } from "@/lib/content-notify"
 import { uniqueSlug } from "@/lib/slug"
 
 export const dynamic = "force-dynamic"
@@ -32,7 +33,8 @@ export async function POST(req: Request) {
   try {
     const admin = await adminOnly(req)
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    const v = validateArticleInput(await req.json().catch(() => ({})))
+    const input = await req.json().catch(() => ({}))
+    const v = validateArticleInput(input)
     if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
     const article = await db.article.create({
       data: {
@@ -42,7 +44,8 @@ export async function POST(req: Request) {
         publishedAt: v.data.status === "PUBLISHED" ? new Date() : null,
       },
     })
-    return NextResponse.json({ success: true, article })
+    const newsletter = input?.notify === true && article.status === "PUBLISHED" ? await notifyNewContent("article", article.id, admin.id).catch((e) => (console.error("[ARTICLE_NOTIFY]", e), null)) : null
+    return NextResponse.json({ success: true, article, newsletter })
   } catch (error) {
     console.error("[ADMIN_ARTICLE_CREATE_ERROR]", error)
     return NextResponse.json({ error: "Internal error" }, { status: 500 })

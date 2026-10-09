@@ -8,7 +8,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ArticleCardData, Cover, LiveNowCard, SectionHead, WorkshopCard, WorkshopCardData, useDateFormat, useL } from '@/components/editorial';
 import { BreathBreak, PoseOfTheDay } from '@/components/home-extras';
-import { NewsletterBand, WaveDivider } from '@/components/section-pages';
+import { EpisodeData, NewsletterBand, WaveDivider } from '@/components/section-pages';
+import { PodcastPlayer } from '@/components/podcast-player';
+import { ProductCard, ProductData } from '@/components/shop-pages';
 import { ARTICLE_CATEGORIES } from '@/lib/articles';
 import dynamic from 'next/dynamic';
 import { Aurora, Marquee, PhotoBackdrop, Reveal, Stagger, StaggerItem } from '@/components/motion';
@@ -26,6 +28,8 @@ export interface HomeData {
   workshops: WorkshopCardData[];
   articles: ArticleCardData[];
   news: ArticleCardData[];
+  episode: EpisodeData | null;
+  products: ProductData[];
   teachers: { id: string; name: string; image: string | null; bio: string | null; specialties: string[] }[];
 }
 
@@ -173,6 +177,30 @@ export default function HomeView({ data }: { data: HomeData }) {
             <div className="lg:col-span-7"><BreathBreak /></div>
           </div>
         </section>
+
+        {/* ── Podcast + Shop ───────────────────────────────────── */}
+        {(data.episode || data.products.length > 0) && (
+          <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-16" data-testid="home-podcast-shop">
+            <div className="grid lg:grid-cols-12 gap-6">
+              {data.episode && (
+                <div className="lg:col-span-5 rounded-3xl border border-rule bg-white p-6 md:p-8" data-testid="home-episode">
+                  <p className="eyebrow mb-3">{L('Podcast · Konuşmalar', 'Podcast · Conversations')}</p>
+                  <h2 className="font-display text-3xl leading-tight"><Link href={`/podcast/${data.episode.slug}`} className="hover:underline underline-offset-4 decoration-1">{data.episode.title}</Link></h2>
+                  {data.episode.guest && <p className="text-sm text-teal-700 font-medium mt-1">{L('Konuk', 'Guest')}: {data.episode.guest}</p>}
+                  <p className="text-sage-600 mt-3 line-clamp-3">{data.episode.description}</p>
+                  <PodcastPlayer id={data.episode.id} src={data.episode.audioUrl} className="mt-5" />
+                  <Link href="/podcast" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-700">{L('Tüm bölümler', 'All episodes')} <ArrowRight size={15} /></Link>
+                </div>
+              )}
+              {data.products.length > 0 && (
+                <div className={data.episode ? 'lg:col-span-7' : 'lg:col-span-12'}>
+                  <div className="flex items-end justify-between mb-4"><h2 className="font-display text-3xl">Shop</h2><Link href="/shop" className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700">{L('Tüm ürünler', 'All products')} <ArrowRight size={15} /></Link></div>
+                  <div className="grid sm:grid-cols-3 gap-4">{data.products.map((p) => <ProductCard key={p.id} p={p} />)}</div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ── category ticker ──────────────────────────────────── */}
         <div className="border-y border-rule py-4 mt-16 font-display text-2xl text-sage-600">

@@ -23,6 +23,10 @@ import { SecurityTab } from "./admin/security-tab"
 import { AuditTab } from "./admin/audit-tab"
 import { RoomsTab } from "./admin/rooms-tab"
 import { MonitorTab } from "./admin/monitor-tab"
+import { PodcastTab } from "./admin/podcast-tab"
+import { NewsletterTab } from "./admin/newsletter-tab"
+import { ProductsTab } from "./admin/products-tab"
+import { OrdersTab } from "./admin/orders-tab"
 import { Card, SectionTitle, Stat, fmtMoney } from "./admin/ui"
 
 /**
@@ -140,6 +144,10 @@ export function AdminTabs({ pendingApplications, recentActions, financials, tria
 
         {tab === "payouts" && <AdminPayouts onChange={() => { refreshAdminBadges(); router.refresh() }} />}
         {tab === "articles" && <AdminArticles />}
+        {tab === "podcast" && <PodcastTab onChanged={changed} />}
+        {tab === "newsletter" && <NewsletterTab />}
+        {tab === "products" && <ProductsTab onChanged={changed} />}
+        {tab === "orders" && <OrdersTab onChanged={changed} />}
       </div>
 
       {userId && <UserDrawer id={userId} onClose={() => setUserId(null)} onChanged={changed} />}

@@ -25,6 +25,11 @@ export const MAGIC_BYTES: Record<string, number[][]> = {
   "video/quicktime": [[0x00, 0x00, 0x00]], // iOS .mov — same container family
   "video/webm": [[0x1A, 0x45, 0xDF, 0xA3]], // EBML header
   "video/ogg": [[0x4F, 0x67, 0x67, 0x53]], // OggS
+  "audio/mpeg": [[0x49, 0x44, 0x33], [0xFF, 0xFB], [0xFF, 0xF3], [0xFF, 0xF2], [0xFF, 0xE3]], // ID3 tag or an MPEG frame sync
+  "audio/mp4": [[0x00, 0x00, 0x00]], // .m4a: ISO-BMFF like mp4 (box name checked below)
+  "audio/ogg": [[0x4F, 0x67, 0x67, 0x53]], // OggS
+  "audio/wav": [[0x52, 0x49, 0x46, 0x46]], // RIFF (followed by WAVE)
+  "audio/webm": [[0x1A, 0x45, 0xDF, 0xA3]], // EBML header
 }
 
 export function validateMagicBytes(buffer: ArrayBuffer, declaredMimeType: string): boolean {
@@ -45,10 +50,14 @@ export function validateMagicBytes(buffer: ArrayBuffer, declaredMimeType: string
     }
 
     // MP4 / MOV: bytes 4..8 must name a known top-level box
-    if (declaredMimeType === "video/mp4" || declaredMimeType === "video/quicktime") {
+    if (declaredMimeType === "video/mp4" || declaredMimeType === "video/quicktime" || declaredMimeType === "audio/mp4") {
       if (bytes.length < 12) return false
       const box = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7])
       return ["ftyp", "moov", "mdat", "wide", "free", "skip"].includes(box)
+    }
+
+    if (declaredMimeType === "audio/wav") {
+      return bytes.length >= 12 && String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]) === "WAVE"
     }
 
     // WebP için ek kontrol: offset 8'de "WEBP" string'i olmalı

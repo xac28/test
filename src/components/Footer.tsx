@@ -18,6 +18,9 @@ export default function Footer() {
         { href: '/teachers', label: t.nav.teachers },
         { href: '/icerikler', label: t.nav.articles },
         { href: '/community', label: tr ? 'Topluluk' : 'Community' },
+        { href: '/shop', label: 'Shop' },
+        { href: '/podcast', label: 'Podcast' },
+        { href: '/duyurular', label: tr ? 'Duyurular' : 'News' },
       ],
     },
     {

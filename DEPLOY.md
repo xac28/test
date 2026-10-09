@@ -23,7 +23,9 @@ cp .env.example .env
 | `ADMIN_EMAIL` | Bu adresle kayıt olan hesap yönetici olur |
 | `DB_ROOT_PASSWORD`, `DB_PASSWORD` | Güçlü parolalar |
 | `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_PUBLIC_URL` | Kendi anahtar çiftiniz; `LIVEKIT_PUBLIC_URL=wss://live.aya.ornek.com` |
-| `SMTP_USER`, `SMTP_PASS` | E-posta gönderimi |
+| `SMTP_USER`, `SMTP_PASS` | E-posta gönderimi (şifre sıfırlama, sipariş e-postaları, **bülten**). Tanımlı değilse bülten gönderimleri yalnızca kayıt altına alınır, kimseye e-posta gitmez |
+| `SHOP_ACCOUNT_NAME`, `SHOP_IBAN` | Shop siparişlerinde (havale/EFT) müşteriye gösterilen hesap bilgileri |
+| `ADMIN_EMAIL` | Yeni sipariş ve stok azalması bildirimleri bu adrese gider |
 | `STRIPE_*`, `IYZICO_*`, `GOOGLE_CLIENT_*` | Kullandığınız ödeme / giriş sağlayıcıları |
 | `ENABLE_HSTS=true` | HTTPS çalıştıktan sonra |
 
@@ -42,9 +44,13 @@ Kontrol: `curl https://aya.ornek.com/api/health` → `{"status":"ok"}`.
 10 3 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/cleanup-recordings
 # her 15 dakika — biten dersleri tamamlandı olarak işaretle
 */15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/process-bookings
+# her gün 04:00 — 3 gündür ödenmeyen havale siparişlerini iptal et (stok geri döner)
+0 4 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/shop-maintenance
 # her gün 03:30 — yedek
 30 3 * * *  cd /opt/aya && BACKUP_DIR=/var/backups/aya ./deploy/backup.sh
 ```
+Podcast sesleri ve ürün görselleri `public/uploads/` altına yazılır; bu klasör kalıcı diskte olmalı ve yedeğe dahil edilmelidir.
+
 Yedekleri başka bir makineye de kopyalayın (aynı diskteki yedek diski kaybedince işe yaramaz). Geri yükleme: `./deploy/restore.sh <db dosyası> [dosya arşivi]`; önce `docker compose stop web`.
 
 ## 5. Güvenlik başlıkları

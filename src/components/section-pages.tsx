@@ -1,27 +1,28 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Bell, Headphones, Megaphone, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, Headphones, Megaphone, Mic, ShoppingBag } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { ArticleCard, ArticleCardData, useDateFormat, useL } from '@/components/editorial';
+import { ArticleCardData, Cover, useDateFormat, useL } from '@/components/editorial';
 import { NewsletterForm } from '@/components/newsletter';
 import { Reveal, Stagger, StaggerItem } from '@/components/motion';
-import { SHOP_CATEGORIES, ShopCategory } from '@/lib/shop';
+import { PodcastPlayer } from '@/components/podcast-player';
+import { formatDuration } from '@/lib/podcast';
 import { useI18n } from '@/i18n';
 
 /** Shared blue header band + page frame for the section landing pages. */
-export function SectionFrame({ eyebrow, title, intro, icon: Icon, children }: { eyebrow: string; title: string; intro: string; icon: typeof Bell; children: React.ReactNode }) {
+export function SectionFrame({ eyebrow, title, intro, icon: Icon, children, compact = false }: { eyebrow: string; title: string; intro: string; icon: typeof Bell; children: React.ReactNode; compact?: boolean }) {
   return (
     <>
       <Navbar />
       <main>
         <section className="relative overflow-hidden bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600 text-white">
           <div className="absolute inset-0 bg-[radial-gradient(60%_90%_at_90%_0%,rgba(124,196,245,0.35),transparent_70%)]" aria-hidden />
-          <div className="relative max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-24">
+          <div className={`relative max-w-7xl mx-auto px-6 lg:px-12 ${compact ? "pt-10 pb-6 lg:pt-12 lg:pb-8" : "py-16 lg:py-24"}`}>
             <p className="eyebrow !text-white/70 mb-4 inline-flex items-center gap-2"><Icon size={14} /> {eyebrow}</p>
-            <h1 className="font-display font-light text-5xl md:text-7xl leading-[1] max-w-3xl">{title}</h1>
-            <p className="mt-6 text-lg text-white/80 max-w-xl leading-relaxed">{intro}</p>
+            <h1 className={`font-display font-light leading-[1] max-w-3xl ${compact ? "text-4xl md:text-5xl" : "text-5xl md:text-7xl"}`}>{title}</h1>
+            <p className={`text-white/80 max-w-xl leading-relaxed ${compact ? "mt-3" : "mt-6 text-lg"}`}>{intro}</p>
           </div>
           <WaveDivider className="text-cream" />
         </section>
@@ -59,71 +60,19 @@ export function NewsletterBand() {
   );
 }
 
-export function ShopIndexView() {
-  const L = useL();
-  const { locale } = useI18n();
-  return (
-    <SectionFrame icon={ShoppingBag} eyebrow="Shop" title={L('Pratiğinize eşlik edecek ürünler', 'Things to accompany your practice')} intro={L('Wellness, mat ve aromaterapi koleksiyonlarımız hazırlanıyor. Açıldığında ilk siz haberdar olun.', 'Our wellness, mat and aromatherapy collections are being prepared. Be the first to know when they open.')}>
-      <Stagger className="grid md:grid-cols-3 gap-6 -mt-2">
-        {SHOP_CATEGORIES.map((c) => (
-          <StaggerItem key={c.slug}><ShopCard c={c} lang={locale === 'tr' ? 'tr' : 'en'} /></StaggerItem>
-        ))}
-      </Stagger>
-    </SectionFrame>
-  );
+export interface EpisodeData {
+  id: string; slug: string; title: string; description: string; audioUrl: string; coverUrl: string | null
+  guest: string | null; durationSec: number | null; episodeNo: number | null; publishedAt: string | null; plays: number
 }
 
-function ShopCard({ c, lang }: { c: ShopCategory; lang: 'tr' | 'en' }) {
-  return (
-    <Link href={`/shop/${c.slug}`} className="group block rounded-3xl overflow-hidden border border-rule bg-white card-lift">
-      <div className={`aspect-[4/3] bg-gradient-to-br ${c.tone} flex items-end p-6`}>
-        <span className="font-display text-5xl text-ink/90">{c.name[lang]}</span>
-      </div>
-      <div className="p-6">
-        <p className="text-sage-600">{c.tagline[lang]}</p>
-        <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-700">{lang === 'tr' ? 'İncele' : 'Explore'} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" /></span>
-      </div>
-    </Link>
-  );
-}
-
-export function ShopCategoryView({ c }: { c: ShopCategory }) {
+export function PodcastView({ items }: { items: EpisodeData[] }) {
   const L = useL();
-  const { locale } = useI18n();
-  const lang = locale === 'tr' ? 'tr' : 'en';
-  return (
-    <SectionFrame icon={ShoppingBag} eyebrow={`Shop · ${c.name[lang]}`} title={c.name[lang]} intro={c.tagline[lang]}>
-      <div className="flex flex-wrap gap-2 mb-10">
-        {SHOP_CATEGORIES.map((x) => (
-          <Link key={x.slug} href={`/shop/${x.slug}`} className={`px-4 py-2 text-sm rounded-full border transition-colors ${x.slug === c.slug ? 'bg-ink text-white border-ink' : 'border-rule text-sage-700 hover:border-ink bg-white'}`}>{x.name[lang]}</Link>
-        ))}
-      </div>
-      <Reveal>
-        <div data-testid="shop-soon" className="grid lg:grid-cols-12 gap-8 rounded-3xl border border-rule bg-white p-8 md:p-12">
-          <div className="lg:col-span-6">
-            <span className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 text-xs font-bold tracking-wider uppercase px-3 py-1.5 rounded-full"><Bell size={13} /> {L('Çok yakında', 'Coming soon')}</span>
-            <h2 className="font-display text-4xl mt-5 leading-tight">{L('Koleksiyon hazırlanıyor', 'Collection in preparation')}</h2>
-            <p className="text-sage-600 mt-3 max-w-md">{L('Açıldığında haber vermemiz için e-posta adresinizi bırakın.', 'Leave your email and we will tell you when it opens.')}</p>
-            <NewsletterForm className="mt-6" />
-          </div>
-          <div className="lg:col-span-6">
-            <p className="eyebrow mb-4">{L('Neler gelecek', 'What is coming')}</p>
-            <ul className="space-y-3">
-              {c.plans[lang].map((p) => (
-                <li key={p} className="flex items-center gap-3 border-b border-rule pb-3 text-ink"><span className="w-2 h-2 rounded-full bg-accent" /> {p}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </Reveal>
-    </SectionFrame>
-  );
-}
-
-export function PodcastView({ items }: { items: ArticleCardData[] }) {
-  const L = useL();
+  const f = useDateFormat();
   return (
     <SectionFrame icon={Headphones} eyebrow="Podcast" title={L('Konuşmalar', 'Conversations')} intro={L('Eğitmenler ve konuklarla nefes, beden ve zihin üzerine sohbetler.', 'Conversations with teachers and guests on breath, body and mind.')}>
+      <div className="-mt-2 mb-8 flex flex-wrap gap-3">
+        <a href="/podcast/feed.xml" data-testid="podcast-rss" className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border border-rule bg-white hover:border-ink"><Mic size={15} /> {L('RSS ile abone ol', 'Subscribe via RSS')}</a>
+      </div>
       {items.length === 0 ? (
         <div data-testid="no-podcast" className="rounded-3xl border border-dashed border-rule bg-white py-20 px-6 text-center">
           <Headphones className="mx-auto text-teal-500 mb-4" size={34} />
@@ -131,10 +80,45 @@ export function PodcastView({ items }: { items: ArticleCardData[] }) {
           <p className="text-sage-600 max-w-md mx-auto">{L('Yeni bölümler yayımlandığında bültenle haber veriyoruz.', 'We announce new episodes through the newsletter.')}</p>
         </div>
       ) : (
-        <Stagger className="grid md:grid-cols-3 gap-x-8 gap-y-12">
-          {items.map((a) => <StaggerItem key={a.slug}><ArticleCard a={a} /></StaggerItem>)}
-        </Stagger>
+        <ul className="space-y-6">
+          {items.map((e) => (
+            <li key={e.id} data-testid="episode-card" className="grid md:grid-cols-12 gap-6 rounded-3xl border border-rule bg-white p-5 md:p-6">
+              <Link href={`/podcast/${e.slug}`} className="md:col-span-3 block">
+                <Cover src={e.coverUrl} tone="clay" label={e.title[0]} className="aspect-square rounded-2xl" />
+              </Link>
+              <div className="md:col-span-9 min-w-0">
+                <p className="eyebrow mb-1">
+                  {e.episodeNo ? `${L('Bölüm', 'Episode')} ${e.episodeNo}` : L('Bölüm', 'Episode')}
+                  {e.publishedAt ? <span className="normal-case tracking-normal font-normal text-sage-500"> · {f.date(e.publishedAt)}</span> : null}
+                  {e.durationSec ? <span className="normal-case tracking-normal font-normal text-sage-500"> · {formatDuration(e.durationSec)}</span> : null}
+                </p>
+                <h2 className="font-display text-3xl leading-tight"><Link href={`/podcast/${e.slug}`} className="hover:underline underline-offset-4 decoration-1">{e.title}</Link></h2>
+                {e.guest && <p className="text-sm text-teal-700 font-medium mt-1">{L('Konuk', 'Guest')}: {e.guest}</p>}
+                <p className="text-sage-600 mt-2 line-clamp-3">{e.description}</p>
+                <PodcastPlayer id={e.id} src={e.audioUrl} className="mt-4" />
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
+    </SectionFrame>
+  );
+}
+
+export function PodcastEpisodeView({ e }: { e: EpisodeData }) {
+  const L = useL();
+  const f = useDateFormat();
+  return (
+    <SectionFrame icon={Headphones} eyebrow={`Podcast${e.episodeNo ? ` · ${L('Bölüm', 'Episode')} ${e.episodeNo}` : ''}`} title={e.title} intro={e.guest ? `${L('Konuk', 'Guest')}: ${e.guest}` : L('Konuşmalar', 'Conversations')}>
+      <Link href="/podcast" className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700 mb-6"><ArrowLeft size={15} /> {L('Tüm bölümler', 'All episodes')}</Link>
+      <article className="grid md:grid-cols-12 gap-8">
+        <div className="md:col-span-4"><Cover src={e.coverUrl} tone="clay" label={e.title[0]} className="aspect-square rounded-3xl" /></div>
+        <div className="md:col-span-8">
+          <p className="text-sm text-sage-500 mb-4">{e.publishedAt ? f.date(e.publishedAt) : ''}{e.durationSec ? ` · ${formatDuration(e.durationSec)}` : ''} · {e.plays} {L('dinlenme', 'listens')}</p>
+          <PodcastPlayer id={e.id} src={e.audioUrl} />
+          <div className="mt-8 text-lg leading-relaxed text-sage-700 whitespace-pre-line">{e.description}</div>
+        </div>
+      </article>
     </SectionFrame>
   );
 }

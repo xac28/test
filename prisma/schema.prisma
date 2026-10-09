@@ -722,6 +722,8 @@ model Article {
   authorId    String
   author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   publishedAt DateTime?
+  // set once the subscribers were told about this piece (news / announcements)
+  notifiedAt  DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -894,7 +896,127 @@ model StreamerDevice {
 // ── Newsletter (Gelişmeleri takip edin) ────────────────────────────────────
 
 model NewsletterSubscriber {
-  id        String   @id @default(cuid())
-  email     String   @unique @db.VarChar(190)
-  createdAt DateTime @default(now())
+  id               String    @id @default(cuid())
+  email            String    @unique @db.VarChar(190)
+  // secret in the unsubscribe link of every mail
+  unsubscribeToken String?   @unique
+  // where the address came from: "home", "shop:matlar", "podcast", "admin"…
+  source           String?   @db.VarChar(60)
+  unsubscribedAt   DateTime?
+  createdAt        DateTime  @default(now())
+}
+
+// One sent (or attempted) newsletter: a manual campaign or the automatic "new content" mail.
+model NewsletterCampaign {
+  id         String   @id @default(cuid())
+  subject    String   @db.VarChar(200)
+  body       String   @db.Text
+  // "manual" | "article" | "podcast" | "product"
+  kind       String   @db.VarChar(20)
+  refId      String?  @db.VarChar(40)
+  sentCount  Int      @default(0)
+  failedCount Int     @default(0)
+  skipped    Boolean  @default(false)
+  createdById String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ── Podcast (Konuşmalar) ───────────────────────────────────────────────────
+
+model PodcastEpisode {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String        @db.VarChar(200)
+  description String        @db.Text
+  audioUrl    String        @db.VarChar(500)
+  coverUrl    String?       @db.VarChar(500)
+  guest       String?       @db.VarChar(120)
+  durationSec Int?
+  episodeNo   Int?
+  status      ArticleStatus @default(DRAFT)
+  publishedAt DateTime?
+  plays       Int           @default(0)
+  // set once the subscribers were told about this episode
+  notifiedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+// ── Shop ───────────────────────────────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String        @db.VarChar(160)
+  summary     String        @db.VarChar(300)
+  description String        @db.Text
+  // wellness | matlar | aromaterapi
+  category    String        @db.VarChar(40)
+  // price in kuruş (₺ × 100)
+  priceKurus  Int
+  stock       Int           @default(0)
+  // JSON array of image URLs; the first one is the cover
+  images      String        @db.Text
+  status      ArticleStatus @default(DRAFT)
+  featured    Boolean       @default(false)
+  notifiedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  items       OrderItem[]
+
+  @@index([status, category])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  // short human code shown to the customer, e.g. AYA-7K3F9Q
+  code        String      @unique @db.VarChar(16)
+  userId      String?
+  email       String      @db.VarChar(190)
+  name        String      @db.VarChar(120)
+  phone       String      @db.VarChar(30)
+  address     String      @db.VarChar(400)
+  city        String      @db.VarChar(80)
+  note        String?     @db.VarChar(300)
+  // "havale" (bank transfer) | "kapida" (pay on delivery)
+  payMethod   String      @db.VarChar(12)
+  status      OrderStatus @default(PENDING_PAYMENT)
+  subtotalKurus Int
+  shippingKurus Int       @default(0)
+  totalKurus  Int
+  trackingNo  String?     @db.VarChar(60)
+  adminNote   String?     @db.VarChar(300)
+  stockRestored Boolean   @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  items       OrderItem[]
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  // snapshot, so a later price or name change never rewrites an old order
+  name       String  @db.VarChar(160)
+  unitKurus  Int
+  quantity   Int
+
+  @@index([orderId])
 }

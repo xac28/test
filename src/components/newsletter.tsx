@@ -5,7 +5,7 @@ import { ArrowRight, Check, Loader2, Mail } from 'lucide-react';
 import { useL } from '@/components/editorial';
 
 /** "Gelişmeleri takip edin!" e-mail sign-up. `tone="dark"` for use on the deep-blue band. */
-export function NewsletterForm({ tone = 'light', className = '' }: { tone?: 'light' | 'dark'; className?: string }) {
+export function NewsletterForm({ tone = 'light', className = '', source = 'site' }: { tone?: 'light' | 'dark'; className?: string; source?: string }) {
   const L = useL();
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle');
@@ -17,7 +17,7 @@ export function NewsletterForm({ tone = 'light', className = '' }: { tone?: 'lig
     setState('busy');
     setError('');
     try {
-      const res = await fetch('/api/newsletter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const res = await fetch('/api/newsletter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, source }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || L('Kaydedilemedi.', 'Could not subscribe.'));
       setState('done');

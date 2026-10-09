@@ -24,16 +24,23 @@ export async function POST(req: Request) {
 
     const formData = await req.formData()
     const file = formData.get("file") as File | null
-    const type = formData.get("type") as string || "certificate" // 'avatar', 'certificate', or 'video'
+    const type = formData.get("type") as string || "certificate" // 'avatar', 'certificate', 'video', 'post', 'audio' or 'product'
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
 
+    // podcast audio and shop pictures are site content: only admins publish those
+    if ((type === "audio" || type === "product") && user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     // Validate file type (mobile clients report some types differently — normalise first)
     const mime = normalizeMime(file.type)
-    const allowedTypes = type === "avatar" || type === "post"
+    const allowedTypes = type === "avatar" || type === "post" || type === "product"
       ? ["image/jpeg", "image/png", "image/webp"]
+      : type === "audio"
+      ? ["audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav", "audio/webm"]
       : type === "video"
       ? ["video/mp4", "video/webm", "video/ogg", "video/quicktime"]
       : ["application/pdf", "image/jpeg", "image/png", "image/webp"]
@@ -43,9 +50,9 @@ export async function POST(req: Request) {
     }
 
     // Max sizes
-    const maxSize = type === "video" ? 500 * 1024 * 1024 : 10 * 1024 * 1024 // 500MB for video, 10MB otherwise
-    if (file.size > maxSize) {
-      return NextResponse.json({ error: `File too large. Maximum ${type === "video" ? "500MB" : "10MB"}` }, { status: 400 })
+    const maxMb = type === "video" ? 500 : type === "audio" ? 200 : 10
+    if (file.size > maxMb * 1024 * 1024) {
+      return NextResponse.json({ error: `File too large. Maximum ${maxMb}MB` }, { status: 400 })
     }
 
     // Read file bytes
@@ -63,7 +70,7 @@ export async function POST(req: Request) {
     const safeOrigName = path.basename(file.name).replace(/[^a-zA-Z0-9._-]/g, "_")
 
     // Determine directory
-    const folder = type === "avatar" ? "avatars" : type === "post" ? "posts" : type === "video" ? "videos" : "certificates"
+    const folder = type === "avatar" ? "avatars" : type === "post" ? "posts" : type === "video" ? "videos" : type === "audio" ? "audio" : type === "product" ? "products" : "certificates"
     const uploadsDir = path.join(process.cwd(), "public", "uploads", folder)
     await mkdir(uploadsDir, { recursive: true })
 
@@ -71,13 +78,16 @@ export async function POST(req: Request) {
     const mimeExt: Record<string, string> = {
       "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "application/pdf": ".pdf",
       "video/mp4": ".mp4", "video/webm": ".webm", "video/ogg": ".ogg", "video/quicktime": ".mov",
+      "audio/mpeg": ".mp3", "audio/mp4": ".m4a", "audio/ogg": ".ogg", "audio/wav": ".wav", "audio/webm": ".weba",
     }
     // Phone libraries often hand over names without (or with the wrong) extension: trust the validated type
     const ext = mimeExt[mime] || path.extname(safeOrigName)
     
     // Extension whitelist kontrolü
-    const safeExtensions = type === "avatar" || type === "post"
+    const safeExtensions = type === "avatar" || type === "post" || type === "product"
       ? [".jpg", ".jpeg", ".png", ".webp"]
+      : type === "audio"
+      ? [".mp3", ".m4a", ".ogg", ".wav", ".weba"]
       : type === "video"
       ? [".mp4", ".webm", ".ogg", ".mov"]
       : [".pdf", ".jpg", ".jpeg", ".png", ".webp"]
@@ -86,7 +96,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid file extension" }, { status: 400 })
     }
 
-    const prefix = type === "avatar" ? "avatar" : type === "post" ? "post" : type === "video" ? "video" : "cert"
+    const prefix = type === "avatar" ? "avatar" : type === "post" ? "post" : type === "video" ? "video" : type === "audio" ? "audio" : type === "product" ? "product" : "cert"
     const filename = `${prefix}-${user.id}-${Date.now()}${ext.toLowerCase()}`
     const filepath = path.join(uploadsDir, filename)
 

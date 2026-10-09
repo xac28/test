@@ -2,8 +2,8 @@ import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { notify, notifyAdminsInApp } from "@/lib/notifications"
 import { SITE_URL } from "@/lib/site"
-import { sendCampaign } from "@/lib/newsletter"
-import { LOW_STOCK, formatKurus } from "@/lib/shop"
+import { renderMail, sendCampaign, unsubscribeUrl } from "@/lib/newsletter"
+import { LOW_STOCK, UNPAID_ORDER_DAYS, formatKurus } from "@/lib/shop"
 import { NEWS_CATEGORIES, NON_EDITORIAL_CATEGORIES } from "@/lib/articles"
 import { OPEN_STATUSES } from "@/lib/reports"
 import { notifyNewContent } from "@/lib/content-notify"
@@ -206,6 +206,83 @@ export async function runScheduledPublish(now = new Date()): Promise<PublishResu
         const sent = await notifyNewContent(kind, row.id).catch((e) => (console.error("[SCHEDULED_NOTIFY]", kind, e), null))
         if (sent) out.announced++
       }
+    }
+  }
+  return out
+}
+
+// ───────────────────────── unpaid orders & inactive students ─────────────────────────
+
+/**
+ * A bank-transfer order that has waited a day for its payment gets one reminder, with the time that is left before the
+ * automatic cancellation (UNPAID_ORDER_DAYS). Claimed first, so it is sent once even when two runs overlap.
+ */
+export async function runUnpaidOrderReminders(now = new Date()): Promise<number> {
+  const remindAfter = new Date(now.getTime() - DAY)
+  const alive = new Date(now.getTime() - UNPAID_ORDER_DAYS * DAY)
+  const orders = await db.order.findMany({
+    where: { status: "PENDING_PAYMENT", payMethod: "havale", payReminderAt: null, createdAt: { lte: remindAfter, gt: alive } },
+    select: { id: true, code: true, email: true, userId: true, totalKurus: true, createdAt: true },
+    take: 100,
+  })
+  let sent = 0
+  for (const o of orders) {
+    const claimed = await db.order.updateMany({ where: { id: o.id, payReminderAt: null, status: "PENDING_PAYMENT" }, data: { payReminderAt: now } })
+    if (claimed.count !== 1) continue
+    sent++
+    const hoursLeft = Math.max(1, Math.round((o.createdAt.getTime() + UNPAID_ORDER_DAYS * DAY - now.getTime()) / HOUR))
+    const left = hoursLeft >= 24 ? `${Math.round(hoursLeft / 24)} gün` : `${hoursLeft} saat`
+    const href = `/shop/siparis/${o.code}`
+    const text = `${o.code} numaralı siparişin için havale/EFT ödemeni bekliyoruz (${formatKurus(o.totalKurus)}). Yaklaşık ${left} içinde ödeme gelmezse sipariş otomatik iptal edilir ve ürünler stoğa döner.`
+    if (o.userId) await notify({ userId: o.userId, type: "SYSTEM", title: "Siparişin ödeme bekliyor", body: text, href })
+    if (o.email) await sendEmail({ to: o.email, subject: `AYA Shop: ${o.code} siparişin ödeme bekliyor`, html: frame(`<p>${esc(text)}</p><p><a href="${SITE_URL}${href}" style="color:#1f62bf">Sipariş ve ödeme bilgileri</a></p><p style="color:#5a6f87;font-size:13px">Ödemeyi yaptıysan bu mesajı yok sayabilirsin; kontrol edip siparişini hazırlayacağız.</p>`) })
+  }
+  return sent
+}
+
+export interface WinbackResult { nudged: number; emailed: number }
+
+/**
+ * Students who joined at least three weeks ago and have not booked a lesson or workshop for a month get one friendly nudge
+ * (at most one per 60 days): what is coming up and the half-price trial lesson. The bell always gets it; an e-mail only goes to
+ * those who also subscribed to the newsletter (they agreed to hear from us), with the unsubscribe link.
+ */
+export async function runWinback(now = new Date(), limit = 100): Promise<WinbackResult> {
+  const out: WinbackResult = { nudged: 0, emailed: 0 }
+  const since30 = new Date(now.getTime() - 30 * DAY)
+  const candidates = await db.user.findMany({
+    where: {
+      role: "STUDENT", banned: false, deletedAt: null, email: { not: null }, createdAt: { lte: new Date(now.getTime() - 21 * DAY) },
+      OR: [{ winbackAt: null }, { winbackAt: { lte: new Date(now.getTime() - 60 * DAY) } }],
+      bookings: { none: { OR: [{ createdAt: { gte: since30 } }, { startTime: { gte: now } }] } },
+      workshopEnrollments: { none: { createdAt: { gte: since30 } } },
+    },
+    select: { id: true, name: true, email: true, winbackAt: true },
+    orderBy: { createdAt: "asc" },
+    take: limit,
+  })
+  if (!candidates.length) return out
+  const [workshops, article] = await Promise.all([
+    db.workshop.findMany({ where: { status: "PUBLISHED", mode: "LIVE", startsAt: { gte: now, lte: new Date(now.getTime() + 14 * DAY) } }, select: { title: true, startsAt: true }, orderBy: { startsAt: "asc" }, take: 3 }),
+    db.article.findFirst({ where: { status: "PUBLISHED", category: { notIn: NON_EDITORIAL_CATEGORIES } }, select: { title: true, slug: true }, orderBy: { publishedAt: "desc" } }),
+  ])
+  const lines = [
+    ...(workshops.length ? [`Önümüzdeki 2 haftada ${workshops.length === 3 ? "3+" : workshops.length} canlı atölye var; ilki: ${workshops[0].title} (${when(workshops[0].startsAt!)}).`] : []),
+    ...(article ? [`Yeni yazı: ${article.title}.`] : []),
+    "İlk deneme dersin her eğitmende yarı fiyat.",
+  ]
+  for (const u of candidates) {
+    const claimed = await db.user.updateMany({ where: { id: u.id, OR: [{ winbackAt: null }, { winbackAt: { lte: new Date(now.getTime() - 60 * DAY) } }] }, data: { winbackAt: now } })
+    if (claimed.count !== 1) continue
+    out.nudged++
+    const first = (u.name ?? "").trim().split(/\s+/)[0]
+    const body = `${first ? `${first}, ` : ""}seni bir süredir aramızda göremedik. ${lines.join(" ")}`
+    await notify({ userId: u.id, type: "SYSTEM", title: "Seni özledik", body, href: "/atolyeler" })
+    const sub = u.email ? await db.newsletterSubscriber.findFirst({ where: { email: u.email.toLowerCase(), unsubscribedAt: null }, select: { unsubscribeToken: true } }) : null
+    if (sub?.unsubscribeToken && u.email) {
+      const m = renderMail(`${body}\n\nSana uygun bir ders ya da atölye bulmak için Rehber'e yazabilirsin.`, unsubscribeUrl(sub.unsubscribeToken), { label: "AYA'ya göz at", href: `${SITE_URL}/atolyeler` })
+      const r = await sendEmail({ to: u.email, subject: "AYA: seni özledik", html: m.html, text: m.text })
+      if (r.success) out.emailed++
     }
   }
   return out

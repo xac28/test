@@ -339,3 +339,80 @@ describe("scheduled publishing", () => {
     expect((await db.article.findUniqueOrThrow({ where: { id: a.id } })).status).toBe("DRAFT")
   })
 })
+
+describe("unpaid orders and inactive students", () => {
+  const DAY = 24 * HOUR
+  const orderData = (over: object) => ({ code: `AYA-${rnd().toUpperCase().padEnd(6, "X").slice(0, 6)}`, email: `u-${rnd()}@aya.test`, name: "Test", phone: "05320000000", address: "Test mah. Test sok. No 1", city: "Bursa", payMethod: "havale", subtotalKurus: 20000, shippingKurus: 0, totalKurus: 20000, ...over })
+  const users: string[] = []
+  afterAll(async () => { await db.user.deleteMany({ where: { id: { in: users } } }).catch(() => {}) })
+
+  it("reminds once about a bank-transfer order that waited a day, and only while it is still alive", async () => {
+    const student = await makeUser("STUDENT")
+    users.push(student.id)
+    const mk = async (hoursAgo: number, over: object = {}) => {
+      const o = await db.order.create({ data: orderData({ createdAt: new Date(Date.now() - hoursAgo * HOUR), ...over }) })
+      created.orders.push(o.id)
+      return o
+    }
+    const waiting = await mk(30, { userId: student.id })
+    const fresh = await mk(2)
+    const cod = await mk(30, { payMethod: "kapida" })
+    const paid = await mk(30, { status: "PAID" })
+    const nearlyDead = await mk(2 * 24 + 20) // still inside the 3 days
+    const expired = await mk(80) // past the 3 days: the cancellation job handles it, no reminder
+
+    const runs = await Promise.all([1, 2, 3].map(() => cron("/api/cron/reminders").then((r) => r.json())))
+    expect(runs.every((r) => typeof r.unpaidOrders === "number")).toBe(true)
+    const marks = async (id: string) => (await db.order.findUniqueOrThrow({ where: { id } })).payReminderAt
+    expect(await marks(waiting.id)).toBeTruthy()
+    expect(await marks(nearlyDead.id)).toBeTruthy()
+    for (const o of [fresh, cod, paid, expired]) expect(await marks(o.id), o.code).toBeNull()
+    expect(await notes(student.id, "Siparişin ödeme bekliyor")).toBe(1) // three overlapping runs, one message
+    const note = await db.notification.findFirstOrThrow({ where: { userId: student.id, title: "Siparişin ödeme bekliyor" } })
+    expect(note.body).toContain(waiting.code)
+    expect(note.href).toBe(`/shop/siparis/${waiting.code}`)
+    await cron("/api/cron/reminders")
+    expect(await notes(student.id, "Siparişin ödeme bekliyor")).toBe(1)
+  })
+
+  it("nudges a student who has been away for a month — once, not those who are active, new, banned or booked ahead", async () => {
+    const old = new Date(Date.now() - 400 * DAY)
+    const mkStudent = async (over: object = {}) => {
+      const u = await makeUser("STUDENT")
+      users.push(u.id)
+      await db.user.update({ where: { id: u.id }, data: { createdAt: old, ...over } })
+      return u
+    }
+    const away = await mkStudent()
+    const recentBooking = await mkStudent()
+    const upcoming = await mkStudent()
+    const joinedLately = await mkStudent({ createdAt: new Date(Date.now() - 5 * DAY) })
+    const banned = await mkStudent({ banned: true })
+    const { teacher } = await makeTeacher()
+    await booking(teacher.id, recentBooking.id, -3 * DAY, "COMPLETED")
+    await booking(teacher.id, upcoming.id, 2 * DAY)
+    const subscribed = await mkStudent()
+    await db.newsletterSubscriber.create({ data: { email: subscribed.email.toLowerCase(), unsubscribeToken: `t-${rnd()}${rnd()}` } })
+    created.emails.push(subscribed.email.toLowerCase())
+
+    const res = await (await cron("/api/cron/digests?weekly=0")).json()
+    expect(res.winback.nudged).toBeGreaterThanOrEqual(2)
+    expect(await notes(away.id, "Seni özledik")).toBe(1)
+    expect(await notes(subscribed.id, "Seni özledik")).toBe(1)
+    for (const u of [recentBooking, upcoming, joinedLately, banned]) expect(await notes(u.id, "Seni özledik")).toBe(0)
+    expect((await db.user.findUniqueOrThrow({ where: { id: away.id } })).winbackAt).toBeTruthy()
+    const body = (await db.notification.findFirstOrThrow({ where: { userId: away.id, title: "Seni özledik" } })).body!
+    expect(body).toContain("yarı fiyat")
+
+    // never twice within 60 days, even with overlapping runs; after 60 days it may come again
+    await Promise.all([1, 2].map(() => cron("/api/cron/digests?weekly=0")))
+    expect(await notes(away.id, "Seni özledik")).toBe(1)
+    await db.user.update({ where: { id: away.id }, data: { winbackAt: new Date(Date.now() - 61 * DAY) } })
+    await cron("/api/cron/digests?weekly=0")
+    expect(await notes(away.id, "Seni özledik")).toBe(2)
+    // ?winback=0 turns it off
+    await db.user.update({ where: { id: away.id }, data: { winbackAt: new Date(Date.now() - 61 * DAY) } })
+    expect((await (await cron("/api/cron/digests?weekly=0&winback=0")).json()).winback).toBeNull()
+    expect(await notes(away.id, "Seni özledik")).toBe(2)
+  })
+})

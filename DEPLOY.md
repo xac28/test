@@ -48,6 +48,8 @@ Kontrol: `curl https://aya.ornek.com/api/health` → `{"status":"ok"}`.
 0 4 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/shop-maintenance
 # her 15 dakika — ders/atölye hatırlatmaları (24 saat + 1 saat önce) ve ders sonrası yorum isteği
 */15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/reminders
+# her 5 dakika — zamanlanmış yazı / podcast bölümü / ürünleri yayınla
+*/5 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/publish
 # her gün 08:00 — yöneticilere günlük özet; pazartesi günleri abonelere haftalık bülten özeti
 0 8 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/digests
 # her gün 03:30 — yedek

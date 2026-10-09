@@ -5,6 +5,15 @@ import { Loader2, Upload } from "lucide-react"
 
 export const inputCls = "w-full border border-rule bg-paper rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink"
 
+/** "Yayın zamanı": the editors' date and time for scheduled publishing (value is the browser-local datetime-local string). */
+export function ScheduleField({ value, onChange, testid }: { value: string; onChange: (v: string) => void; testid: string }) {
+  return (
+    <Field label="Yayın zamanı (isteğe bağlı)" hint="Bir zaman seçip “Zamanla”ya basarsan içerik o saatte kendiliğinden yayınlanır (e-posta kutusu işaretliyse aboneler de bilgilendirilir).">
+      <input type="datetime-local" className={inputCls} value={value} onChange={(e) => onChange(e.target.value)} data-testid={testid} />
+    </Field>
+  )
+}
+
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block">

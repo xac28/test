@@ -5,6 +5,7 @@ import { useConfirm } from './admin/ui';
 import { useCallback, useEffect, useState } from 'react';
 import { FileText, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { ARTICLE_ADMIN_CATEGORIES } from '@/lib/articles';
+import { formatSchedule, fromLocalInput, toLocalInput } from '@/lib/schedule';
 
 interface Row {
   id: string;
@@ -13,6 +14,7 @@ interface Row {
   category: string;
   status: 'DRAFT' | 'PUBLISHED';
   publishedAt: string | null;
+  scheduledAt: string | null;
   updatedAt: string;
 }
 
@@ -25,6 +27,8 @@ interface Draft {
   coverUrl: string;
   status: 'DRAFT' | 'PUBLISHED';
   notify?: boolean;
+  /** datetime-local value (browser time); empty = not scheduled */
+  scheduledAt?: string;
 }
 
 const EMPTY: Draft = { title: '', excerpt: '', body: '', category: ARTICLE_ADMIN_CATEGORIES[0], coverUrl: '', status: 'DRAFT' };
@@ -47,7 +51,7 @@ export function AdminArticles() {
     const res = await fetch(`/api/admin/articles/${id}`);
     if (!res.ok) return;
     const { article } = await res.json();
-    setDraft({ id, title: article.title, excerpt: article.excerpt, body: article.body, category: article.category, coverUrl: article.coverUrl || '', status: article.status });
+    setDraft({ id, title: article.title, excerpt: article.excerpt, body: article.body, category: article.category, coverUrl: article.coverUrl || '', status: article.status, scheduledAt: toLocalInput(article.scheduledAt) });
   };
 
   const save = async (status: 'DRAFT' | 'PUBLISHED') => {
@@ -57,7 +61,7 @@ export function AdminArticles() {
     const res = await fetch(draft.id ? `/api/admin/articles/${draft.id}` : '/api/admin/articles', {
       method: draft.id ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...draft, status }),
+      body: JSON.stringify({ ...draft, status, scheduledAt: status === 'DRAFT' ? fromLocalInput(draft.scheduledAt || '') : null }),
     });
     const data = await res.json().catch(() => ({}));
     setBusy(false);
@@ -116,8 +120,14 @@ export function AdminArticles() {
             <p className="text-xs text-sage-500 mt-1.5">Biçim: <code>## Başlık</code>, <code>### Alt başlık</code>, <code>&gt; Alıntı</code>, <code>- madde</code>. Paragrafları boş satırla ayırın.</p>
           </div>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" data-testid="article-notify" checked={!!draft.notify} onChange={(e) => setDraft({ ...draft, notify: e.target.checked })} /> <span>Yayınlarken bülten abonelerine e-posta gönder<span className="block text-xs text-sage-500">Duyuru ve haberler için önerilir. Her yazı için yalnızca bir kez gönderilir.</span></span></label>
+          <div>
+            <label className="eyebrow block mb-1.5" htmlFor="article-schedule">Yayın zamanı (isteğe bağlı)</label>
+            <input id="article-schedule" data-testid="schedule-input" type="datetime-local" value={draft.scheduledAt || ''} onChange={(e) => setDraft({ ...draft, scheduledAt: e.target.value })} className={`${field} max-w-xs`} />
+            <p className="text-xs text-sage-500 mt-1.5">Bir zaman seçip “Zamanla”ya basarsan yazı o saatte kendiliğinden yayınlanır{draft.notify ? ' ve abonelere e-posta gider' : ''}.</p>
+          </div>
           {error && <p role="alert" className="text-sm text-clay-600">{error}</p>}
           <div className="flex flex-wrap gap-3">
+            {draft.scheduledAt && <button data-testid="schedule-article" disabled={busy} onClick={() => save('DRAFT')} className="bg-teal-700 text-white px-6 py-2.5 text-sm font-semibold rounded-md disabled:opacity-60">Zamanla</button>}
             <button data-testid="publish-article" disabled={busy} onClick={() => save('PUBLISHED')} className="bg-ink text-cream px-6 py-2.5 text-sm font-semibold rounded-md disabled:opacity-60">{draft.id && draft.status === 'PUBLISHED' ? 'Güncelle' : 'Yayınla'}</button>
             <button data-testid="save-draft" disabled={busy} onClick={() => save('DRAFT')} className="border border-ink px-6 py-2.5 text-sm font-semibold rounded-md disabled:opacity-60">Taslak olarak kaydet</button>
             <button onClick={() => { setDraft(null); setError(null); }} className="px-4 py-2.5 text-sm text-sage-600 underline">Vazgeç</button>
@@ -140,7 +150,7 @@ export function AdminArticles() {
                 <tr key={r.id} data-testid="article-row">
                   <td className="px-5 py-3 text-sm font-medium text-sage-900">{r.title}</td>
                   <td className="px-5 py-3 text-sm text-sage-600">{r.category}</td>
-                  <td className="px-5 py-3"><span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.status === 'PUBLISHED' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>{r.status === 'PUBLISHED' ? 'Yayında' : 'Taslak'}</span></td>
+                  <td className="px-5 py-3"><span data-testid="article-status" className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.status === 'PUBLISHED' ? 'bg-green-50 text-green-800 border-green-200' : r.scheduledAt ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>{r.status === 'PUBLISHED' ? 'Yayında' : r.scheduledAt ? `Zamanlandı · ${formatSchedule(r.scheduledAt)}` : 'Taslak'}</span></td>
                   <td className="px-5 py-3">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => edit(r.id)} title="Düzenle" className="p-2 hover:bg-sage-100 rounded-md"><Pencil size={15} /></button>

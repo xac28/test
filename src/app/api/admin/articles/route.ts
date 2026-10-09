@@ -4,6 +4,7 @@ import { resolveUser } from "@/lib/auth-utils"
 import { validateArticleInput } from "@/lib/articles"
 import { notifyNewContent } from "@/lib/content-notify"
 import { uniqueSlug } from "@/lib/slug"
+import { scheduleData } from "@/lib/schedule"
 
 export const dynamic = "force-dynamic"
 
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
   try {
     if (!(await adminOnly(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const articles = await db.article.findMany({
-      select: { id: true, slug: true, title: true, excerpt: true, category: true, status: true, publishedAt: true, updatedAt: true },
+      select: { id: true, slug: true, title: true, excerpt: true, category: true, status: true, publishedAt: true, scheduledAt: true, updatedAt: true },
       orderBy: { updatedAt: "desc" },
       take: 200,
     })
@@ -36,9 +37,12 @@ export async function POST(req: Request) {
     const input = await req.json().catch(() => ({}))
     const v = validateArticleInput(input)
     if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+    const sch = scheduleData(input, v.data.status)
+    if (!sch.ok) return NextResponse.json({ error: sch.error }, { status: 400 })
     const article = await db.article.create({
       data: {
         ...v.data,
+        ...sch.data,
         slug: uniqueSlug(v.data.title),
         authorId: admin.id,
         publishedAt: v.data.status === "PUBLISHED" ? new Date() : null,

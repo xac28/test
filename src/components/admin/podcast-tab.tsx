@@ -3,11 +3,12 @@
 import { useState } from "react"
 import { Eye, EyeOff, Headphones, Pencil, Plus, Trash2 } from "lucide-react"
 import { Button, Drawer, Empty, ErrorNote, Pill, SectionTitle, Spinner, Stat, Table, api, fmtDate, useConfirm, useLoader, useToast } from "./ui"
-import { Field, UploadField, audioDuration, inputCls } from "./forms"
+import { Field, ScheduleField, UploadField, audioDuration, inputCls } from "./forms"
+import { formatSchedule, fromLocalInput, toLocalInput } from "@/lib/schedule"
 import { formatDuration } from "@/lib/podcast"
 
-interface Draft { id?: string; title: string; description: string; audioUrl: string; coverUrl: string; guest: string; durationSec: string; episodeNo: string; status: "DRAFT" | "PUBLISHED"; notify: boolean }
-const EMPTY: Draft = { title: "", description: "", audioUrl: "", coverUrl: "", guest: "", durationSec: "", episodeNo: "", status: "DRAFT", notify: false }
+interface Draft { id?: string; title: string; description: string; audioUrl: string; coverUrl: string; guest: string; durationSec: string; episodeNo: string; status: "DRAFT" | "PUBLISHED"; notify: boolean; scheduledAt: string }
+const EMPTY: Draft = { title: "", description: "", audioUrl: "", coverUrl: "", guest: "", durationSec: "", episodeNo: "", status: "DRAFT", notify: false, scheduledAt: "" }
 
 /** Podcast "Konuşmalar": add episodes (audio upload), publish, tell the subscribers, see the listens. */
 export function PodcastTab({ onChanged }: { onChanged: () => void }) {
@@ -20,7 +21,7 @@ export function PodcastTab({ onChanged }: { onChanged: () => void }) {
 
   const open = (e?: any) => {
     setFormError(null)
-    setDraft(e ? { id: e.id, title: e.title, description: e.description, audioUrl: e.audioUrl, coverUrl: e.coverUrl || "", guest: e.guest || "", durationSec: e.durationSec ? String(e.durationSec) : "", episodeNo: e.episodeNo ? String(e.episodeNo) : "", status: e.status, notify: false } : { ...EMPTY, episodeNo: String((data?.count ?? 0) + 1) })
+    setDraft(e ? { id: e.id, title: e.title, description: e.description, audioUrl: e.audioUrl, coverUrl: e.coverUrl || "", guest: e.guest || "", durationSec: e.durationSec ? String(e.durationSec) : "", episodeNo: e.episodeNo ? String(e.episodeNo) : "", status: e.status, notify: !!e.scheduledNotify, scheduledAt: toLocalInput(e.scheduledAt) } : { ...EMPTY, episodeNo: String((data?.count ?? 0) + 1) })
   }
 
   const save = async (status: "DRAFT" | "PUBLISHED") => {
@@ -28,9 +29,9 @@ export function PodcastTab({ onChanged }: { onChanged: () => void }) {
     setSaving(true)
     setFormError(null)
     try {
-      const res = await api(draft.id ? `/api/admin/podcast/${draft.id}` : "/api/admin/podcast", { method: draft.id ? "PATCH" : "POST", json: { ...draft, status } })
+      const res = await api(draft.id ? `/api/admin/podcast/${draft.id}` : "/api/admin/podcast", { method: draft.id ? "PATCH" : "POST", json: { ...draft, status, scheduledAt: status === "DRAFT" ? fromLocalInput(draft.scheduledAt) : null } })
       const n = res.newsletter
-      show(status === "PUBLISHED" ? `Yayınlandı${n ? (n.skipped ? " (e-posta ayarı yok: bülten gönderilmedi)" : `, ${n.sent} aboneye e-posta gitti`) : ""}` : "Taslak kaydedildi")
+      show(status === "PUBLISHED" ? `Yayınlandı${n ? (n.skipped ? " (e-posta ayarı yok: bülten gönderilmedi)" : `, ${n.sent} aboneye e-posta gitti`) : ""}` : res.episode?.scheduledAt ? `Zamanlandı: ${formatSchedule(res.episode.scheduledAt)}` : "Taslak kaydedildi")
       setDraft(null)
       reload()
       onChanged()
@@ -65,7 +66,7 @@ export function PodcastTab({ onChanged }: { onChanged: () => void }) {
           {data.episodes.map((e: any) => (
             <tr key={e.id} data-testid="episode-row" className="align-top">
               <td className="px-4 py-3 max-w-sm"><p className="font-medium break-words">{e.episodeNo ? `#${e.episodeNo} · ` : ""}{e.title}</p>{e.guest && <p className="text-xs text-sage-500">Konuk: {e.guest}</p>}</td>
-              <td className="px-4 py-3"><Pill tone={e.status === "PUBLISHED" ? "green" : "gray"}>{e.status === "PUBLISHED" ? "Yayında" : "Taslak"}</Pill></td>
+              <td className="px-4 py-3"><Pill tone={e.status === "PUBLISHED" ? "green" : e.scheduledAt ? "blue" : "gray"}>{e.status === "PUBLISHED" ? "Yayında" : e.scheduledAt ? `Zamanlandı · ${formatSchedule(e.scheduledAt)}` : "Taslak"}</Pill></td>
               <td className="px-4 py-3 whitespace-nowrap">{formatDuration(e.durationSec) || "—"}</td>
               <td className="px-4 py-3">{e.plays}</td>
               <td className="px-4 py-3 whitespace-nowrap text-xs text-sage-500">{fmtDate(e.publishedAt ?? e.createdAt)}</td>
@@ -92,9 +93,11 @@ export function PodcastTab({ onChanged }: { onChanged: () => void }) {
             <Field label="Bölüm no"><input className={inputCls} inputMode="numeric" value={draft.episodeNo} onChange={(e) => setDraft({ ...draft, episodeNo: e.target.value })} data-testid="episode-no" /></Field>
           </div>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={draft.notify} onChange={(e) => setDraft({ ...draft, notify: e.target.checked })} data-testid="episode-notify" /> <span>Yayınlarken bülten abonelerine e-posta gönder<span className="block text-xs text-sage-500">Her bölüm için yalnızca bir kez gönderilir.</span></span></label>
+          <ScheduleField value={draft.scheduledAt} onChange={(v) => setDraft({ ...draft, scheduledAt: v })} testid="episode-schedule" />
           {formError && <p role="alert" data-testid="episode-error" className="text-sm text-red-600">{formError}</p>}
-          <div className="flex gap-2">
-            <Button tone="primary" disabled={saving} data-testid="episode-publish" onClick={() => save("PUBLISHED")}>{draft.id && draft.status === "PUBLISHED" ? "Kaydet" : "Yayınla"}</Button>
+          <div className="flex flex-wrap gap-2">
+            {draft.scheduledAt && <Button tone="primary" disabled={saving} data-testid="episode-schedule-save" onClick={() => save("DRAFT")}>Zamanla</Button>}
+            <Button tone={draft.scheduledAt ? "default" : "primary"} disabled={saving} data-testid="episode-publish" onClick={() => save("PUBLISHED")}>{draft.id && draft.status === "PUBLISHED" ? "Kaydet" : draft.scheduledAt ? "Şimdi yayınla" : "Yayınla"}</Button>
             <Button disabled={saving} data-testid="episode-draft" onClick={() => save("DRAFT")}>Taslak olarak kaydet</Button>
           </div>
         </Drawer>

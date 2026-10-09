@@ -243,6 +243,43 @@ test.describe("admin panel is Turkish", () => {
   })
 })
 
+test.describe("scheduled publishing (admin editor)", () => {
+  test("an article is scheduled for later, stays hidden, and goes live when its time comes", async ({ browser, page }) => {
+    const admin = await makeAccount("ADMIN")
+    const a = await newSession(browser, admin.email)
+    await a.page.goto("/admin?tab=articles")
+    await a.page.getByTestId("new-article").click()
+    const title = `E2E Zamanlı ${Date.now()}`
+    await a.page.getByTestId("article-title-input").fill(title)
+    await a.page.locator("textarea").first().fill("Bu yazı zamanlanmış yayın testiyle oluşturuldu ve yeterince uzun bir özet içeriyor.")
+    await a.page.getByTestId("article-body-input").fill("Zamanlanmış yayın testi için yazılan gövde metni; en az yüz karakter olması gerekiyor, o yüzden birkaç cümle daha ekliyoruz: yoga, nefes ve meditasyon.")
+    // no time chosen yet: there is no "Zamanla" button
+    await expect(a.page.getByTestId("schedule-article")).toHaveCount(0)
+    const local = (ms: number) => { const d = new Date(Date.now() + ms); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}` }
+    await a.page.getByTestId("schedule-input").fill(local(-3_600_000))
+    await a.page.getByTestId("schedule-article").click()
+    await expect(a.page.getByTestId("admin-articles").locator("p[role=alert]")).toContainText("geçmişte") // the past is refused
+    await a.page.getByTestId("schedule-input").fill(local(2 * 3_600_000))
+    await a.page.getByTestId("schedule-article").click()
+    const row = a.page.getByTestId("article-row").filter({ hasText: title })
+    await expect(row.getByTestId("article-status")).toContainText("Zamanlandı", { timeout: 15_000 })
+    await a.page.screenshot({ path: "test-results/admin-scheduled.png" })
+    await page.goto("/icerikler")
+    await expect(page.getByText(title)).toHaveCount(0)
+
+    // the time comes (simulated by moving it into the past in the database), the cron job runs
+    const art = await db.article.findFirstOrThrow({ where: { title } })
+    await db.article.update({ where: { id: art.id }, data: { scheduledAt: new Date(Date.now() - 60_000) } })
+    const res = await page.request.post("/api/cron/publish", { headers: { authorization: `Bearer ${process.env.CRON_SECRET ?? ""}` } })
+    expect(res.status()).toBe(200)
+    await page.goto("/icerikler")
+    await expect(page.getByTestId("article-card").filter({ hasText: title }).first()).toBeVisible({ timeout: 15_000 })
+    await a.page.reload()
+    await expect(a.page.getByTestId("article-row").filter({ hasText: title }).getByTestId("article-status")).toContainText("Yayında")
+    await a.ctx.close()
+  })
+})
+
 test.describe("articles (admin writes, public reads)", () => {
   test("draft is hidden; publishing shows it in the list and renders the body safely", async ({ browser, page }) => {
     const admin = await makeAccount("ADMIN")

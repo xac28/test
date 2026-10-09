@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 import { validateArticleInput } from "@/lib/articles"
 import { notifyNewContent } from "@/lib/content-notify"
+import { scheduleData } from "@/lib/schedule"
 
 async function adminOnly(req: Request) {
   const user = await resolveUser(req)
@@ -28,10 +29,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const v = validateArticleInput({ ...existing, ...body })
     if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
     const publishing = v.data.status === "PUBLISHED" && existing.status !== "PUBLISHED"
+    const sch = scheduleData(body, v.data.status, existing, new Date(), v.data.status === "DRAFT" && existing.status === "PUBLISHED")
+    if (!sch.ok) return NextResponse.json({ error: sch.error }, { status: 400 })
     const article = await db.article.update({
       where: { id: params.id },
       data: {
         ...v.data,
+        ...sch.data,
         ...(publishing ? { publishedAt: new Date() } : {}),
         ...(v.data.status === "DRAFT" ? { publishedAt: null } : {}),
       },

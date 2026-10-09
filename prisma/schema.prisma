@@ -731,10 +731,14 @@ model Article {
   publishedAt DateTime?
   // set once the subscribers were told about this piece (news / announcements)
   notifiedAt  DateTime?
+  // a draft with a date here is published by the cron job at that time (and announced when scheduledNotify is set)
+  scheduledAt     DateTime?
+  scheduledNotify Boolean   @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   @@index([status, publishedAt])
+  @@index([status, scheduledAt])
 }
 
 
@@ -951,10 +955,13 @@ model PodcastEpisode {
   plays       Int           @default(0)
   // set once the subscribers were told about this episode
   notifiedAt  DateTime?
+  scheduledAt     DateTime?
+  scheduledNotify Boolean   @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   @@index([status, publishedAt])
+  @@index([status, scheduledAt])
 }
 
 // ── Shop ───────────────────────────────────────────────────────────────────
@@ -983,11 +990,14 @@ model Product {
   status      ArticleStatus @default(DRAFT)
   featured    Boolean       @default(false)
   notifiedAt  DateTime?
+  scheduledAt     DateTime?
+  scheduledNotify Boolean   @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   items       OrderItem[]
 
   @@index([status, category])
+  @@index([status, scheduledAt])
 }
 
 model Order {

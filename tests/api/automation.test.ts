@@ -226,3 +226,116 @@ describe("back in stock", () => {
     expect(await db.newsletterCampaign.count({ where: { refId: p.id, kind: "restock" } })).toBe(1)
   })
 })
+
+describe("scheduled publishing", () => {
+  const future = (h: number) => new Date(Date.now() + h * HOUR).toISOString()
+  const body = "Bu, zamanlanmış yayın testi için yazılmış yeterince uzun bir gövdedir; yoga, nefes ve meditasyon üzerine birkaç cümle daha ekliyoruz ki doğrulama kuralları geçsin."
+  const articleInput = (extra: object = {}) => ({ title: `Zamanlı yazı ${rnd()}`, excerpt: "Zamanlanmış yayın testi için kısa özet metni.", body, category: "Sağlık", status: "DRAFT", ...extra })
+  const scheduled: { articles: string[]; episodes: string[]; products: string[] } = { articles: [], episodes: [], products: [] }
+  afterAll(async () => {
+    await db.article.deleteMany({ where: { id: { in: scheduled.articles } } })
+    await db.podcastEpisode.deleteMany({ where: { id: { in: scheduled.episodes } } })
+    await db.product.deleteMany({ where: { id: { in: scheduled.products } } })
+    await db.newsletterCampaign.deleteMany({ where: { refId: { in: [...scheduled.articles, ...scheduled.episodes, ...scheduled.products] } } })
+  })
+
+  it("protects the cron endpoint", async () => {
+    expect((await cron("/api/cron/publish", null)).status).toBe(401)
+    expect((await cron("/api/cron/publish", "wrong")).status).toBe(401)
+  })
+
+  it("an admin can schedule a draft; bad times are refused; editing keeps the schedule and cancelling clears it", async () => {
+    const admin = await makeUser("ADMIN")
+    const bad = async (scheduledAt: unknown) => (await json("/api/admin/articles", admin, "POST", articleInput({ scheduledAt }))).status
+    expect(await bad("nonsense")).toBe(400)
+    expect(await bad(future(-5))).toBe(400)
+    expect(await bad(future(24 * 400))).toBe(400)
+
+    const at = future(5)
+    const res = await json("/api/admin/articles", admin, "POST", articleInput({ scheduledAt: at, notify: true }))
+    expect(res.status).toBe(200)
+    const a = (await res.json()).article
+    scheduled.articles.push(a.id)
+    expect(a.status).toBe("DRAFT")
+    expect(new Date(a.scheduledAt).toISOString()).toBe(at)
+    expect(a.scheduledNotify).toBe(true)
+    // it is not public
+    expect((await db.article.findFirstOrThrow({ where: { id: a.id } })).publishedAt).toBeNull()
+    const list = (await (await api("/api/admin/articles", admin)).json()).articles
+    expect(list.find((x: any) => x.id === a.id).scheduledAt).toBeTruthy()
+
+    const edited = (await (await json(`/api/admin/articles/${a.id}`, admin, "PATCH", { title: `Düzenlendi ${rnd()}` })).json()).article
+    expect(new Date(edited.scheduledAt).toISOString()).toBe(at) // editing the text does not touch the schedule
+    const cancelled = (await (await json(`/api/admin/articles/${a.id}`, admin, "PATCH", { scheduledAt: null })).json()).article
+    expect(cancelled.scheduledAt).toBeNull()
+    expect(cancelled.scheduledNotify).toBe(false)
+  })
+
+  it("publishing by hand or taking a piece down clears its schedule", async () => {
+    const admin = await makeUser("ADMIN")
+    const a = (await (await json("/api/admin/articles", admin, "POST", articleInput({ scheduledAt: future(3) }))).json()).article
+    scheduled.articles.push(a.id)
+    const live = (await (await json(`/api/admin/articles/${a.id}`, admin, "PATCH", { status: "PUBLISHED" })).json()).article
+    expect(live).toMatchObject({ status: "PUBLISHED", scheduledAt: null })
+    const back = (await (await json(`/api/admin/articles/${a.id}`, admin, "PATCH", { status: "DRAFT" })).json()).article
+    expect(back).toMatchObject({ status: "DRAFT", scheduledAt: null })
+    // a published piece cannot be scheduled
+    const pub = (await (await json("/api/admin/articles", admin, "POST", articleInput({ status: "PUBLISHED", scheduledAt: future(3) }))).json()).article
+    scheduled.articles.push(pub.id)
+    expect(pub.scheduledAt).toBeNull()
+  })
+
+  it("publishes what is due (article, episode, product), leaves the rest, announces when asked, and does it once", async () => {
+    const admin = await makeUser("ADMIN")
+    const past = new Date(Date.now() - 2 * HOUR)
+    const author = admin.id
+    const due = await db.article.create({ data: { slug: `zt-${rnd()}`, title: "Zamanı gelen yazı", excerpt: "Zamanlanmış yayın testi için kısa özet.", body, category: "Haberler", status: "DRAFT", authorId: author, scheduledAt: past, scheduledNotify: true } })
+    const later = await db.article.create({ data: { slug: `zt-${rnd()}`, title: "Zamanı gelmeyen yazı", excerpt: "Zamanlanmış yayın testi için kısa özet.", body, category: "Haberler", status: "DRAFT", authorId: author, scheduledAt: new Date(Date.now() + 5 * HOUR) } })
+    const plain = await db.article.create({ data: { slug: `zt-${rnd()}`, title: "Zamansız taslak", excerpt: "Zamanlanmış yayın testi için kısa özet.", body, category: "Haberler", status: "DRAFT", authorId: author } })
+    const ep = await db.podcastEpisode.create({ data: { slug: `zt-${rnd()}`, title: "Zamanlı bölüm", description: "Test bölümü.", audioUrl: "/uploads/x.mp3", status: "DRAFT", scheduledAt: past } })
+    const pr = await db.product.create({ data: { slug: `zt-${rnd()}`, name: "Zamanlı ürün", summary: "Test ürünü.", description: "Test ürünü.", category: "matlar", priceKurus: 10000, stock: 3, images: "[]", status: "DRAFT", scheduledAt: past } })
+    scheduled.articles.push(due.id, later.id, plain.id); scheduled.episodes.push(ep.id); scheduled.products.push(pr.id)
+
+    const runs = await Promise.all([1, 2, 3].map(() => cron("/api/cron/publish").then((r) => r.json())))
+    const total = (k: string) => runs.reduce((n, r) => n + r[k], 0)
+    expect(total("articles")).toBeGreaterThanOrEqual(1)
+    expect(total("episodes")).toBeGreaterThanOrEqual(1)
+    expect(total("products")).toBeGreaterThanOrEqual(1)
+
+    const [d, l, p, e, x] = await Promise.all([
+      db.article.findUniqueOrThrow({ where: { id: due.id } }), db.article.findUniqueOrThrow({ where: { id: later.id } }), db.article.findUniqueOrThrow({ where: { id: plain.id } }),
+      db.podcastEpisode.findUniqueOrThrow({ where: { id: ep.id } }), db.product.findUniqueOrThrow({ where: { id: pr.id } }),
+    ])
+    expect(d).toMatchObject({ status: "PUBLISHED", scheduledAt: null, scheduledNotify: false })
+    expect(d.publishedAt).toBeTruthy()
+    expect(e).toMatchObject({ status: "PUBLISHED", scheduledAt: null })
+    expect(e.publishedAt).toBeTruthy()
+    expect(x).toMatchObject({ status: "PUBLISHED", scheduledAt: null })
+    expect(l.status).toBe("DRAFT")
+    expect(l.scheduledAt).toBeTruthy()
+    expect(p.status).toBe("DRAFT")
+
+    // announced exactly once (a campaign row exists even when no mail server is configured)
+    expect(d.notifiedAt).toBeTruthy()
+    expect(await db.newsletterCampaign.count({ where: { refId: due.id } })).toBe(1)
+    // the episode and product were not flagged: no announcement
+    expect(await db.newsletterCampaign.count({ where: { refId: { in: [ep.id, pr.id] } } })).toBe(0)
+
+    // a second run finds nothing more to do for these
+    const again = await (await cron("/api/cron/publish")).json()
+    expect(await db.newsletterCampaign.count({ where: { refId: due.id } })).toBe(1)
+    expect(again.success).toBe(true)
+  })
+
+  it("an admin who cancels the schedule between the run's read and its claim wins", async () => {
+    const admin = await makeUser("ADMIN")
+    const a = await db.article.create({ data: { slug: `zt-${rnd()}`, title: "İptal edilen", excerpt: "Zamanlanmış yayın testi için kısa özet.", body, category: "Haberler", status: "DRAFT", authorId: admin.id, scheduledAt: new Date(Date.now() - HOUR) } })
+    scheduled.articles.push(a.id)
+    // the claim only succeeds for the exact scheduledAt that was read
+    const claimed = await db.article.updateMany({ where: { id: a.id, status: "DRAFT", scheduledAt: new Date(Date.now() - 10 * HOUR) }, data: { status: "PUBLISHED" } })
+    expect(claimed.count).toBe(0)
+    await json(`/api/admin/articles/${a.id}`, admin, "PATCH", { scheduledAt: null })
+    await cron("/api/cron/publish")
+    expect((await db.article.findUniqueOrThrow({ where: { id: a.id } })).status).toBe("DRAFT")
+  })
+})

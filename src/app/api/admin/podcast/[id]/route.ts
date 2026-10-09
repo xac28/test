@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin-api"
 import { validatePodcastInput } from "@/lib/podcast"
 import { notifyNewContent } from "@/lib/content-notify"
+import { scheduleData } from "@/lib/schedule"
 
 export const dynamic = "force-dynamic"
 
@@ -23,9 +24,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const v = validatePodcastInput({ ...existing, ...body })
   if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
   const publishing = v.data.status === "PUBLISHED" && existing.status !== "PUBLISHED"
+  const sch = scheduleData(body, v.data.status, existing, new Date(), v.data.status === "DRAFT" && existing.status === "PUBLISHED")
+  if (!sch.ok) return NextResponse.json({ error: sch.error }, { status: 400 })
   const episode = await db.podcastEpisode.update({
     where: { id: params.id },
-    data: { ...v.data, ...(publishing ? { publishedAt: new Date() } : {}), ...(v.data.status === "DRAFT" ? { publishedAt: null } : {}) },
+    data: { ...v.data, ...sch.data, ...(publishing ? { publishedAt: new Date() } : {}), ...(v.data.status === "DRAFT" ? { publishedAt: null } : {}) },
   })
   let newsletter = null
   if (v.notify && episode.status === "PUBLISHED") newsletter = await notifyNewContent("podcast", episode.id, a.admin.id).catch((e) => (console.error("[PODCAST_NOTIFY]", e), null))

@@ -6,6 +6,7 @@ import { sendCampaign } from "@/lib/newsletter"
 import { LOW_STOCK, formatKurus } from "@/lib/shop"
 import { NEWS_CATEGORIES, NON_EDITORIAL_CATEGORIES } from "@/lib/articles"
 import { OPEN_STATUSES } from "@/lib/reports"
+import { notifyNewContent } from "@/lib/content-notify"
 
 const HOUR = 3_600_000
 const DAY = 24 * HOUR
@@ -172,4 +173,40 @@ export async function notifyRestock(productIds: string[]) {
     told += claimed.count
   }
   return told
+}
+
+// ───────────────────────── scheduled publishing ─────────────────────────
+
+export interface PublishResult { articles: number; episodes: number; products: number; announced: number }
+
+/**
+ * Publishes every draft whose `scheduledAt` has come (articles, podcast episodes, products). Each item is claimed with
+ * `updateMany … where status = DRAFT and scheduledAt = the value we read`, so overlapping runs publish it once, and an admin
+ * who changed or cancelled the schedule in the meantime wins. Items flagged "tell the subscribers" are announced right after.
+ */
+export async function runScheduledPublish(now = new Date()): Promise<PublishResult> {
+  const out: PublishResult = { articles: 0, episodes: 0, products: 0, announced: 0 }
+  const kinds = [
+    { kind: "article" as const, table: db.article as any, live: { publishedAt: now }, key: "articles" as const },
+    { kind: "podcast" as const, table: db.podcastEpisode as any, live: { publishedAt: now }, key: "episodes" as const },
+    { kind: "product" as const, table: db.product as any, live: {}, key: "products" as const },
+  ]
+  for (const { kind, table, live, key } of kinds) {
+    const due: { id: string; scheduledAt: Date; scheduledNotify: boolean }[] = await table.findMany({
+      where: { status: "DRAFT", scheduledAt: { lte: now } },
+      select: { id: true, scheduledAt: true, scheduledNotify: true },
+      orderBy: { scheduledAt: "asc" },
+      take: 50,
+    })
+    for (const row of due) {
+      const claimed = await table.updateMany({ where: { id: row.id, status: "DRAFT", scheduledAt: row.scheduledAt }, data: { status: "PUBLISHED", scheduledAt: null, scheduledNotify: false, ...live } })
+      if (claimed.count !== 1) continue
+      out[key]++
+      if (row.scheduledNotify) {
+        const sent = await notifyNewContent(kind, row.id).catch((e) => (console.error("[SCHEDULED_NOTIFY]", kind, e), null))
+        if (sent) out.announced++
+      }
+    }
+  }
+  return out
 }

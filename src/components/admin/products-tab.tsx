@@ -3,11 +3,12 @@
 import { useState } from "react"
 import { AlertTriangle, Eye, EyeOff, Package, Pencil, Plus, Star, Trash2, X } from "lucide-react"
 import { Button, Drawer, Empty, ErrorNote, Pill, SearchBox, SectionTitle, Segmented, Spinner, Stat, Table, api, useConfirm, useDebounced, useLoader, useToast } from "./ui"
-import { Field, UploadField, inputCls } from "./forms"
+import { Field, UploadField, inputCls, ScheduleField } from "./forms"
+import { formatSchedule, fromLocalInput, toLocalInput } from "@/lib/schedule"
 import { LOW_STOCK, SHOP_CATEGORIES, formatKurus, parseImages } from "@/lib/shop"
 
-interface Draft { id?: string; name: string; summary: string; description: string; category: string; priceTL: string; stock: string; images: string[]; featured: boolean; status: "DRAFT" | "PUBLISHED"; notify: boolean }
-const EMPTY: Draft = { name: "", summary: "", description: "", category: SHOP_CATEGORIES[0].slug, priceTL: "", stock: "0", images: [], featured: false, status: "DRAFT", notify: false }
+interface Draft { id?: string; name: string; summary: string; description: string; category: string; priceTL: string; stock: string; images: string[]; featured: boolean; status: "DRAFT" | "PUBLISHED"; notify: boolean; scheduledAt: string }
+const EMPTY: Draft = { name: "", summary: "", description: "", category: SHOP_CATEGORIES[0].slug, priceTL: "", stock: "0", images: [], featured: false, status: "DRAFT", notify: false, scheduledAt: "" }
 
 /** Shop products: add, price, stock, pictures, publish; low-stock warning. */
 export function ProductsTab({ onChanged }: { onChanged: () => void }) {
@@ -23,7 +24,7 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
 
   const open = (p?: any) => {
     setFormError(null)
-    setDraft(p ? { id: p.id, name: p.name, summary: p.summary, description: p.description, category: p.category, priceTL: String(p.priceKurus / 100), stock: String(p.stock), images: parseImages(p.images), featured: p.featured, status: p.status, notify: false } : { ...EMPTY })
+    setDraft(p ? { id: p.id, name: p.name, summary: p.summary, description: p.description, category: p.category, priceTL: String(p.priceKurus / 100), stock: String(p.stock), images: parseImages(p.images), featured: p.featured, status: p.status, notify: !!p.scheduledNotify, scheduledAt: toLocalInput(p.scheduledAt) } : { ...EMPTY })
   }
 
   const save = async (status: "DRAFT" | "PUBLISHED") => {
@@ -31,9 +32,9 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
     setSaving(true)
     setFormError(null)
     try {
-      const res = await api(draft.id ? `/api/admin/products/${draft.id}` : "/api/admin/products", { method: draft.id ? "PATCH" : "POST", json: { ...draft, status } })
+      const res = await api(draft.id ? `/api/admin/products/${draft.id}` : "/api/admin/products", { method: draft.id ? "PATCH" : "POST", json: { ...draft, status, scheduledAt: status === "DRAFT" ? fromLocalInput(draft.scheduledAt) : null } })
       const n = res.newsletter
-      show(status === "PUBLISHED" ? `Yayında${n ? (n.skipped ? " (e-posta ayarı yok: bülten gönderilmedi)" : `, ${n.sent} aboneye e-posta gitti`) : ""}` : "Taslak kaydedildi")
+      show(status === "PUBLISHED" ? `Yayında${n ? (n.skipped ? " (e-posta ayarı yok: bülten gönderilmedi)" : `, ${n.sent} aboneye e-posta gitti`) : ""}` : res.product?.scheduledAt ? `Zamanlandı: ${formatSchedule(res.product.scheduledAt)}` : "Taslak kaydedildi")
       setDraft(null)
       reload()
       onChanged()
@@ -67,7 +68,7 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
               <td className="px-4 py-3">{SHOP_CATEGORIES.find((c) => c.slug === p.category)?.name.tr ?? p.category}</td>
               <td className="px-4 py-3 whitespace-nowrap">{formatKurus(p.priceKurus)}</td>
               <td className="px-4 py-3 whitespace-nowrap">{p.stock <= LOW_STOCK && p.status === "PUBLISHED" ? <Pill tone={p.stock === 0 ? "red" : "amber"}><AlertTriangle size={11} className="inline mr-1" />{p.stock}</Pill> : p.stock}</td>
-              <td className="px-4 py-3"><Pill tone={p.status === "PUBLISHED" ? "green" : "gray"}>{p.status === "PUBLISHED" ? "Yayında" : "Taslak"}</Pill></td>
+              <td className="px-4 py-3"><Pill tone={p.status === "PUBLISHED" ? "green" : p.scheduledAt ? "blue" : "gray"}>{p.status === "PUBLISHED" ? "Yayında" : p.scheduledAt ? `Zamanlandı · ${formatSchedule(p.scheduledAt)}` : "Taslak"}</Pill></td>
               <td className="px-4 py-3 text-right whitespace-nowrap space-x-1.5">
                 <Button data-testid="product-toggle" onClick={() => patch(p, { status: p.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED" }, p.status === "PUBLISHED" ? "Yayından kaldırıldı" : "Yayınlandı")}>{p.status === "PUBLISHED" ? <><EyeOff size={14} /> Kaldır</> : <><Eye size={14} /> Yayınla</>}</Button>
                 <Button data-testid="product-edit" onClick={() => open(p)}><Pencil size={14} /> Düzenle</Button>
@@ -102,9 +103,11 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
           </div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.featured} onChange={(e) => setDraft({ ...draft, featured: e.target.checked })} /> Öne çıkan ürün (Shop ana sayfasında göster)</label>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={draft.notify} onChange={(e) => setDraft({ ...draft, notify: e.target.checked })} data-testid="product-notify" /> <span>Yayınlarken bülten abonelerine e-posta gönder<span className="block text-xs text-sage-500">Her ürün için yalnızca bir kez gönderilir.</span></span></label>
+          <ScheduleField value={draft.scheduledAt} onChange={(v) => setDraft({ ...draft, scheduledAt: v })} testid="product-schedule" />
           {formError && <p role="alert" data-testid="product-error" className="text-sm text-red-600">{formError}</p>}
-          <div className="flex gap-2">
-            <Button tone="primary" disabled={saving} data-testid="product-publish" onClick={() => save("PUBLISHED")}>{draft.id && draft.status === "PUBLISHED" ? "Kaydet" : "Yayınla"}</Button>
+          <div className="flex flex-wrap gap-2">
+            {draft.scheduledAt && <Button tone="primary" disabled={saving} data-testid="product-schedule-save" onClick={() => save("DRAFT")}>Zamanla</Button>}
+            <Button tone={draft.scheduledAt ? "default" : "primary"} disabled={saving} data-testid="product-publish" onClick={() => save("PUBLISHED")}>{draft.id && draft.status === "PUBLISHED" ? "Kaydet" : draft.scheduledAt ? "Şimdi yayınla" : "Yayınla"}</Button>
             <Button disabled={saving} data-testid="product-draft" onClick={() => save("DRAFT")}>Taslak olarak kaydet</Button>
           </div>
         </Drawer>

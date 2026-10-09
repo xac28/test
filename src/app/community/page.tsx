@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Camera, Grid3X3, LayoutList, Loader2, ShieldCheck } from "lucide-react"
@@ -13,7 +13,7 @@ import { PhotoGrid, RecentPosters } from "@/components/community/grid"
 type Tab = "all" | "teachers" | "mine"
 type View = "grid" | "list"
 
-export default function CommunityPage() {
+function CommunityContent() {
   const gate = useAuthGate()
   const params = useSearchParams()
   const authorFilter = params.get("author")
@@ -204,5 +204,13 @@ export default function CommunityPage() {
       </main>
       <Footer />
     </>
+  )
+}
+
+export default function CommunityPage() {
+  return (
+    <Suspense fallback={null}>
+      <CommunityContent />
+    </Suspense>
   )
 }

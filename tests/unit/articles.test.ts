@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
-import { readingMinutes, parseArticleBody, validateArticleInput } from "@/lib/articles"
+import { readingMinutes, parseArticleBody, validateArticleInput, ARTICLE_CATEGORIES, ARTICLE_ADMIN_CATEGORIES, NEWS_CATEGORIES, NON_EDITORIAL_CATEGORIES, PODCAST_CATEGORY } from "@/lib/articles"
+import { SHOP_CATEGORIES, SHOP_BY_SLUG } from "@/lib/shop"
 import { slugify, uniqueSlug } from "@/lib/slug"
 
 describe("slugify", () => {
@@ -62,5 +63,32 @@ describe("validateArticleInput", () => {
     expect(validateArticleInput({ ...ok, category: "" }).ok).toBe(false)
     expect(validateArticleInput({ ...ok, coverUrl: "data:text/html,<script>" }).ok).toBe(false)
     expect(validateArticleInput({ ...ok, coverUrl: "/uploads/x.jpg" }).ok).toBe(true)
+  })
+})
+
+describe("site sections (menu categories)", () => {
+  it("Yazılar menu has the five sketched categories, kept apart from news and podcast", () => {
+    expect([...ARTICLE_CATEGORIES]).toEqual(["Sağlık", "Beslenme", "Hareket", "Kişisel Gelişim", "Bakım"])
+    expect([...NEWS_CATEGORIES]).toEqual(["Duyurular", "Haberler"])
+    expect(NON_EDITORIAL_CATEGORIES).toEqual(["Duyurular", "Haberler", PODCAST_CATEGORY])
+    for (const c of ARTICLE_CATEGORIES) expect(NON_EDITORIAL_CATEGORIES).not.toContain(c)
+    expect(ARTICLE_ADMIN_CATEGORIES).toHaveLength(ARTICLE_CATEGORIES.length + NEWS_CATEGORIES.length + 1)
+  })
+
+  it("every admin category passes article validation", () => {
+    for (const category of ARTICLE_ADMIN_CATEGORIES) {
+      const r = validateArticleInput({ title: "Bir başlık", excerpt: "x".repeat(30), body: "y".repeat(120), category, status: "PUBLISHED" })
+      expect(r.ok).toBe(true)
+    }
+  })
+
+  it("shop categories match the menu and resolve by slug", () => {
+    expect(SHOP_CATEGORIES.map((c) => c.slug)).toEqual(["wellness", "matlar", "aromaterapi"])
+    for (const c of SHOP_CATEGORIES) {
+      expect(SHOP_BY_SLUG[c.slug]).toBe(c)
+      expect(c.plans.tr.length).toBeGreaterThan(0)
+      expect(c.plans.en).toHaveLength(c.plans.tr.length)
+    }
+    expect(SHOP_BY_SLUG["yok"]).toBeUndefined()
   })
 })

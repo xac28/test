@@ -195,7 +195,7 @@ export function composeReply(message: string, data: GuideData): GuideReply {
   return composeNavigation(message, data, navIntent)
 }
 
-function composeNavigation(message: string, data: GuideData, intent: Intent): GuideReply {
+export function composeNavigation(message: string, data: GuideData, intent: Intent): GuideReply {
   const n = normalize(message)
   const join: GuideLink = { label: "Ücretsiz üye ol", href: "/login?mode=register" }
   const withJoin = (links: GuideLink[]) => (data.signedIn ? links : [...links, join])

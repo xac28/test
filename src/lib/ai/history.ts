@@ -1,7 +1,15 @@
-import { AI_LIMITS } from "@/lib/ai/config"
 import type { ChatMsg } from "@/lib/ai/agent"
 
-/** Turns whatever the browser sent into a safe conversation: at most N turns, trimmed, starting and ending with the user. */
+export const AI_LIMITS = {
+  /** messages of history read per question */
+  maxHistory: 20,
+  maxUserChars: 800,
+  maxAssistantChars: 2500,
+  perUserDay: Number(process.env.AYA_AI_USER_DAILY || 400),
+  perVisitorDay: Number(process.env.AYA_AI_VISITOR_DAILY || 200),
+}
+
+/** Turns whatever the browser sent into a safe conversation: at most N turns, trimmed, ending with the user. */
 export function cleanHistory(raw: unknown): ChatMsg[] | null {
   if (!Array.isArray(raw)) return null
   const out: ChatMsg[] = []
@@ -16,4 +24,4 @@ export function cleanHistory(raw: unknown): ChatMsg[] | null {
 }
 
 /** Only an internal path of the site (never a URL the browser could be sent elsewhere with). */
-export const cleanPage = (raw: unknown): string | undefined => (typeof raw === "string" && /^\/[a-z0-9/_\-.]{0,80}$/i.test(raw) ? raw : undefined)
+export const cleanPage = (raw: unknown): string | undefined => (typeof raw === "string" && /^\/(?!\/)[a-z0-9/_\-.]{0,80}$/i.test(raw) ? raw : undefined)

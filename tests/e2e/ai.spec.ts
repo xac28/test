@@ -16,9 +16,8 @@ test.describe("AYA Rehber (chat guide)", () => {
     await expect(page.getByRole("dialog", { name: /rehber/i })).toBeVisible()
     await expect(page.getByTestId("ai-message").first()).toContainText("AYA Rehber")
 
-    // quick prompt
-    await page.getByRole("button", { name: "Eğitmen olmak istiyorum" }).click()
-    const msg = page.getByTestId("ai-message").last()
+    // a typed question
+    const msg = await ask(page, "Eğitmen olmak istiyorum")
     await expect(msg).toContainText("başvuru", { timeout: 20_000 })
     await msg.getByTestId("ai-link").first().click({ timeout: 20_000 })
     await expect(page).toHaveURL(/\/become-teacher$/)

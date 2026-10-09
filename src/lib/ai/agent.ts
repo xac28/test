@@ -1,112 +1,83 @@
-import Anthropic from "@anthropic-ai/sdk"
-import { AI_LIMITS, AI_MODEL } from "@/lib/ai/config"
-import { PERSONA, dynamicContext, knowledgeText } from "@/lib/ai/prompt"
-import { AiCard, TOOLS, TOOL_STATUS, ToolCtx, runTool } from "@/lib/ai/tools"
+import { AiCard, ToolCtx } from "@/lib/ai/tools"
+import { ChatMsg, think } from "@/lib/ai/brain/engine"
+import type { Answer } from "@/lib/ai/brain/answer"
 
-export interface ChatMsg { role: "user" | "assistant"; content: string }
+export type { ChatMsg }
 
 export type AgentEvent =
   | { type: "text"; text: string }
   | { type: "status"; label: string }
   | { type: "cards"; cards: AiCard[] }
+  | { type: "links"; links: { label: string; href: string }[] }
+  | { type: "suggestions"; suggestions: string[] }
+  | { type: "learning" }
   | { type: "action"; action: "support" }
 
 export interface AgentResult {
   text: string
   tools: string[]
-  inputTokens: number
-  outputTokens: number
-  cacheReadTokens: number
-  refused: boolean
-  /** the loop ran out of tool round trips before the model answered */
-  exhausted: boolean
+  intent: string
+  kind: Answer["kind"]
+  confidence: number
+  matchedId?: string
+  learning: boolean
+  /** feedback buttons make sense for this answer */
+  rate: boolean
 }
 
-const REFUSAL_TEXT = "Bu konuda sana yardımcı olamıyorum. Yoga, AYA ya da mağaza hakkında başka bir şey sorabilirsin."
+/** Milliseconds between streamed chunks. 0 (tests) writes the answer at once. */
+const pace = (chunks: number) => {
+  const env = process.env.AYA_AI_STREAM_MS
+  if (env !== undefined && env !== "") return Math.max(0, Number(env) || 0)
+  return Math.min(22, Math.max(5, Math.round(2400 / Math.max(chunks, 1))))
+}
+
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    if (!ms) return resolve()
+    const t = setTimeout(resolve, ms)
+    signal?.addEventListener("abort", () => { clearTimeout(t); resolve() }, { once: true })
+  })
+
+/** Splits an answer into small pieces that keep markdown markers and line breaks intact. */
+export function chunkText(text: string): string[] {
+  const words = text.match(/\S+\s*/g) ?? []
+  const out: string[] = []
+  for (let i = 0; i < words.length; i += 2) out.push(words.slice(i, i + 2).join(""))
+  return out
+}
 
 /**
- * One question → answer, streamed. The model may look things up with tools (up to maxToolTurns round trips);
- * its text is forwarded as it is written, tool results become cards. Throws when the API itself fails,
- * so the caller can fall back to the rule-based guide.
+ * One question → answer, streamed: a status line while data is looked up, the result cards, the text as it is
+ * "written", then links, follow-up chips and hand-over actions. The engine itself is src/lib/ai/brain.
  */
 export async function runAgent(opts: {
-  client: Anthropic
   history: ChatMsg[]
   ctx: ToolCtx
   page?: string
   emit: (e: AgentEvent) => void
   signal?: AbortSignal
 }): Promise<AgentResult> {
-  const { client, history, ctx, emit, signal } = opts
-  const messages: Anthropic.Beta.BetaMessageParam[] = history.map((m) => ({ role: m.role, content: m.content }))
-  const system: Anthropic.Beta.BetaTextBlockParam[] = [
-    { type: "text", text: PERSONA },
-    // the cache breakpoint sits after everything that never changes; the per-request block below stays outside it
-    { type: "text", text: knowledgeText(), cache_control: { type: "ephemeral" } },
-    { type: "text", text: dynamicContext({ now: new Date(), user: ctx.user ? { role: ctx.user.role, name: ctx.user.name } : null, page: opts.page }) },
-  ]
+  const { history, ctx, emit, signal } = opts
+  const a = await think(history, ctx, { onStatus: (label) => emit({ type: "status", label }) })
+  if (signal?.aborted) throw new Error("aborted")
 
-  const out: AgentResult = { text: "", tools: [], inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, refused: false, exhausted: false }
-  const cardKeys = new Set<string>()
-
-  for (let turn = 0; turn < AI_LIMITS.maxToolTurns; turn++) {
-    const stream = client.beta.messages.stream(
-      {
-        model: AI_MODEL(),
-        max_tokens: AI_LIMITS.maxOutputTokens,
-        // a policy decline is retried on a fallback model by the API itself (see "server-side fallbacks")
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
-        // a chat answer needs little deliberation: the lowest effort keeps it quick and cheap
-        output_config: { effort: "low" },
-        system,
-        tools: TOOLS,
-        messages,
-      },
-      { signal },
-    )
-    let turnText = ""
-    stream.on("text", (delta) => {
-      // a new model turn after a tool call continues the same chat bubble: separate it from what came before
-      if (!turnText && out.text && !/\s$/.test(out.text)) { out.text += "\n\n"; emit({ type: "text", text: "\n\n" }) }
-      turnText += delta
-      out.text += delta
-      emit({ type: "text", text: delta })
-    })
-    const msg = await stream.finalMessage()
-    out.inputTokens += msg.usage.input_tokens + (msg.usage.cache_creation_input_tokens ?? 0)
-    out.outputTokens += msg.usage.output_tokens
-    out.cacheReadTokens += msg.usage.cache_read_input_tokens ?? 0
-
-    if (msg.stop_reason === "refusal") {
-      out.refused = true
-      if (!out.text) { out.text = REFUSAL_TEXT; emit({ type: "text", text: REFUSAL_TEXT }) }
-      return out
-    }
-    if (msg.stop_reason !== "tool_use") return out
-
-    // the assistant turn goes back unchanged (thinking blocks included), followed by every tool result in ONE user message
-    messages.push({ role: "assistant", content: msg.content })
-    const calls = msg.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use")
-    emit({ type: "status", label: TOOL_STATUS[calls[0]?.name] ?? "Bilgi toplanıyor…" })
-    const results = await Promise.all(
-      calls.map(async (c) => {
-        out.tools.push(c.name)
-        const r = await runTool(c.name, c.input, ctx)
-        if (r.cards?.length) {
-          const fresh = r.cards.filter((card) => !cardKeys.has(card.href) && cardKeys.add(card.href))
-          if (fresh.length) emit({ type: "cards", cards: fresh })
-        }
-        if (r.action) emit({ type: "action", action: r.action })
-        const block: Anthropic.Beta.BetaToolResultBlockParam = { type: "tool_result", tool_use_id: c.id, content: JSON.stringify(r.result), ...(r.isError ? { is_error: true } : {}) }
-        return block
-      }),
-    )
-    messages.push({ role: "user", content: results })
+  if (a.cards.length) emit({ type: "cards", cards: dedupeCards(a.cards) })
+  const chunks = chunkText(a.text)
+  const wait = pace(chunks.length)
+  for (const c of chunks) {
+    if (signal?.aborted) break
+    emit({ type: "text", text: c })
+    await sleep(wait, signal)
   }
-  out.exhausted = true
-  const more = "\n\nBunu daha fazla araştıramadım; istersen soruyu biraz daha açık yazar mısın?"
-  out.text += more
-  emit({ type: "text", text: more })
-  return out
+  if (a.links.length) emit({ type: "links", links: a.links })
+  if (a.suggestions.length) emit({ type: "suggestions", suggestions: a.suggestions })
+  if (a.learning) emit({ type: "learning" })
+  if (a.action) emit({ type: "action", action: a.action })
+  return { text: a.text, tools: a.tools, intent: String(a.intent), kind: a.kind, confidence: a.confidence, matchedId: a.matchedId || undefined, learning: !!a.learning, rate: a.rate }
+}
+
+function dedupeCards(cards: AiCard[]): AiCard[] {
+  const seen = new Set<string>()
+  return cards.filter((c) => !seen.has(c.href) && !!seen.add(c.href))
 }

@@ -4,8 +4,6 @@ import { requireAdmin, pageOf, cleanReason } from "@/lib/admin-api"
 import { keysFromInput, keysFromQuestion, parseKeys, safeHref } from "@/lib/ai-learning"
 import { normalize } from "@/lib/ai-guide"
 import { notify } from "@/lib/notifications"
-import { AI_LIMITS, AI_MODEL, aiEnabled } from "@/lib/ai/config"
-import { dayKey } from "@/lib/ai/usage"
 
 export const dynamic = "force-dynamic"
 
@@ -41,27 +39,28 @@ export async function GET(req: Request) {
   }
 
   if (view === "llm") {
-    const days = await db.aiUsageDay.findMany({ orderBy: { day: "desc" }, take: 7 })
-    const today = days.find((d) => d.day === dayKey()) ?? null
-    const where: any = { kind: "llm", ...(q ? { norm: { contains: normalize(q) } } : {}) }
-    const [rows, total, good, bad, count7, toolRows] = await Promise.all([
-      db.aiInteraction.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: size, select: { id: true, message: true, reply: true, tools: true, helpful: true, tokensIn: true, tokensOut: true, createdAt: true, taught: true } }),
+    // the guide's own answers: what was asked, what it said, how sure it was and which lookups it used
+    const low = url.searchParams.get("low") === "1"
+    const where: any = { reply: { not: null }, kind: { in: ["knowledge", "navigation", "recommend", "unknown", "taught"] }, ...(low ? { confidence: { lt: 0.4 } } : {}), ...(q ? { norm: { contains: normalize(q) } } : {}) }
+    const base: any = { reply: { not: null }, createdAt: { gte: week } }
+    const [rows, total, good, bad, count7, today, lowCount, toolRows, intentRows, avg] = await Promise.all([
+      db.aiInteraction.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: size, select: { id: true, message: true, reply: true, tools: true, helpful: true, confidence: true, intent: true, kind: true, createdAt: true, taught: true } }),
       db.aiInteraction.count({ where }),
-      db.aiInteraction.count({ where: { kind: "llm", helpful: true, createdAt: { gte: week } } }),
-      db.aiInteraction.count({ where: { kind: "llm", helpful: false, createdAt: { gte: week } } }),
-      db.aiInteraction.count({ where: { kind: "llm", createdAt: { gte: week } } }),
-      db.aiInteraction.findMany({ where: { kind: "llm", createdAt: { gte: week }, tools: { not: null } }, select: { tools: true }, take: 2000 }),
+      db.aiInteraction.count({ where: { ...base, helpful: true } }),
+      db.aiInteraction.count({ where: { ...base, helpful: false } }),
+      db.aiInteraction.count({ where: base }),
+      db.aiInteraction.count({ where: { reply: { not: null }, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
+      db.aiInteraction.count({ where: { ...base, confidence: { lt: 0.4 }, kind: { not: "crisis" } } }),
+      db.aiInteraction.findMany({ where: { ...base, tools: { not: null } }, select: { tools: true }, take: 3000 }),
+      db.aiInteraction.groupBy({ by: ["intent"], where: base, _count: { _all: true }, orderBy: { _count: { intent: "desc" } }, take: 8 }),
+      db.aiInteraction.aggregate({ where: { ...base, confidence: { not: null } }, _avg: { confidence: true } }),
     ])
     const toolCounts: Record<string, number> = {}
     for (const r of toolRows) for (const t of (r.tools ?? "").split(",").filter(Boolean)) toolCounts[t] = (toolCounts[t] ?? 0) + 1
-    const tokens = (d: { inputTokens: number; outputTokens: number } | null) => (d ? d.inputTokens + d.outputTokens : 0)
-    // rough list-price estimate for the default model ($4 in / $20 out per million tokens): cache reads make the real bill lower
-    const cost = (d: { inputTokens: number; outputTokens: number }) => Math.round(((d.inputTokens * 4 + d.outputTokens * 20) / 1_000_000) * 100) / 100
     return NextResponse.json({
-      enabled: aiEnabled(), model: AI_MODEL(), budget: AI_LIMITS.dailyTokenBudget,
-      today: today ? { ...today, tokens: tokens(today), estUsd: cost(today), budgetUsedPct: Math.min(100, Math.round((tokens(today) / AI_LIMITS.dailyTokenBudget) * 100)) } : { day: dayKey(), requests: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, fallbacks: 0, tokens: 0, estUsd: 0, budgetUsedPct: 0 },
-      days: days.map((d) => ({ day: d.day, requests: d.requests, tokens: tokens(d), fallbacks: d.fallbacks, estUsd: cost(d) })),
-      count7, good, bad, helpfulRate: good + bad ? Math.round((good / (good + bad)) * 100) : null, toolCounts,
+      engine: "AYA Rehber (kendi motorumuz)", today, count7, good, bad, helpfulRate: good + bad ? Math.round((good / (good + bad)) * 100) : null,
+      lowConfidence: lowCount, avgConfidence: avg._avg.confidence !== null ? Math.round(avg._avg.confidence * 100) : null,
+      toolCounts, intents: intentRows.map((r) => ({ intent: r.intent, count: r._count._all })),
       items: rows, total, page, pageSize: size,
     })
   }

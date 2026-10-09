@@ -28,10 +28,8 @@ interface Message {
   cards?: AiCard[]
   /** the answer is still being written */
   streaming?: boolean
-  /** what the AI is doing right now ("Eğitmenler aranıyor…") */
+  /** what the guide is doing right now ("Eğitmenler aranıyor…") */
   status?: string
-  /** an answer written by the AI (as opposed to the rule-based guide) */
-  ai?: boolean
   /** the answer can be rated; `feedback` holds the visitor's rating once given */
   interactionId?: string | null
   askFeedback?: boolean
@@ -43,17 +41,17 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
-  { text: "Bel ağrım için hangi yoga?" },
-  { text: "Stres ve uyku için" },
+  { text: "Bel ağrım için ne yapabilirim?" },
+  { text: "10 dakikalık sabah rutini hazırla" },
+  { text: "Uyumakta zorlanıyorum" },
   { text: "Canlı yayın var mı?" },
-  { text: "Atölyeleri göster" },
-  { text: "Üye olmak istiyorum" },
-  { text: "Eğitmen olmak istiyorum" },
+  { text: "Hafta sonu atölye var mı?" },
+  { text: "Yeni başlıyorum, hangi stil?" },
 ]
 
 const WELCOME: Message = {
   role: "ai",
-  text: "**Merhaba!** Ben AYA Rehber. Sana uygun eğitmeni, atölyeyi ya da canlı yayını bulurum; üyelik, ders kaydı ve ödeme gibi konularda doğru sayfaya yönlendiririm.\n\nBir şey yaz ya da aşağıdan seç.",
+  text: "**Merhaba!** Ben AYA Rehber. Derdini ya da hedefini yaz; sana uygun stili, eğitmeni, atölyeyi ve pozları bulur, istersen kısa bir pratik rutini hazırlarım. Üyelik, ders, sipariş ve ödeme konularında da yardımcı olurum.\n\nBir şey yaz ya da aşağıdan seç.",
 }
 
 const STORE_KEY = "aya-ai-chat"
@@ -104,10 +102,6 @@ export function AiAssistant() {
   const [showQuickPrompts, setShowQuickPrompts] = useState(true)
   const [mode, setMode] = useState<"guide" | "support">("guide")
   const [supportCtx, setSupportCtx] = useState<{ source: "USER" | "AI_UNHELPFUL" | "AI_REQUEST"; context: string }>({ source: "USER", context: "" })
-  const [typingText, setTypingText] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
-  /** null = not asked yet; true = answers come from the AI; false = the rule-based guide answers */
-  const [aiOn, setAiOn] = useState<boolean | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -132,7 +126,7 @@ export function AiAssistant() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
-  }, [messages, typingText])
+  }, [messages])
 
   // a short, one-time hint per browser session
   useEffect(() => {
@@ -147,67 +141,25 @@ export function AiAssistant() {
     return () => { clearTimeout(show); clearTimeout(hide) }
   }, [])
 
-  // asked once, the first time the chat opens (the page itself never waits for it)
-  const checkAi = useCallback(() => {
-    if (aiOn !== null) return
-    fetch("/api/ai/status", { cache: "no-store" }).then((r) => r.json()).then((d) => setAiOn(!!d.enabled)).catch(() => setAiOn(false))
-  }, [aiOn])
-
-  // Typing animation for the rule-based guide's answers
-  const typeMessage = (fullText: string, teachers?: any[], links?: GuideLink[], suggestions?: string[], extra: Partial<Message> = {}) => {
-    setIsTyping(true)
-    setTypingText("")
-    let i = 0
-    const interval = setInterval(() => {
-      if (i < fullText.length) {
-        setTypingText(fullText.substring(0, i + 1))
-        i++
-      } else {
-        clearInterval(interval)
-        setIsTyping(false)
-        setTypingText("")
-        setMessages((prev) => [...prev, { role: "ai", text: fullText, teachers, links, suggestions, ...extra }])
-      }
-    }, 12)
-  }
-
-  /** The rule-based guide (also the safety net whenever the AI cannot answer). */
-  const askRules = async (userMsg: string) => {
-    try {
-      const res = await fetch("/api/ai/recommend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: userMsg }) })
-      const data = await res.json().catch(() => ({}))
-      setLoading(false)
-      typeMessage(
-        data.reply || (res.status === 429 ? "Çok hızlı yazıyorsun 🙂 Birkaç saniye bekleyip tekrar dene." : "Şu an yardımcı olamıyorum, lütfen biraz sonra tekrar dene."),
-        data.teachers, data.links, data.suggestions,
-        { interactionId: data.interactionId, askFeedback: !!data.askFeedback, learning: !!data.learning, question: userMsg },
-      )
-      // "canlı destek" → the chat opens right after the answer
-      if (data.action === "support") openSupport("AI_REQUEST", lastQuestion())
-    } catch {
-      setLoading(false)
-      typeMessage("Bağlantı hatası oluştu. Lütfen tekrar deneyin.")
-    }
-  }
-
   const patchLast = (fn: (m: Message) => Message) => setMessages((prev) => (prev.length ? [...prev.slice(0, -1), fn(prev[prev.length - 1])] : prev))
 
-  /** The AI: the answer arrives as a stream of events (text, status, cards, done). */
-  const askAi = async (userMsg: string, history: Message[]) => {
+  /** The guide: the answer arrives as a stream of events (status, cards, text, links, chips, done). */
+  const ask = async (userMsg: string, history: Message[]) => {
     const ctrl = new AbortController()
     abortRef.current = ctrl
     const payload = [...history.filter((m) => m.text && m !== WELCOME), { role: "user", text: userMsg } as Message]
       .slice(-16).map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.text }))
+    const say = (text: string) => setMessages((prev) => [...prev, { role: "ai", text, question: userMsg }])
     let wrote = false
     try {
       const res = await fetch("/api/ai/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: payload, page: pathname || undefined }), signal: ctrl.signal })
-      if (res.status === 429) { setLoading(false); typeMessage("Çok hızlı yazıyorsun 🙂 Birkaç saniye bekleyip tekrar dene."); return }
       if (!(res.headers.get("content-type") || "").includes("text/event-stream") || !res.body) {
         const data = await res.json().catch(() => ({}))
-        if (data.fallback === "disabled" || data.fallback === "budget") setAiOn(false)
-        return askRules(userMsg) // AI is off, busy or the question needs the careful, fixed answer
+        setLoading(false)
+        say(res.status === 429 ? (data.error || "Çok hızlı yazıyorsun 🙂 Birkaç saniye bekleyip tekrar dene.") : "Şu an yardımcı olamıyorum, lütfen biraz sonra tekrar dene.")
+        return
       }
-      setMessages((prev) => [...prev, { role: "ai", text: "", ai: true, streaming: true, question: userMsg }])
+      setMessages((prev) => [...prev, { role: "ai", text: "", streaming: true, question: userMsg }])
       setLoading(false)
       const reader = res.body.getReader()
       const dec = new TextDecoder()
@@ -225,23 +177,22 @@ export function AiAssistant() {
           try { ev = JSON.parse(p.slice(6)) } catch { continue }
           if (ev.type === "text") { wrote = true; patchLast((m) => ({ ...m, text: m.text + ev.text, status: undefined })) }
           else if (ev.type === "status") patchLast((m) => ({ ...m, status: ev.label }))
-          else if (ev.type === "cards") patchLast((m) => ({ ...m, cards: [...(m.cards ?? []), ...ev.cards] }))
+          else if (ev.type === "cards") patchLast((m) => ({ ...m, cards: [...(m.cards ?? []), ...ev.cards], status: undefined }))
+          else if (ev.type === "links") patchLast((m) => ({ ...m, links: ev.links }))
+          else if (ev.type === "suggestions") patchLast((m) => ({ ...m, suggestions: ev.suggestions }))
+          else if (ev.type === "learning") patchLast((m) => ({ ...m, learning: true }))
           else if (ev.type === "action" && ev.action === "support") supportAfter = true
           else if (ev.type === "done") patchLast((m) => ({ ...m, streaming: false, status: undefined, interactionId: ev.interactionId, askFeedback: !!ev.askFeedback }))
-          else if (ev.type === "error") patchLast((m) => ({ ...m, streaming: false, status: undefined, text: `${m.text}\n\n_${ev.message}_` }))
-          else if (ev.type === "fallback") {
-            setMessages((prev) => prev.slice(0, -1)) // drop the empty bubble; the rule-based guide answers instead
-            return askRules(userMsg)
-          }
+          else if (ev.type === "error") patchLast((m) => ({ ...m, streaming: false, status: undefined, text: m.text ? `${m.text}\n\n_${ev.message}_` : ev.message }))
         }
       }
       patchLast((m) => ({ ...m, streaming: false, status: undefined }))
-      if (supportAfter) openSupport("AI_REQUEST", userMsg)
+      if (supportAfter) openSupport("AI_REQUEST", lastQuestion())
     } catch (e: any) {
       if (e?.name === "AbortError") { patchLast((m) => ({ ...m, streaming: false, status: undefined })); return }
       setLoading(false)
       if (wrote) patchLast((m) => ({ ...m, streaming: false, status: undefined, text: `${m.text}\n\n_Bağlantı koptu. Soruyu tekrar gönder._` }))
-      else { setMessages((prev) => (prev.at(-1)?.streaming ? prev.slice(0, -1) : prev)); await askRules(userMsg) }
+      else { setMessages((prev) => (prev.at(-1)?.streaming ? prev.slice(0, -1) : prev)); say("Bağlantı hatası oluştu. Lütfen tekrar dene.") }
     } finally {
       abortRef.current = null
     }
@@ -249,15 +200,14 @@ export function AiAssistant() {
 
   const handleSend = async (text?: string) => {
     const userMsg = (text || input).trim().slice(0, 800)
-    if (!userMsg || loading || isTyping || abortRef.current) return
+    if (!userMsg || loading || abortRef.current) return
 
     setInput("")
     setShowQuickPrompts(false)
     const history = messages
     setMessages((prev) => [...prev, { role: "user", text: userMsg }])
     setLoading(true)
-    if (aiOn) await askAi(userMsg, history)
-    else await askRules(userMsg)
+    await ask(userMsg, history)
   }
 
   const stop = () => abortRef.current?.abort()
@@ -281,7 +231,6 @@ export function AiAssistant() {
     setMessages([WELCOME])
     setShowQuickPrompts(true)
     setLoading(false)
-    setIsTyping(false)
     try { sessionStorage.removeItem(STORE_KEY) } catch { /* nothing to remove */ }
   }
 
@@ -289,13 +238,13 @@ export function AiAssistant() {
   if (isFullScreenLivePage(pathname) || pathname?.startsWith("/admin")) return null
 
   const close = () => setIsOpen(false)
-  const busy = loading || isTyping || messages.at(-1)?.streaming === true
+  const busy = loading || messages.at(-1)?.streaming === true
 
   return (
     <>
       {/* Floating button — quiet by default, the hint disappears after a few seconds and never returns in this session */}
       <button
-        onClick={() => { setIsOpen(!isOpen); setHint(false); checkAi(); setTimeout(() => inputRef.current?.focus(), 200) }}
+        onClick={() => { setIsOpen(!isOpen); setHint(false); setTimeout(() => inputRef.current?.focus(), 200) }}
         className={`fixed bottom-5 right-5 z-[90] h-12 rounded-full shadow-lg flex items-center justify-center gap-2 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ink ${
           isOpen ? "w-12 bg-paper text-ink border border-rule" : "pl-4 pr-5 bg-ink text-cream hover:bg-sage-800"
         }`}
@@ -320,7 +269,7 @@ export function AiAssistant() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-display text-xl leading-none flex items-center gap-2">
                   {mode === "guide" ? "AYA Rehber" : "Canlı destek"}
-                  {mode === "guide" && aiOn && <span data-testid="ai-badge" className="text-[10px] font-body font-bold tracking-wider uppercase bg-white/15 rounded-full px-2 py-0.5">Yapay zekâ</span>}
+                  {mode === "guide" && <span data-testid="ai-badge" className="text-[10px] font-body font-bold tracking-wider uppercase bg-white/15 rounded-full px-2 py-0.5">Akıllı asistan</span>}
                 </h3>
                 <p className="text-cream/60 text-xs mt-1">{mode === "guide" ? "Sorularını yanıtlar, doğru sayfaya götürür" : "Ekibimizle yaz, buradan yanıtlasınlar"}</p>
               </div>
@@ -429,11 +378,9 @@ export function AiAssistant() {
               </div>
             ))}
 
-            {(loading || isTyping) && (
+            {loading && (
               <div className="flex justify-start">
-                <div className="bg-sage-100/70 rounded-xl rounded-bl-sm px-3.5 py-2.5 text-sm text-sage-800 max-w-[90%]">
-                  {isTyping ? <RichText text={typingText} onNavigate={close} /> : <TypingDots />}
-                </div>
+                <div className="bg-sage-100/70 rounded-xl rounded-bl-sm px-3.5 py-2.5 text-sm text-sage-800 max-w-[90%]"><TypingDots /></div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -479,7 +426,7 @@ export function AiAssistant() {
                 </button>
               )}
             </div>
-            {aiOn && <p className="mt-1.5 px-1 text-[10px] text-sage-500">Yapay zekâ yanılabilir. Önemli konularda canlı destekle doğrulayın; sağlık sorunlarında doktora danışın.</p>}
+            <p className="mt-1.5 px-1 text-[10px] text-sage-500">Otomatik asistan yanılabilir. Önemli konularda canlı destekle doğrulayın; sağlık sorunlarında doktora danışın.</p>
           </div>
           </>)}
         </div>

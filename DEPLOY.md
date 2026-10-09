@@ -57,18 +57,15 @@ Podcast sesleri ve ürün görselleri `public/uploads/` altına yazılır; bu kl
 
 Yedekleri başka bir makineye de kopyalayın (aynı diskteki yedek diski kaybedince işe yaramaz). Geri yükleme: `./deploy/restore.sh <db dosyası> [dosya arşivi]`; önce `docker compose stop web`.
 
-## 4b. Yapay zekâ Rehber (Claude)
-Rehber, `ANTHROPIC_API_KEY` tanımlıysa Claude ile konuşur (araçlarla eğitmen/atölye/ürün arar, kullanıcının takvimini ve sipariş durumunu okur). Anahtar yoksa ya da bir sorun olursa otomatik olarak kural tabanlı eski rehbere döner; site hiçbir zaman kapanmaz.
+## 4b. Rehber (kendi yapay zekâ motorumuz)
+Rehber dışarıdaki hiçbir yapay zekâ servisini kullanmaz: anahtar, kota ya da fatura yoktur, veri sunucudan çıkmaz. Motor `src/lib/ai/brain` altındadır: Türkçe dil çözümleme (ek ve yazım hatası toleransı), niyet ve slot çıkarma (stil, bölge, hedef, seviye, bütçe, gün…), konuşma belleği ("peki ya daha ucuzu?", "başka var mı?"), veritabanından gerçek veri (eğitmen, atölye, ürün, sipariş, takvim, canlı yayın, yazı, podcast), poz ve rutin üretici, sağlık durumuna duyarlı öneriler ve bilgi bankası + yönetimin öğrettiği yanıtlar.
 
 | Değişken | Anlamı | Varsayılan |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Claude API anahtarı (yoksa AI kapalı) | — |
-| `AYA_AI_MODEL` | Kullanılacak model | `claude-opus-5-5` |
-| `AYA_AI_DAILY_TOKENS` | Günlük toplam token bütçesi; dolunca kural motoruna geçer | `3000000` |
-| `AYA_AI_VISITOR_DAILY` / `AYA_AI_USER_DAILY` | IP / üye başına günlük soru sınırı | `40` / `150` |
-| `AYA_AI_DISABLED=1` | AI'ı kapatır | — |
+| `AYA_AI_VISITOR_DAILY` / `AYA_AI_USER_DAILY` | IP / üye başına günlük soru sınırı | `200` / `400` |
+| `AYA_AI_STREAM_MS` | Yanıt yazılırken parça başına bekleme (0 = anında) | otomatik |
 
-Kullanım, tahmini maliyet ve verilen yanıtlar: Yönetim → Yapay Zeka → “Yapay zekâ”. Anahtarsız test: `npm run build && npm run test:ai` (sahte Anthropic sunucusu kullanır).
+Rehber nasıl gelişir: Yönetim → Yapay Zeka sekmesinde “Bilinmeyen sorular” ve “Yardımcı olmadı” listesinden doğru yanıtı öğretirsin; öğretilen yanıt her zaman öncelikli kullanılır. “Rehber analizi” sekmesi soruları, motorun güven puanını ve kullandığı aramaları gösterir; düşük güvenli yanıtlar öğretmek için en iyi adaydır.
 
 ## 5. Güvenlik başlıkları
 - **CSP**: ilk dağıtımda varsayılan `report-only`: hiçbir şey engellenmez, ihlaller yönetim paneli → Günlükler → Sistem olayları'nda "CSP:" ile görünür. Bir hafta temiz kalırsa `.env` içinde `CSP_MODE=enforce` yapıp `docker compose up -d --build` çalıştırın. Ödeme (Stripe/Iyzico) ve Google girişi akışlarını enforce'a geçince mutlaka deneyin.

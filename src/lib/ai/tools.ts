@@ -1,7 +1,6 @@
-import type Anthropic from "@anthropic-ai/sdk"
 import { db } from "@/lib/db"
 import type { AuthUser } from "@/lib/auth-utils"
-import { rankTeachers, detectStyles } from "@/lib/ai-guide"
+import { rankTeachers, detectStyles, StyleId } from "@/lib/ai-guide"
 import { getGuideTeachers } from "@/lib/ai-data"
 import { fold, matchTaught } from "@/lib/ai-knowledge"
 import { taughtToEntries } from "@/lib/ai-learning"
@@ -37,85 +36,31 @@ export const TOOL_STATUS: Record<string, string> = {
   contact_support: "Canlı destek hazırlanıyor…",
 }
 
-const obj = (properties: Record<string, unknown>, required: string[] = []) => ({ type: "object" as const, properties, required, additionalProperties: false })
-
-/** Tool definitions in the shape the Messages API expects. */
-export const TOOLS: Anthropic.Beta.BetaTool[] = [
-  {
-    name: "search_teachers",
-    description: "Onaylı AYA eğitmenlerini arar ve puan, saatlik ücret (USD) ve uzmanlıklarıyla döndürür. Kullanıcı eğitmen, birebir ders, belirli bir yoga stili ya da hedef (bel ağrısı, stres, esneklik…) istediğinde kullan.",
-    input_schema: obj({
-      style: { type: "string", description: "Yoga stili: hatha, vinyasa, yin, ashtanga, restoratif, meditasyon…" },
-      query: { type: "string", description: "Serbest metin: hedef, sorun ya da eğitmen adı" },
-      max_price_usd: { type: "number", description: "Saatlik üst fiyat sınırı (USD)" },
-      limit: { type: "integer", description: "En çok kaç sonuç (varsayılan 3, en çok 6)" },
-    }),
-  },
-  {
-    name: "search_workshops",
-    description: "Yaklaşan canlı ya da kayıtlı atölyeleri arar: tarih, fiyat (USD), kalan kontenjan, eğitmen.",
-    input_schema: obj({
-      category: { type: "string", description: "Kategori: Hatha, Vinyasa, Yin, Restoratif, Nefes, Meditasyon, Yoga Nidra…" },
-      mode: { type: "string", enum: ["LIVE", "RECORDED"], description: "Canlı ya da kayıtlı" },
-      max_price_usd: { type: "number" },
-      limit: { type: "integer" },
-    }),
-  },
-  {
-    name: "search_content",
-    description: "Yazıları (Sağlık, Beslenme, Hareket, Kişisel Gelişim, Bakım), duyuruları/haberleri ve podcast bölümlerini arar.",
-    input_schema: obj({
-      query: { type: "string", description: "Konu ya da anahtar kelime" },
-      type: { type: "string", enum: ["article", "news", "podcast"], description: "Yazı, duyuru/haber ya da podcast bölümü (varsayılan article)" },
-      category: { type: "string", description: "Yazı kategorisi" },
-    }),
-  },
-  {
-    name: "find_pose",
-    description: "Yoga poz kütüphanesinde poz bulur: adım adım yapılışı, faydaları, kaçınılacak durumlar, seviye. Kullanıcı bir pozu, bir bölgeyi ya da bir hedefi sorduğunda kullan.",
-    input_schema: obj({ query: { type: "string", description: "Poz adı (Türkçe, İngilizce ya da Sanskritçe), bölge ya da hedef" } }, ["query"]),
-  },
-  {
-    name: "search_products",
-    description: "AYA Shop ürünlerini arar (mat, wellness, aromaterapi): fiyat (₺), stok.",
-    input_schema: obj({
-      query: { type: "string" },
-      category: { type: "string", enum: SHOP_SLUGS, description: "wellness, matlar ya da aromaterapi" },
-    }),
-  },
-  { name: "live_now", description: "Şu anda yayında olan herkese açık canlı yayınları listeler.", input_schema: obj({}) },
-  {
-    name: "search_help",
-    description: "Yönetimin öğrettiği resmî yanıtları arar. Genel bilgi bölümünde bulamadığın platform soruları (kurallar, ücretler, özel durumlar) için dene.",
-    input_schema: obj({ query: { type: "string" } }, ["query"]),
-  },
-  {
-    name: "order_status",
-    description: "Shop siparişinin durumunu, kargo takip numarasını ve tutarını verir. Hem sipariş kodu (AYA-XXXXXX) hem sipariş e-postası gerekir.",
-    input_schema: obj({ code: { type: "string" }, email: { type: "string" } }, ["code", "email"]),
-  },
-  { name: "my_schedule", description: "Giriş yapmış kullanıcının yaklaşan derslerini ve atölyelerini listeler.", input_schema: obj({}) },
-  {
-    name: "contact_support",
-    description: "Kullanıcıyı canlı destek ekibine bağlar (ödeme/hesap sorunu, şikayet, iade, yanıtlayamadığın konu ya da kullanıcı isterse).",
-    input_schema: obj({ reason: { type: "string", description: "Kısa neden" } }, ["reason"]),
-  },
-]
-
 const str = (v: unknown, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "")
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined)
 const lim = (v: unknown, def: number, max: number) => Math.min(max, Math.max(1, Math.round(typeof v === "number" && Number.isFinite(v) ? v : def)))
+/** "contains any of the words" over several columns (a whole sentence never appears inside a title). */
+const anyWord = (fields: string[], q: string) => {
+  const words = [...new Set(q.split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 3))].slice(0, 4)
+  return words.length ? { OR: words.flatMap((w) => fields.map((f) => ({ [f]: { contains: w } }))) } : {}
+}
 const clip = (s: string | null | undefined, n = 220) => (s ? (s.length > n ? `${s.slice(0, n - 1)}…` : s) : "")
 
 async function searchTeachers(i: Record<string, unknown>): Promise<ToolOutput> {
   const query = [str(i.style), str(i.query)].filter(Boolean).join(" ")
   const max = num(i.max_price_usd)
+  const offset = Math.max(0, Math.round(num(i.offset) ?? 0))
+  const styles = Array.isArray(i.styles) ? (i.styles.filter((x) => typeof x === "string") as StyleId[]) : []
   let all = await getGuideTeachers()
   if (max !== undefined) all = all.filter((t) => t.hourlyRate <= max)
-  const { teachers, matched } = rankTeachers(all, query || "yoga", lim(i.limit, 3, 6), query ? detectStyles(query) : undefined)
+  const want = lim(i.limit, 3, 6)
+  // the ranking reads "ucuz" from the text; a sort request is the same thing
+  const text = `${query || "yoga"}${i.sort === "price" ? " ucuz" : ""}`
+  const { teachers: ranked, matched } = rankTeachers(all, text, offset + want, styles.length ? styles : query ? detectStyles(query) : undefined)
+  const teachers = ranked.slice(offset, offset + want)
   const rows = teachers.map((t) => ({ name: t.name, specialties: t.specialties, rating: t.rating, reviews: t.reviewCount, price_usd_per_hour: t.hourlyRate, students: t.studentsCount, link: t.href }))
   return {
-    result: { matched_styles: matched, teachers: rows, note: rows.length ? undefined : "Bu ölçütlere uyan eğitmen bulunamadı." },
+    result: { matched_styles: matched, teachers: rows, total_pool: all.length, offset, note: rows.length ? undefined : "Bu ölçütlere uyan eğitmen bulunamadı." },
     cards: teachers.map((t) => ({ kind: "teacher" as const, title: t.name, subtitle: t.specialties || "Yoga eğitmeni", meta: `★ ${t.rating} · $${t.hourlyRate}/saat`, href: t.href })),
   }
 }
@@ -125,16 +70,20 @@ async function searchWorkshops(i: Record<string, unknown>): Promise<ToolOutput> 
   const mode = i.mode === "LIVE" || i.mode === "RECORDED" ? i.mode : undefined
   const max = num(i.max_price_usd)
   const now = new Date()
+  const iso = (v: unknown) => { const d = typeof v === "string" ? new Date(v) : null; return d && !Number.isNaN(d.getTime()) ? d : undefined }
+  const from = iso(i.from)
+  const to = iso(i.to)
   const rows = await db.workshop.findMany({
     where: {
       status: "PUBLISHED",
       ...(mode ? { mode } : {}),
       ...(category ? { category: { contains: category } } : {}),
       ...(max !== undefined ? { priceUsd: { lte: max } } : {}),
-      OR: [{ mode: "RECORDED" }, { startsAt: { gte: new Date(now.getTime() - 3_600_000) } }],
+      OR: [{ mode: "RECORDED" }, { startsAt: { gte: from ?? new Date(now.getTime() - 3_600_000), ...(to ? { lte: to } : {}) } }],
     },
     include: { teacher: { include: { user: { select: { name: true } } } }, enrollments: { select: { status: true } } },
     orderBy: [{ startsAt: "asc" }, { createdAt: "desc" }],
+    skip: Math.max(0, Math.round(num(i.offset) ?? 0)),
     take: lim(i.limit, 4, 8),
   })
   const items = rows.filter((w) => workshopState(w, now) !== "ended")
@@ -143,6 +92,7 @@ async function searchWorkshops(i: Record<string, unknown>): Promise<ToolOutput> 
       workshops: items.map((w) => ({
         title: w.title, category: w.category, level: w.level, mode: w.mode === "LIVE" ? "canlı" : "kayıtlı", teacher: w.teacher.user.name,
         starts_at: w.startsAt ? w.startsAt.toLocaleString("tr-TR", { dateStyle: "full", timeStyle: "short", timeZone: "Europe/Istanbul" }) : null,
+        starts_iso: w.startsAt ? w.startsAt.toISOString() : null, price_usd: w.priceUsd,
         duration_min: w.durationMin, price: formatPriceTR(w.priceUsd), seats_left: seatsLeft(w.capacity, w.enrollments), link: `/atolyeler/${w.slug}`,
       })),
       note: items.length ? undefined : "Şu an bu ölçütlere uyan atölye yok.",
@@ -160,8 +110,8 @@ async function searchContent(i: Record<string, unknown>): Promise<ToolOutput> {
   const category = str(i.category, 60)
   if (type === "podcast") {
     const eps = await db.podcastEpisode.findMany({
-      where: { status: "PUBLISHED", ...(q ? { OR: [{ title: { contains: q } }, { description: { contains: q } }, { guest: { contains: q } }] } : {}) },
-      orderBy: { publishedAt: "desc" }, take: 4,
+      where: { status: "PUBLISHED", ...anyWord(["title", "description", "guest"], q) },
+      orderBy: { publishedAt: "desc" }, skip: Math.max(0, Math.round(num(i.offset) ?? 0)), take: 4,
     })
     return {
       result: { podcast_episodes: eps.map((e) => ({ title: e.title, guest: e.guest, summary: clip(e.description), link: `/podcast/${e.slug}` })), note: eps.length ? undefined : "Bu konuda podcast bölümü yok." },
@@ -172,9 +122,9 @@ async function searchContent(i: Record<string, unknown>): Promise<ToolOutput> {
     where: {
       status: "PUBLISHED",
       category: type === "news" ? { in: [...NEWS_CATEGORIES] } : category ? { equals: category } : { notIn: [...NEWS_CATEGORIES, PODCAST_CATEGORY] },
-      ...(q ? { OR: [{ title: { contains: q } }, { excerpt: { contains: q } }] } : {}),
+      ...anyWord(["title", "excerpt"], q),
     },
-    orderBy: { publishedAt: "desc" }, take: 4,
+    orderBy: { publishedAt: "desc" }, skip: Math.max(0, Math.round(num(i.offset) ?? 0)), take: 4,
     select: { title: true, excerpt: true, slug: true, category: true, coverUrl: true },
   })
   return {
@@ -206,11 +156,14 @@ async function searchProducts(i: Record<string, unknown>): Promise<ToolOutput> {
   const q = str(i.query, 80)
   const cat = typeof i.category === "string" && SHOP_SLUGS.includes(i.category) ? i.category : undefined
   const rows = await db.product.findMany({
-    where: { status: "PUBLISHED", ...(cat ? { category: cat } : {}), ...(q ? { OR: [{ name: { contains: q } }, { summary: { contains: q } }] } : {}) },
-    orderBy: [{ featured: "desc" }, { createdAt: "desc" }], take: 4,
+    where: {
+      status: "PUBLISHED", ...(cat ? { category: cat } : {}), ...anyWord(["name", "summary"], q),
+      ...(num(i.max_tl) !== undefined ? { priceKurus: { lte: Math.round(num(i.max_tl)! * 100) } } : {}),
+    },
+    orderBy: i.sort === "price" ? [{ priceKurus: "asc" }] : [{ featured: "desc" }, { createdAt: "desc" }], skip: Math.max(0, Math.round(num(i.offset) ?? 0)), take: lim(i.limit, 4, 6),
   })
   return {
-    result: { products: rows.map((p) => ({ name: p.name, category: p.category, summary: p.summary, price: formatKurus(p.priceKurus), in_stock: p.stock > 0, stock: p.stock <= 3 ? p.stock : undefined, link: `/shop/urun/${p.slug}` })), note: rows.length ? undefined : "Mağazada bu aramaya uyan ürün yok." },
+    result: { products: rows.map((p) => ({ name: p.name, category: p.category, summary: p.summary, price: formatKurus(p.priceKurus), price_kurus: p.priceKurus, in_stock: p.stock > 0, stock: p.stock <= 3 ? p.stock : undefined, link: `/shop/urun/${p.slug}` })), note: rows.length ? undefined : "Mağazada bu aramaya uyan ürün yok." },
     cards: rows.map((p) => ({ kind: "product" as const, title: p.name, subtitle: p.stock > 0 ? p.summary : "Tükendi", meta: formatKurus(p.priceKurus), href: `/shop/urun/${p.slug}`, image: parseImages(p.images)[0] ?? null })),
   }
 }
@@ -229,7 +182,7 @@ async function searchHelp(i: Record<string, unknown>): Promise<ToolOutput> {
   const hit = matchTaught(q, taughtToEntries(rows))
   if (!hit) return { result: { found: false, note: "Yönetimin öğrettiği bir yanıt yok." } }
   db.aiTaughtAnswer.update({ where: { id: hit.entry.id }, data: { hits: { increment: 1 } } }).catch(() => {})
-  return { result: { found: true, authoritative: true, answer: hit.entry.answer, links: hit.entry.links ?? [] } }
+  return { result: { found: true, authoritative: true, id: hit.entry.id, answer: hit.entry.answer, links: hit.entry.links ?? [] } }
 }
 
 async function orderStatus(i: Record<string, unknown>): Promise<ToolOutput> {

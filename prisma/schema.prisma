@@ -766,18 +766,17 @@ model AiInteraction {
   message    String    @db.VarChar(500)
   norm       String    @db.VarChar(500)
   intent     String    @db.VarChar(40)
-  kind       String    @db.VarChar(20) // taught | knowledge | navigation | unknown | crisis | support
+  kind       String    @db.VarChar(20) // taught | knowledge | navigation | recommend | unknown | crisis | support
   matchedId  String?
   helpful    Boolean?
   taught     Boolean   @default(false) // an admin has since added an answer for this question
   dismissed  Boolean   @default(false) // an admin decided it needs no answer
   createdAt  DateTime  @default(now())
   feedbackAt DateTime?
-  // AI answers (kind "llm"): what the guide said, which tools it used and what it cost
+  // what the guide answered, which lookups it used and how sure it was (0–1)
   reply      String?   @db.Text
   tools      String?   @db.VarChar(200)
-  tokensIn   Int?
-  tokensOut  Int?
+  confidence Float?
 
   @@index([kind, taught, dismissed])
   @@index([helpful])
@@ -1034,11 +1033,3 @@ model OrderItem {
 }
 
 // Daily token ledger of the AI guide: the budget guard reads it, the admin sees it
-model AiUsageDay {
-  day             String @id @db.VarChar(10) // YYYY-MM-DD (UTC)
-  requests        Int    @default(0)
-  inputTokens     Int    @default(0)
-  outputTokens    Int    @default(0)
-  cacheReadTokens Int    @default(0)
-  fallbacks       Int    @default(0) // answered by the rule engine because the AI was off, over budget or failed
-}

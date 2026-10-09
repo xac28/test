@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { SITE_URL } from "@/lib/site"
+import { notifyRestock } from "@/lib/automation"
 import {
   LOW_STOCK, ORDER_STATUS_LABEL, OrderStatusId, PAY_METHOD_LABEL, UNPAID_ORDER_DAYS,
   calcTotals, canTransition, formatKurus, makeOrderCode, nextStatuses,
@@ -101,9 +102,15 @@ export async function setOrderStatus(orderId: string, to: OrderStatusId, opts: {
   const trackingNo = opts.trackingNo?.trim().slice(0, 60)
   if (to === "SHIPPED" && !trackingNo && !order.trackingNo) throw new ShopError("Kargoya verirken takip numarası girin.")
 
+  const backInStock: string[] = []
   const updated = await db.$transaction(async (tx) => {
     if (to === "CANCELLED" && !order.stockRestored) {
-      for (const i of order.items) if (i.productId) await tx.product.updateMany({ where: { id: i.productId }, data: { stock: { increment: i.quantity } } })
+      for (const i of order.items) {
+        if (!i.productId) continue
+        const before = await tx.product.findUnique({ where: { id: i.productId }, select: { stock: true } })
+        await tx.product.updateMany({ where: { id: i.productId }, data: { stock: { increment: i.quantity } } })
+        if (before && before.stock <= 0) backInStock.push(i.productId)
+      }
     }
     return tx.order.update({
       where: { id: orderId },
@@ -119,6 +126,7 @@ export async function setOrderStatus(orderId: string, to: OrderStatusId, opts: {
   if (opts.actorId) {
     await db.auditLog.create({ data: { actorId: opts.actorId, action: `ORDER_${to}`, targetId: order.id, reason: `${order.code}${opts.reason ? `: ${opts.reason}` : ""}`.slice(0, 300) } })
   }
+  if (backInStock.length) await notifyRestock(backInStock).catch((e) => console.error("[RESTOCK]", e))
   const m = STATUS_MAIL[to]
   if (m) await mailCustomer(updated, `${m[0]} (${updated.code})`, m[1])
   return updated

@@ -1,14 +1,13 @@
 import { db } from "@/lib/db"
-import { notSuspended } from "@/lib/policy"
 import { NextResponse } from "next/server"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_AI } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
-import { composeReply, GuideData, GuideReply, GuideTeacher, normalize, wantsHuman } from "@/lib/ai-guide"
+import { composeReply, GuideData, GuideReply, normalize, wantsHuman } from "@/lib/ai-guide"
+import { getGuideTeachers } from "@/lib/ai-data"
 import { isCrisis, matchTaught } from "@/lib/ai-knowledge"
 import { redactForLog, taughtToEntries } from "@/lib/ai-learning"
 import { logEvent } from "@/lib/event-log"
-import { TEACHERS } from "@/lib/teachers"
 import { listActiveBroadcasts } from "@/lib/live-rooms"
 
 export const dynamic = "force-dynamic"
@@ -26,15 +25,10 @@ export async function POST(req: Request) {
     const message = typeof body.message === "string" ? body.message.trim().slice(0, MAX_MESSAGE) : ""
     if (!message) return NextResponse.json({ error: "Message is required" }, { status: 400 })
 
-    const [user, dbTeachers, workshops, articles, live] = await Promise.all([
+    const [user, teachers, workshops, articles, live] = await Promise.all([
       resolveUser(req).catch(() => null),
       // only approved teachers are ever recommended
-      db.teacher.findMany({
-        where: { isTrialMode: false, user: { banned: false, ...notSuspended() } },
-        include: { user: { select: { name: true, country: true } }, bookings: { where: { status: "COMPLETED" }, include: { review: true } } },
-        orderBy: { user: { createdAt: "desc" } },
-        take: 1000,
-      }),
+      getGuideTeachers(),
       db.workshop.findMany({
         where: { status: "PUBLISHED", OR: [{ startsAt: null }, { startsAt: { gte: new Date() } }] },
         orderBy: { startsAt: "asc" },
@@ -45,38 +39,8 @@ export async function POST(req: Request) {
       listActiveBroadcasts().catch(() => []),
     ])
 
-    const real: GuideTeacher[] = dbTeachers.map((t) => {
-      const reviews = t.bookings.filter((b) => b.review && b.review.status === "VISIBLE").map((b) => b.review!)
-      let specs: string[] = []
-      try {
-        specs = t.specialties ? JSON.parse(t.specialties) : []
-      } catch {}
-      return {
-        id: t.id,
-        name: t.user.name || "Eğitmen",
-        country: t.user.country || "",
-        specialties: specs.join(", "),
-        rating: reviews.length ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10 : 5,
-        reviewCount: reviews.length,
-        hourlyRate: t.hourlyRate,
-        studentsCount: t.bookings.length,
-        href: `/teachers/${t.id}`,
-      }
-    })
-    const demo: GuideTeacher[] = TEACHERS.map((t) => ({
-      id: t.slug,
-      name: t.name,
-      country: t.country,
-      specialties: t.styles.join(", "),
-      rating: t.rating,
-      reviewCount: t.reviewCount,
-      hourlyRate: t.pricePerClassUSD,
-      studentsCount: t.studentsCount,
-      href: `/teachers/${t.slug}`,
-    }))
-
     const data: GuideData = {
-      teachers: [...real, ...demo],
+      teachers,
       workshops: workshops.map((w) => ({ ...w, startsAt: w.startsAt ? w.startsAt.toISOString() : null })),
       live: live.map((l) => ({ id: l.id, title: l.title, teacher: l.teacher.name || "Eğitmen" })),
       articles,

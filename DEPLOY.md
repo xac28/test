@@ -46,12 +46,29 @@ Kontrol: `curl https://aya.ornek.com/api/health` → `{"status":"ok"}`.
 */15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/process-bookings
 # her gün 04:00 — 3 gündür ödenmeyen havale siparişlerini iptal et (stok geri döner)
 0 4 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/shop-maintenance
+# her 15 dakika — ders/atölye hatırlatmaları (24 saat + 1 saat önce) ve ders sonrası yorum isteği
+*/15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/reminders
+# her gün 08:00 — yöneticilere günlük özet; pazartesi günleri abonelere haftalık bülten özeti
+0 8 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/digests
 # her gün 03:30 — yedek
 30 3 * * *  cd /opt/aya && BACKUP_DIR=/var/backups/aya ./deploy/backup.sh
 ```
 Podcast sesleri ve ürün görselleri `public/uploads/` altına yazılır; bu klasör kalıcı diskte olmalı ve yedeğe dahil edilmelidir.
 
 Yedekleri başka bir makineye de kopyalayın (aynı diskteki yedek diski kaybedince işe yaramaz). Geri yükleme: `./deploy/restore.sh <db dosyası> [dosya arşivi]`; önce `docker compose stop web`.
+
+## 4b. Yapay zekâ Rehber (Claude)
+Rehber, `ANTHROPIC_API_KEY` tanımlıysa Claude ile konuşur (araçlarla eğitmen/atölye/ürün arar, kullanıcının takvimini ve sipariş durumunu okur). Anahtar yoksa ya da bir sorun olursa otomatik olarak kural tabanlı eski rehbere döner; site hiçbir zaman kapanmaz.
+
+| Değişken | Anlamı | Varsayılan |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Claude API anahtarı (yoksa AI kapalı) | — |
+| `AYA_AI_MODEL` | Kullanılacak model | `claude-opus-5-5` |
+| `AYA_AI_DAILY_TOKENS` | Günlük toplam token bütçesi; dolunca kural motoruna geçer | `3000000` |
+| `AYA_AI_VISITOR_DAILY` / `AYA_AI_USER_DAILY` | IP / üye başına günlük soru sınırı | `40` / `150` |
+| `AYA_AI_DISABLED=1` | AI'ı kapatır | — |
+
+Kullanım, tahmini maliyet ve verilen yanıtlar: Yönetim → Yapay Zeka → “Yapay zekâ”. Anahtarsız test: `npm run build && npm run test:ai` (sahte Anthropic sunucusu kullanır).
 
 ## 5. Güvenlik başlıkları
 - **CSP**: ilk dağıtımda varsayılan `report-only`: hiçbir şey engellenmez, ihlaller yönetim paneli → Günlükler → Sistem olayları'nda "CSP:" ile görünür. Bir hafta temiz kalırsa `.env` içinde `CSP_MODE=enforce` yapıp `docker compose up -d --build` çalıştırın. Ödeme (Stripe/Iyzico) ve Google girişi akışlarını enforce'a geçince mutlaka deneyin.

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin-api"
 import { parseImages, validateProductInput } from "@/lib/shop"
 import { notifyNewContent } from "@/lib/content-notify"
+import { notifyRestock } from "@/lib/automation"
 
 export const dynamic = "force-dynamic"
 
@@ -24,6 +25,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const product = await db.product.update({ where: { id: params.id }, data: v.data })
   let newsletter = null
   if (v.notify && product.status === "PUBLISHED") newsletter = await notifyNewContent("product", product.id, a.admin.id).catch((e) => (console.error("[PRODUCT_NOTIFY]", e), null))
+  // sold out → back in stock: tell the visitors who asked to be told
+  if (existing.stock <= 0 && product.stock > 0) await notifyRestock([product.id]).catch((e) => console.error("[RESTOCK]", e))
   return NextResponse.json({ success: true, product, newsletter })
 }
 

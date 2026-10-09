@@ -50,15 +50,17 @@ export const smtpConfigured = () => !!(process.env.SMTP_USER && process.env.SMTP
 export interface CampaignInput {
   subject: string
   body: string
-  kind: "manual" | "article" | "podcast" | "product"
+  kind: "manual" | "article" | "podcast" | "product" | "digest" | "restock"
   refId?: string
   cta?: { label: string; href: string }
   createdById?: string
+  /** send to these subscribers only (still skipping the ones who unsubscribed) */
+  onlyIds?: string[]
 }
 
 /** Sends to every active subscriber (a few at a time) and records the result. Without SMTP nothing is sent and the log says so. */
 export async function sendCampaign(c: CampaignInput) {
-  const subs = await db.newsletterSubscriber.findMany({ where: { unsubscribedAt: null }, select: { id: true, email: true, unsubscribeToken: true } })
+  const subs = await db.newsletterSubscriber.findMany({ where: { unsubscribedAt: null, ...(c.onlyIds ? { id: { in: c.onlyIds } } : {}) }, select: { id: true, email: true, unsubscribeToken: true } })
   if (!smtpConfigured()) {
     const campaign = await db.newsletterCampaign.create({ data: { subject: c.subject.slice(0, 200), body: c.body, kind: c.kind, refId: c.refId, createdById: c.createdById, skipped: true } })
     return { campaign, sent: 0, failed: 0, skipped: true, recipients: subs.length }

@@ -11,9 +11,11 @@
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "test:api": "vitest run --config vitest.api.config.ts",
+    "test:ai": "bash scripts/run-ai-tests.sh",
     "seed:demo": "node scripts/seed-demo.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@auth/prisma-adapter": "^2.11.2",
     "@livekit/components-react": "^2.9.20",
     "@livekit/components-styles": "^1.2.0",

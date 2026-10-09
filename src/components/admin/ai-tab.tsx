@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { Bot, Check, EyeOff, Pencil, Plus, Sparkles, ThumbsDown, Trash2 } from "lucide-react"
-import { Button, Card, Drawer, Empty, ErrorNote, Pager, Pill, SearchBox, SectionTitle, Segmented, Spinner, Stat, ago, api, fmtDateTime, useConfirm, useDebounced, useLoader, useToast } from "./ui"
+import { Button, Card, Drawer, Empty, ErrorNote, Pager, Pill, SearchBox, SectionTitle, Segmented, Spinner, Stat, Table, ago, api, fmtDateTime, useConfirm, useDebounced, useLoader, useToast } from "./ui"
 
-type View = "overview" | "unknown" | "unhelpful" | "taught"
+type View = "overview" | "llm" | "unknown" | "unhelpful" | "taught"
 
 export interface TeachInit { question: string; answer?: string; norm?: string; id?: string; keywords?: string; linkLabel?: string; linkHref?: string }
 
@@ -68,9 +68,10 @@ export function AiTab({ onChanged }: { onChanged: () => void }) {
     <div className="space-y-5" data-testid="tab-ai">
       <SectionTitle title="Yapay zeka (AYA Rehber)" hint="Rehberin bilmediği soruları öğret, geri bildirimleri izle, öğretilmiş cevapları yönet." />
       <Segmented testid="ai-view" value={view} onChange={setView} options={[
-        { id: "overview", label: "Özet" }, { id: "unknown", label: "Bilinmeyen sorular" }, { id: "unhelpful", label: "Yardımcı olmadı" }, { id: "taught", label: "Öğretilenler" },
+        { id: "overview", label: "Özet" }, { id: "llm", label: "Yapay zekâ" }, { id: "unknown", label: "Bilinmeyen sorular" }, { id: "unhelpful", label: "Yardımcı olmadı" }, { id: "taught", label: "Öğretilenler" },
       ]} />
       {view === "overview" && <Overview go={setView} />}
+      {view === "llm" && <Llm />}
       {view === "unknown" && <Unknown onChanged={onChanged} />}
       {view === "unhelpful" && <Unhelpful onChanged={onChanged} />}
       {view === "taught" && <Taught />}
@@ -229,6 +230,66 @@ function Taught() {
       {teach && <TeachDialog init={teach} onClose={() => setTeach(null)} onDone={(m) => { show(m); reload() }} />}
       {dialog}
       {toast}
+    </div>
+  )
+}
+
+/** The AI behind the guide: is it on, what does it cost today, how do people rate it, what did it say. */
+function Llm() {
+  const [page, setPage] = useState(1)
+  const [q, setQ] = useState("")
+  const dq = useDebounced(q)
+  const { data, error, loading, reload } = useLoader<any>(() => api(`/api/admin/ai?view=llm&page=${page}&q=${encodeURIComponent(dq)}`), [page, dq])
+  if (error) return <ErrorNote message={error} onRetry={reload} />
+  if (!data) return <Spinner />
+  const t = data.today
+  return (
+    <div className="space-y-5" data-testid="ai-llm">
+      {!data.enabled && (
+        <p data-testid="ai-llm-off" className="rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm p-4">Yapay zekâ kapalı: <code>ANTHROPIC_API_KEY</code> tanımlı değil. Rehber şimdilik yalnızca kural tabanlı motorla yanıt veriyor; anahtar eklenince otomatik açılır.</p>
+      )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Stat label="Bugün soru" value={t.requests} hint={`${t.fallbacks} kural motoruna düştü`} />
+        <Stat label="Bugün token" value={t.tokens.toLocaleString("tr-TR")} hint={`bütçenin %${t.budgetUsedPct}’i`} tone={t.budgetUsedPct >= 80 ? "red" : t.budgetUsedPct >= 50 ? "amber" : undefined} />
+        <Stat label="Tahmini maliyet (bugün)" value={`$${t.estUsd.toFixed(2)}`} hint={`model: ${data.model}`} />
+        <Stat label="Memnuniyet (7 gün)" value={data.helpfulRate === null ? "—" : `%${data.helpfulRate}`} hint={`${data.count7} yanıt · 👍 ${data.good} · 👎 ${data.bad}`} tone={data.helpfulRate !== null && data.helpfulRate < 60 ? "amber" : "green"} />
+      </div>
+      <Card className="p-4">
+        <p className="text-sm font-semibold mb-2">Son 7 gün</p>
+        <Table head={["Gün", "Soru", "Token", "Kural motoru", "Tahmini $"]}>
+          {data.days.map((d: any) => (<tr key={d.day}><td className="px-4 py-2">{d.day}</td><td className="px-4 py-2">{d.requests}</td><td className="px-4 py-2">{d.tokens.toLocaleString("tr-TR")}</td><td className="px-4 py-2">{d.fallbacks}</td><td className="px-4 py-2">{d.estUsd.toFixed(2)}</td></tr>))}
+        </Table>
+        <p className="text-xs text-sage-500 mt-2">Günlük bütçe {data.budget.toLocaleString("tr-TR")} token (<code>AYA_AI_DAILY_TOKENS</code>); dolunca Rehber otomatik olarak kural motoruna geçer. Maliyet liste fiyatından kabaca hesaplanır; önbellek sayesinde gerçek fatura genelde daha düşüktür.</p>
+      </Card>
+      {Object.keys(data.toolCounts).length > 0 && (
+        <div className="flex flex-wrap gap-2" data-testid="ai-tools-used">
+          {Object.entries(data.toolCounts).sort((a: any, b: any) => b[1] - a[1]).map(([k, v]: any) => <Pill key={k} tone="gray">{k} · {v}</Pill>)}
+        </div>
+      )}
+      <div className="flex items-center gap-3"><SectionTitle title="Yapay zekânın son yanıtları" hint="Yardımcı olmadı diye işaretlenenleri “Yardımcı olmadı” sekmesinden Rehbere öğretebilirsin; öğretilen yanıtlar yapay zekâ tarafından da kullanılır." /></div>
+      <SearchBox value={q} onChange={(v) => { setQ(v); setPage(1) }} placeholder="Sorularda ara…" testid="ai-llm-search" />
+      {data.items.length === 0 ? <Empty icon={<Bot size={32} />}>Henüz yapay zekâ yanıtı yok.</Empty> : (
+        <div className={loading ? "opacity-60" : ""}>
+          <ul className="space-y-3">
+            {data.items.map((r: any) => (
+              <li key={r.id} data-testid="ai-llm-row" className="rounded-xl border border-rule bg-paper p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-medium text-sm break-words">{r.message}</p>
+                  <span className="text-xs text-sage-500 whitespace-nowrap">{ago(r.createdAt)}</span>
+                </div>
+                <p className="text-sm text-sage-700 mt-1.5 whitespace-pre-line line-clamp-5">{r.reply}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-sage-500">
+                  {r.helpful === true && <Pill tone="green">👍</Pill>}
+                  {r.helpful === false && <Pill tone="red">👎</Pill>}
+                  {r.tools && <span>araçlar: {r.tools}</span>}
+                  {r.tokensOut !== null && <span>{(r.tokensIn ?? 0) + r.tokensOut} token</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <Pager page={data.page} pageSize={data.pageSize} total={data.total} onPage={setPage} />
+        </div>
+      )}
     </div>
   )
 }

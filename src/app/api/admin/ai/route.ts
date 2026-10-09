@@ -4,6 +4,8 @@ import { requireAdmin, pageOf, cleanReason } from "@/lib/admin-api"
 import { keysFromInput, keysFromQuestion, parseKeys, safeHref } from "@/lib/ai-learning"
 import { normalize } from "@/lib/ai-guide"
 import { notify } from "@/lib/notifications"
+import { AI_LIMITS, AI_MODEL, aiEnabled } from "@/lib/ai/config"
+import { dayKey } from "@/lib/ai/usage"
 
 export const dynamic = "force-dynamic"
 
@@ -35,6 +37,32 @@ export async function GET(req: Request) {
       byKind: Object.fromEntries(byKind.map((k) => [k.kind, k._count._all])),
       topUnknown: topUnknown.map((t) => ({ norm: t.norm, count: t._count._all })),
       taughtCount: await db.aiTaughtAnswer.count({ where: { active: true } }),
+    })
+  }
+
+  if (view === "llm") {
+    const days = await db.aiUsageDay.findMany({ orderBy: { day: "desc" }, take: 7 })
+    const today = days.find((d) => d.day === dayKey()) ?? null
+    const where: any = { kind: "llm", ...(q ? { norm: { contains: normalize(q) } } : {}) }
+    const [rows, total, good, bad, count7, toolRows] = await Promise.all([
+      db.aiInteraction.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: size, select: { id: true, message: true, reply: true, tools: true, helpful: true, tokensIn: true, tokensOut: true, createdAt: true, taught: true } }),
+      db.aiInteraction.count({ where }),
+      db.aiInteraction.count({ where: { kind: "llm", helpful: true, createdAt: { gte: week } } }),
+      db.aiInteraction.count({ where: { kind: "llm", helpful: false, createdAt: { gte: week } } }),
+      db.aiInteraction.count({ where: { kind: "llm", createdAt: { gte: week } } }),
+      db.aiInteraction.findMany({ where: { kind: "llm", createdAt: { gte: week }, tools: { not: null } }, select: { tools: true }, take: 2000 }),
+    ])
+    const toolCounts: Record<string, number> = {}
+    for (const r of toolRows) for (const t of (r.tools ?? "").split(",").filter(Boolean)) toolCounts[t] = (toolCounts[t] ?? 0) + 1
+    const tokens = (d: { inputTokens: number; outputTokens: number } | null) => (d ? d.inputTokens + d.outputTokens : 0)
+    // rough list-price estimate for the default model ($4 in / $20 out per million tokens): cache reads make the real bill lower
+    const cost = (d: { inputTokens: number; outputTokens: number }) => Math.round(((d.inputTokens * 4 + d.outputTokens * 20) / 1_000_000) * 100) / 100
+    return NextResponse.json({
+      enabled: aiEnabled(), model: AI_MODEL(), budget: AI_LIMITS.dailyTokenBudget,
+      today: today ? { ...today, tokens: tokens(today), estUsd: cost(today), budgetUsedPct: Math.min(100, Math.round((tokens(today) / AI_LIMITS.dailyTokenBudget) * 100)) } : { day: dayKey(), requests: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, fallbacks: 0, tokens: 0, estUsd: 0, budgetUsedPct: 0 },
+      days: days.map((d) => ({ day: d.day, requests: d.requests, tokens: tokens(d), fallbacks: d.fallbacks, estUsd: cost(d) })),
+      count7, good, bad, helpfulRate: good + bad ? Math.round((good / (good + bad)) * 100) : null, toolCounts,
+      items: rows, total, page, pageSize: size,
     })
   }
 

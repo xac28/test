@@ -370,6 +370,10 @@ model Booking {
   
   price         Float
   
+  // automation marks: each reminder / review request is sent once
+  reminder24At  DateTime?
+  reminder1hAt  DateTime?
+  reviewAskedAt DateTime?
   review        Review?
   chatMessages  ChatMessage[]
   createdAt     DateTime @default(now())
@@ -698,6 +702,9 @@ model WorkshopEnrollment {
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   status     EnrollmentStatus @default(CONFIRMED)
   createdAt  DateTime         @default(now())
+  // automation marks: each reminder is sent once
+  reminder24At DateTime?
+  reminder1hAt DateTime?
 
   @@unique([workshopId, userId])
   @@index([userId])
@@ -766,6 +773,11 @@ model AiInteraction {
   dismissed  Boolean   @default(false) // an admin decided it needs no answer
   createdAt  DateTime  @default(now())
   feedbackAt DateTime?
+  // AI answers (kind "llm"): what the guide said, which tools it used and what it cost
+  reply      String?   @db.Text
+  tools      String?   @db.VarChar(200)
+  tokensIn   Int?
+  tokensOut  Int?
 
   @@index([kind, taught, dismissed])
   @@index([helpful])
@@ -1019,4 +1031,14 @@ model OrderItem {
   quantity   Int
 
   @@index([orderId])
+}
+
+// Daily token ledger of the AI guide: the budget guard reads it, the admin sees it
+model AiUsageDay {
+  day             String @id @db.VarChar(10) // YYYY-MM-DD (UTC)
+  requests        Int    @default(0)
+  inputTokens     Int    @default(0)
+  outputTokens    Int    @default(0)
+  cacheReadTokens Int    @default(0)
+  fallbacks       Int    @default(0) // answered by the rule engine because the AI was off, over budget or failed
 }

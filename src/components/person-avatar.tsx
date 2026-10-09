@@ -8,8 +8,8 @@ import { useState } from "react"
  */
 const SKIN = ["#f5d3b8", "#eebd96", "#d9a273", "#b97c52", "#8d5a3b", "#6b412a"]
 const HAIR = ["#1d1713", "#3a2618", "#5c3a21", "#8a5a2b", "#c28a43", "#6d6d70", "#9b3d2e"]
-const CLOTH = ["#1f6b66", "#e2684a", "#7b63bd", "#f2bb3a", "#c24d77", "#2a857d", "#47a39a", "#ee8466"]
-const BG: [string, string][] = [["#fce6dc", "#fdf0cf"], ["#d6ece9", "#eef7f6"], ["#ece7f7", "#f9e3ea"], ["#fdf0cf", "#fce6dc"], ["#aedbd5", "#eef7f6"], ["#f9e3ea", "#fce6dc"]]
+const CLOTH = ["#1c5496", "#2f7de1", "#7b63bd", "#5ab9ec", "#c24d77", "#2569b5", "#3f88d4", "#5b9cef"]
+const BG: [string, string][] = [["#dcebfc", "#def2fc"], ["#d2e6f9", "#eaf3fc"], ["#ece7f7", "#f9e3ea"], ["#def2fc", "#dcebfc"], ["#a6cdf1", "#eaf3fc"], ["#f9e3ea", "#dcebfc"]]
 
 function hash(s: string) {
   let h = 2166136261
@@ -61,7 +61,7 @@ export function PersonAvatar({ name, seed, size = 40, className = "", rounded = 
       ) : null}
       <path d="M37.5 45q3.5 3.6 7 0M55.5 45q3.5 3.6 7 0" stroke={eye} strokeWidth="2.2" fill="none" strokeLinecap="round" />
       <path d="M44 56q6 5 12 0" stroke="#7a3b2a" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-      <ellipse cx="37" cy="53" rx="3.5" ry="2.2" fill="#e2684a" opacity="0.18" /><ellipse cx="63" cy="53" rx="3.5" ry="2.2" fill="#e2684a" opacity="0.18" />
+      <ellipse cx="37" cy="53" rx="3.5" ry="2.2" fill="#2f7de1" opacity="0.18" /><ellipse cx="63" cy="53" rx="3.5" ry="2.2" fill="#2f7de1" opacity="0.18" />
     </svg>
   )
 }

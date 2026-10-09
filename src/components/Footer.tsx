@@ -51,7 +51,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-sage-900 text-cream/80 mt-24">
+    <footer className="bg-sage-900 text-cream/80">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-16 pb-10">
         <div className="grid md:grid-cols-12 gap-12 pb-12 border-b border-white/15">
           <div className="md:col-span-4">

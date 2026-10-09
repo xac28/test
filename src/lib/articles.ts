@@ -1,6 +1,15 @@
 /** Article (İçerik) helpers: reading time, a tiny safe markup parser, validation. */
 
-export const ARTICLE_CATEGORIES = ["Yoga", "Nefes", "Meditasyon", "Felsefe", "Beslenme", "Yaşam", "Eğitmenlerden"] as const
+/** "Yazılar" menu: the editorial categories. */
+export const ARTICLE_CATEGORIES = ["Sağlık", "Beslenme", "Hareket", "Kişisel Gelişim", "Bakım"] as const
+/** Home page "Duyurular / Haberler" box. */
+export const NEWS_CATEGORIES = ["Duyurular", "Haberler"] as const
+/** "Podcast › Konuşmalar" lists articles of this category. */
+export const PODCAST_CATEGORY = "Podcast"
+/** Everything an editor can pick in the admin article form. */
+export const ARTICLE_ADMIN_CATEGORIES = [...ARTICLE_CATEGORIES, ...NEWS_CATEGORIES, PODCAST_CATEGORY] as const
+/** Categories kept out of the "Yazılar" lists. */
+export const NON_EDITORIAL_CATEGORIES: string[] = [...NEWS_CATEGORIES, PODCAST_CATEGORY]
 
 export type Block =
   | { type: "h2"; text: string }

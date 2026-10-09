@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { ArrowRight, Check, Radio, Video, CalendarCheck, Sparkles, Compass, Users } from 'lucide-react';
+import { ArrowRight, Check, Megaphone, Radio, Video, CalendarCheck, Sparkles, Compass, Users } from 'lucide-react';
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { ArticleCard, ArticleCardData, Cover, LiveNowCard, SectionHead, WorkshopCard, WorkshopCardData, useL } from '@/components/editorial';
+import { ArticleCardData, Cover, LiveNowCard, SectionHead, WorkshopCard, WorkshopCardData, useDateFormat, useL } from '@/components/editorial';
+import { BreathBreak, PoseOfTheDay } from '@/components/home-extras';
+import { NewsletterBand, WaveDivider } from '@/components/section-pages';
+import { ARTICLE_CATEGORIES } from '@/lib/articles';
 import dynamic from 'next/dynamic';
 import { Aurora, Marquee, PhotoBackdrop, Reveal, Stagger, StaggerItem } from '@/components/motion';
 import { FaqList } from '@/components/marketing';
@@ -22,11 +25,13 @@ export interface HomeData {
   live: { id: string; title: string; viewers: number; teacher: string | null; trial?: boolean } | null;
   workshops: WorkshopCardData[];
   articles: ArticleCardData[];
+  news: ArticleCardData[];
   teachers: { id: string; name: string; image: string | null; bio: string | null; specialties: string[] }[];
 }
 
 export default function HomeView({ data }: { data: HomeData }) {
   const L = useL();
+  const f = useDateFormat();
   const { status } = useSession();
   const visitor = status === 'unauthenticated';
   const [heroPose, setHeroPose] = useState(HERO_POSES[0]);
@@ -36,8 +41,8 @@ export default function HomeView({ data }: { data: HomeData }) {
       <Navbar />
       <main>
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden border-b border-rule">
-          <div className="absolute inset-0 bg-gradient-to-br from-clay-50 via-cream to-teal-50" aria-hidden />
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-clay-50 via-cream to-teal-100" aria-hidden />
           <PhotoBackdrop sources={PHOTOS.hero} opacity={0.12} />
           <Aurora />
           <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-14 lg:pt-16 lg:pb-20 grid lg:grid-cols-12 gap-6 lg:gap-10 items-center">
@@ -92,10 +97,85 @@ export default function HomeView({ data }: { data: HomeData }) {
               )}
             </div>
           </div>
+          <WaveDivider className="relative text-cream" />
+        </section>
+
+        {/* ── Yazılar + Duyurular / Haberler (from the sketch) ─────── */}
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-10" data-testid="home-feed">
+          <div className="grid lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-7 rounded-3xl border border-rule bg-white p-6 md:p-9 shadow-md" data-testid="home-articles">
+              <div className="flex flex-wrap items-end justify-between gap-4 pb-5 border-b border-rule">
+                <h2 className="font-display text-4xl md:text-5xl">{L('Yazılar', 'Articles')}</h2>
+                <Link href="/icerikler" className="tap-area group inline-flex items-center gap-2 text-sm font-semibold text-teal-700">{L('Tüm yazılar', 'All articles')} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" /></Link>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-5">
+                {ARTICLE_CATEGORIES.map((c) => (
+                  <Link key={c} href={`/icerikler?category=${encodeURIComponent(c)}`} className="tap-area px-3.5 py-1.5 text-xs font-semibold rounded-full bg-teal-50 text-teal-700 hover:bg-teal-700 hover:text-white transition-colors">{c}</Link>
+                ))}
+              </div>
+              {data.articles.length === 0 ? (
+                <p className="mt-8 text-sage-600 py-10 text-center border border-dashed border-rule rounded-2xl">{L('Yakında burada yeni yazılar olacak.', 'New articles will appear here soon.')}</p>
+              ) : (
+                <div className="mt-6 grid md:grid-cols-2 gap-6">
+                  <Link href={`/icerikler/${data.articles[0].slug}`} data-testid="article-card" className="group block">
+                    <Cover src={data.articles[0].coverUrl} tone="clay" label={data.articles[0].title[0]} className="aspect-[4/3] mb-4 rounded-2xl" />
+                    <p className="eyebrow mb-1.5">{data.articles[0].category}</p>
+                    <h3 className="font-display text-2xl leading-snug group-hover:underline underline-offset-4 decoration-1">{data.articles[0].title}</h3>
+                    <p className="text-sm text-sage-600 mt-2 line-clamp-2">{data.articles[0].excerpt}</p>
+                  </Link>
+                  <ul className="divide-y divide-rule">
+                    {data.articles.slice(1).map((a) => (
+                      <li key={a.slug}>
+                        <Link href={`/icerikler/${a.slug}`} data-testid="article-card" className="group block py-4 first:pt-0">
+                          <p className="eyebrow mb-1">{a.category}{a.publishedAt ? <span className="normal-case tracking-normal font-normal text-sage-500"> · {f.dateShort(a.publishedAt)}</span> : null}</p>
+                          <h3 className="font-display text-xl leading-snug group-hover:text-teal-700 transition-colors">{a.title}</h3>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="lg:col-span-5 relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600 text-white p-6 md:p-9 shadow-lg" data-testid="home-news">
+              <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-sky-300/20 blur-3xl" aria-hidden />
+              <div className="relative">
+                <div className="flex items-end justify-between gap-4 pb-5 border-b border-white/20">
+                  <h2 className="font-display text-4xl md:text-5xl leading-[1.05]">{L('Duyurular', 'Announcements')}<br />{L('Haberler', '& News')}</h2>
+                  <Link href="/duyurular" className="tap-area text-sm font-semibold text-white/85 hover:text-white inline-flex items-center gap-1.5 shrink-0">{L('Tümü', 'All')} <ArrowRight size={14} /></Link>
+                </div>
+                {data.news.length === 0 ? (
+                  <div className="mt-10 flex flex-col items-center text-center gap-4 py-10">
+                    <span className="w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center"><Megaphone size={26} className="text-sky-200" /></span>
+                    <p className="text-white/75 max-w-xs">{L('Şimdilik yeni bir duyuru yok. Gelişmeleri aşağıdaki bültenle takip edebilirsiniz.', 'No announcements for now. Follow updates with the newsletter below.')}</p>
+                  </div>
+                ) : (
+                  <ul className="mt-2">
+                    {data.news.map((n) => (
+                      <li key={n.slug} className="border-b border-white/15 last:border-0">
+                        <Link href={`/icerikler/${n.slug}`} className="group flex items-start gap-4 py-4">
+                          <span className="shrink-0 mt-1 text-[10px] font-bold tracking-wider uppercase bg-white/15 rounded-full px-2.5 py-1">{n.category}</span>
+                          <span className="min-w-0">
+                            <span className="block font-display text-xl leading-snug group-hover:underline underline-offset-4 decoration-1">{n.title}</span>
+                            {n.publishedAt && <span className="block text-xs text-white/60 mt-1">{f.date(n.publishedAt)}</span>}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-12 gap-6 mt-6">
+            <div className="lg:col-span-5"><PoseOfTheDay /></div>
+            <div className="lg:col-span-7"><BreathBreak /></div>
+          </div>
         </section>
 
         {/* ── category ticker ──────────────────────────────────── */}
-        <div className="border-b border-rule py-4 font-display text-2xl text-sage-600">
+        <div className="border-y border-rule py-4 mt-16 font-display text-2xl text-sage-600">
           <Marquee
             items={['Hatha', 'Vinyasa', 'Yin', 'Restoratif', 'Nefes', 'Meditasyon', 'Yoga Nidra'].map((c) => (
               <Link key={c} href={`/atolyeler?category=${encodeURIComponent(c)}`} className="tap-area hover:text-clay-600 italic">
@@ -185,7 +265,7 @@ export default function HomeView({ data }: { data: HomeData }) {
 
         {/* ── 03 Live studio band ──────────────────────────────── */}
         <section className="relative overflow-hidden mt-28 bg-stage text-cream">
-          <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_20%,rgba(201,99,58,0.28),transparent_70%),radial-gradient(50%_70%_at_10%_90%,rgba(233,147,107,0.14),transparent_70%)]" aria-hidden />
+          <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_20%,rgba(47,125,225,0.28),transparent_70%),radial-gradient(50%_70%_at_10%_90%,rgba(91,156,240,0.14),transparent_70%)]" aria-hidden />
           <PhotoBackdrop sources={PHOTOS.studio} opacity={0.35} />
           <div className="absolute inset-0 bg-gradient-to-r from-stage via-stage/90 to-stage/40" aria-hidden />
           <div className="relative max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-12 gap-12 items-center">
@@ -209,7 +289,7 @@ export default function HomeView({ data }: { data: HomeData }) {
               </div>
             </div>
             <Reveal className="lg:col-span-6" delay={0.1}>
-              <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-white/15 bg-[radial-gradient(80%_90%_at_70%_30%,rgba(201,99,58,0.45),rgba(26,24,21,0.95)_70%)] shadow-2xl">
+              <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-white/15 bg-[radial-gradient(80%_90%_at_70%_30%,rgba(47,125,225,0.45),rgba(26,24,21,0.95)_70%)] shadow-2xl">
                 <PhotoBackdrop sources={PHOTOS.meditation} opacity={0.9} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" aria-hidden />
                 <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-accent text-white text-[11px] font-bold tracking-wider uppercase px-2 py-1 rounded"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> {L('Canlı', 'Live')}</span>
@@ -221,24 +301,6 @@ export default function HomeView({ data }: { data: HomeData }) {
             </Reveal>
           </div>
         </section>
-
-        {/* ── 04 Articles ──────────────────────────────────────── */}
-        {data.articles.length > 0 && (
-          <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28">
-            <SectionHead
-              num="06"
-              label={L('İçerikler', 'Journal')}
-              title={L('Nefes, beden ve zihin üzerine yazılar', 'Writing on breath, body and mind')}
-              href="/icerikler"
-              linkLabel={L('Tüm yazılar', 'All articles')}
-            />
-            <Stagger className="grid md:grid-cols-4 gap-x-8 gap-y-12">
-              {data.articles.map((a, i) => (
-                <StaggerItem key={a.slug} className={i === 0 ? 'md:col-span-2' : ''}><ArticleCard a={a} large={i === 0} /></StaggerItem>
-              ))}
-            </Stagger>
-          </section>
-        )}
 
         {/* ── Teachers ─────────────────────────────────────────── */}
         {data.teachers.length > 0 && (
@@ -273,7 +335,7 @@ export default function HomeView({ data }: { data: HomeData }) {
 
         {/* ── Join ─────────────────────────────────────────────── */}
         <section className="relative overflow-hidden mt-28 bg-sage-900 text-cream" data-testid="join-band">
-          <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_20%,rgba(201,99,58,0.28),transparent_70%),radial-gradient(50%_70%_at_10%_90%,rgba(233,147,107,0.14),transparent_70%)]" aria-hidden />
+          <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_20%,rgba(47,125,225,0.28),transparent_70%),radial-gradient(50%_70%_at_10%_90%,rgba(91,156,240,0.14),transparent_70%)]" aria-hidden />
           <PhotoBackdrop sources={PHOTOS.join} opacity={0.4} />
           <div className="absolute inset-0 bg-gradient-to-br from-sage-900 via-sage-900/85 to-sage-900/40" aria-hidden />
           <div className="relative max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-12 gap-12 items-center">
@@ -336,6 +398,7 @@ export default function HomeView({ data }: { data: HomeData }) {
             </div>
           </section>
         </Reveal>
+        <NewsletterBand />
       </main>
       <Footer />
     </>

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield, ChevronDown, Sparkles, PersonStanding, Compass, HelpCircle, Info, GraduationCap } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Radio, Settings, Shield, ChevronDown } from 'lucide-react';
+import { ARTICLE_CATEGORIES } from '@/lib/articles';
 import { useI18n } from '@/i18n';
 import { NotificationBell } from '@/components/notification-bell';
 import { Portrait } from '@/components/person-avatar';
@@ -24,8 +25,11 @@ export default function Navbar() {
   const [drawerMax, setDrawerMax] = useState<number | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
-  const [exploreOpen, setExploreOpen] = useState(false);
-  const exploreRef = useRef<HTMLDivElement>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const openMenu = (id: string) => { clearTimeout(closeTimer.current); setOpenId(id); };
+  const scheduleClose = () => { clearTimeout(closeTimer.current); closeTimer.current = setTimeout(() => setOpenId(null), 160); };
   // the drawer must end at the bottom of the screen wherever the header currently is (a notice bar can sit above it)
   useEffect(() => {
     if (!mobileOpen) return;
@@ -59,16 +63,16 @@ export default function Navbar() {
     };
   }, []);
 
-  useEffect(() => { setMobileOpen(false); setExploreOpen(false); }, [pathname]);
+  useEffect(() => { setMobileOpen(false); setOpenId(null); }, [pathname]);
 
   useEffect(() => {
-    if (!exploreOpen) return;
-    const close = (e: MouseEvent) => { if (exploreRef.current && !exploreRef.current.contains(e.target as Node)) setExploreOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setExploreOpen(false); };
+    if (!openId) return;
+    const close = (e: MouseEvent) => { if (navRef.current && !navRef.current.contains(e.target as Node)) setOpenId(null); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenId(null); };
     document.addEventListener('mousedown', close);
     document.addEventListener('keydown', esc);
     return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
-  }, [exploreOpen]);
+  }, [openId]);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -79,73 +83,86 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', close);
   }, [profileOpen]);
 
-  const navLinks = [
-    { href: '/atolyeler', label: t.nav.workshops },
-    { href: '/live', label: t.nav.live, live: liveCount > 0 },
-    { href: '/teachers', label: t.nav.teachers },
-    { href: '/icerikler', label: t.nav.articles },
-    { href: '/community', label: locale === 'tr' ? 'Topluluk' : 'Community' },
-    { href: '/pricing', label: t.nav.plans },
+  const tr = locale === 'tr';
+  interface NavItem { href: string; label: string }
+  interface NavGroup { id: string; label: string; href: string; items: NavItem[]; live?: boolean }
+  const groups: NavGroup[] = [
+    { id: 'shop', label: 'Shop', href: '/shop', items: [
+      { href: '/shop/wellness', label: 'Wellness' },
+      { href: '/shop/matlar', label: tr ? 'Matlar' : 'Mats' },
+      { href: '/shop/aromaterapi', label: tr ? 'Aromaterapi' : 'Aromatherapy' },
+    ] },
+    { id: 'yoga', label: 'Yoga', href: '/yoga-stilleri', items: [
+      { href: '/pozlar', label: tr ? 'Poz Kütüphanesi' : 'Pose Library' },
+      { href: '/teachers', label: tr ? 'Eğitmenler' : 'Teachers' },
+      { href: '/yoga-stilleri', label: tr ? 'Yoga Stilleri' : 'Yoga Styles' },
+    ] },
+    { id: 'yazilar', label: tr ? 'Yazılar' : 'Articles', href: '/icerikler', items: ARTICLE_CATEGORIES.map((c) => ({ href: `/icerikler?category=${encodeURIComponent(c)}`, label: c })) },
+    { id: 'dersler', label: tr ? 'Dersler' : 'Lessons', href: '/live', live: liveCount > 0, items: [
+      { href: '/live', label: tr ? 'Canlı' : 'Live' },
+      { href: session?.user ? homePathFor(role) : '/login', label: tr ? 'Kayıt' : 'Recordings' },
+    ] },
+    { id: 'atolye', label: tr ? 'Atölye' : 'Workshops', href: '/atolyeler', items: [
+      { href: '/atolyeler?mode=LIVE', label: tr ? 'Canlı' : 'Live' },
+      { href: '/atolyeler?mode=RECORDED', label: tr ? 'Kayıt' : 'Recorded' },
+    ] },
+    { id: 'podcast', label: 'Podcast', href: '/podcast', items: [
+      { href: '/podcast', label: tr ? 'Konuşmalar' : 'Conversations' },
+    ] },
   ];
-
-  const exploreLinks = [
-    { href: '/yoga-stilleri', icon: Sparkles, label: locale === 'tr' ? 'Yoga stilleri' : 'Yoga styles', hint: locale === 'tr' ? 'Hatha, Vinyasa, Yin…' : 'Hatha, Vinyasa, Yin…' },
-    { href: '/pozlar', icon: PersonStanding, label: locale === 'tr' ? 'Poz kütüphanesi' : 'Pose library', hint: locale === 'tr' ? '3B döndürülebilir pozlar' : 'Rotatable 3D poses' },
-    { href: '/nasil-calisir', icon: Compass, label: locale === 'tr' ? 'Nasıl çalışır?' : 'How it works', hint: locale === 'tr' ? 'İlk derse dört adım' : 'Four steps to your first class' },
-    { href: '/sss', icon: HelpCircle, label: locale === 'tr' ? 'Sık sorulan sorular' : 'FAQ', hint: locale === 'tr' ? 'Merak edilenler' : 'Common questions' },
-    { href: '/ogretmenler-icin', icon: GraduationCap, label: locale === 'tr' ? 'Eğitmenler için' : 'For teachers', hint: locale === 'tr' ? 'AYA\'da ders ver' : 'Teach on AYA' },
-    { href: '/hakkimizda', icon: Info, label: locale === 'tr' ? 'Hakkımızda' : 'About', hint: locale === 'tr' ? 'Değerlerimiz' : 'Our values' },
-  ];
-  const exploreActive = exploreLinks.some((l) => pathname === l.href || pathname.startsWith(l.href + '/'));
-
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
+  const isActive = (href: string) => { const base = href.split('?')[0]; return pathname === base || pathname.startsWith(base + '/'); };
+  const groupActive = (g: NavGroup) => isActive(g.href) || g.items.some((i) => isActive(i.href));
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-50 bg-cream border-b border-rule">
+    <header ref={headerRef} className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-rule">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between gap-8">
-        <Link href="/" aria-label="AYA ana sayfa" className="tap-area text-ink text-[1.65rem] leading-none">
-          <Wordmark />
+        <Link href="/" aria-label="AYA ana sayfa" className="tap-area text-ink text-[1.65rem] leading-none inline-flex items-start gap-0.5">
+          <Wordmark /><span aria-hidden className="text-[0.55rem] mt-0.5 font-body text-teal-600">®</span>
         </Link>
 
-        <nav aria-label="Ana menü" className="hidden lg:flex items-center gap-6 xl:gap-8 flex-1">
-          {navLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              aria-current={isActive(l.href) ? 'page' : undefined}
-              className={`relative text-[0.9rem] font-medium py-1 transition-colors ${
-                isActive(l.href) ? 'text-ink' : 'text-sage-600 hover:text-ink'
-              } after:absolute after:left-0 after:-bottom-0.5 after:h-px after:bg-ink after:transition-all ${
-                isActive(l.href) ? 'after:w-full' : 'after:w-0 hover:after:w-full'
-              }`}
-            >
-              {l.label}
-              {l.live && (
-                <span title="Şu anda canlı yayın var" className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle animate-pulse" />
-              )}
-            </Link>
-          ))}
-          <div className="relative" ref={exploreRef}>
-            <button
-              onClick={() => setExploreOpen((o) => !o)}
-              aria-haspopup="menu"
-              aria-expanded={exploreOpen}
-              data-testid="explore-button"
-              className={`inline-flex items-center gap-1 text-[0.9rem] font-medium py-1 transition-colors ${exploreActive || exploreOpen ? 'text-ink' : 'text-sage-600 hover:text-ink'}`}
-            >
-              {locale === 'tr' ? 'Keşfet' : 'Explore'} <ChevronDown size={15} className={`transition-transform ${exploreOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {exploreOpen && (
-              <div role="menu" data-testid="explore-menu" className="absolute left-1/2 -translate-x-1/2 mt-3 w-[22rem] bg-paper border border-rule rounded-2xl shadow-xl p-2 z-50">
-                {exploreLinks.map((l) => (
-                  <Link key={l.href} href={l.href} role="menuitem" className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-clay-50 group">
-                    <span className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center group-hover:bg-clay-100 group-hover:text-clay-600 transition-colors"><l.icon size={18} /></span>
-                    <span><span className="block text-sm font-semibold text-ink">{l.label}</span><span className="block text-xs text-sage-500">{l.hint}</span></span>
+        <nav ref={navRef} aria-label="Ana menü" className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1">
+          {groups.map((g) => {
+            const open = openId === g.id;
+            return (
+              <div key={g.id} className="relative" onMouseEnter={() => openMenu(g.id)} onMouseLeave={scheduleClose}>
+                <div className={`flex items-center rounded-full pl-3.5 pr-1.5 transition-colors ${open ? 'bg-teal-50' : ''}`}>
+                  <Link
+                    href={g.href}
+                    aria-current={isActive(g.href) ? 'page' : undefined}
+                    onFocus={() => openMenu(g.id)}
+                    className={`relative text-[0.92rem] font-semibold py-2 transition-colors ${groupActive(g) || open ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}
+                  >
+                    {g.label}
+                    {g.live && <span title="Şu anda canlı yayın var" className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle animate-pulse" />}
                   </Link>
-                ))}
+                  <button
+                    onClick={() => openMenu(g.id)}
+                    aria-haspopup="menu"
+                    aria-expanded={open}
+                    aria-label={`${g.label} ${tr ? 'alt menüsü' : 'submenu'}`}
+                    data-testid={`nav-toggle-${g.id}`}
+                    className="p-1.5 text-sage-500 hover:text-teal-700"
+                  >
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+                {open && (
+                  <div role="menu" data-testid={`nav-panel-${g.id}`} className="absolute left-0 top-full pt-2 z-50 animate-fade-up" style={{ animationDuration: '0.18s' }}>
+                    <div className="min-w-[13.5rem] bg-white border border-rule rounded-2xl shadow-xl p-2">
+                      {g.items.map((i) => (
+                        <Link key={i.label + i.href} href={i.href} role="menuitem" className="flex items-center justify-between gap-6 px-4 py-2.5 rounded-xl text-sm text-sage-800 hover:bg-teal-50 hover:text-teal-700 transition-colors">
+                          {i.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })}
+          <Link href="/community" aria-current={isActive('/community') ? 'page' : undefined} className={`text-[0.92rem] font-semibold px-3.5 py-2 transition-colors ${isActive('/community') ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}>
+            {tr ? 'Topluluk' : 'Community'}
+          </Link>
         </nav>
 
         <div className="flex items-center gap-4">
@@ -203,9 +220,9 @@ export default function Navbar() {
             </div>
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-5">
-              <Link href="/login" className="text-sm font-medium text-sage-700 hover:text-ink">{t.nav.signIn}</Link>
-              <Link href="/login?mode=register" className="text-sm font-medium bg-ink text-cream hover:bg-sage-800 px-5 py-2.5 rounded-md transition-colors">
+            <div className="hidden sm:flex items-center gap-3">
+              <Link href="/login" data-testid="nav-signin" className="text-sm font-semibold border-[1.5px] border-ink text-ink hover:bg-ink hover:text-white px-5 py-2 rounded-full transition-colors">{t.nav.signIn}</Link>
+              <Link href="/login?mode=register" data-testid="nav-signup" className="hidden xl:inline-flex text-sm font-semibold bg-accent text-white hover:bg-accent-dark px-5 py-2.5 rounded-full shadow-glow transition-colors">
                 {t.nav.signUp}
               </Link>
             </div>
@@ -225,18 +242,20 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="lg:hidden border-t border-rule bg-cream absolute w-full left-0 shadow-lg overflow-y-auto overscroll-contain" style={drawerMax ? { maxHeight: drawerMax } : { maxHeight: 'calc(100dvh - 4.25rem)' }} data-testid="mobile-menu">
           <nav className="max-w-7xl mx-auto px-6 py-4 flex flex-col">
-            {navLinks.map((l) => (
-              <Link key={l.href} href={l.href} className="py-3.5 border-b border-rule text-lg font-display flex items-center gap-2">
-                {l.label}
-                {l.live && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
-              </Link>
+            {groups.map((g) => (
+              <div key={g.id} className="py-3 border-b border-rule">
+                <Link href={g.href} className="text-xl font-display flex items-center gap-2">
+                  {g.label}
+                  {g.live && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
+                </Link>
+                <div className="flex flex-wrap gap-x-5 gap-y-1 mt-1.5">
+                  {g.items.map((i) => (
+                    <Link key={i.label + i.href} href={i.href} className="text-sm text-sage-600 py-1.5">{i.label}</Link>
+                  ))}
+                </div>
+              </div>
             ))}
-            <p className="eyebrow pt-5 pb-1">{locale === 'tr' ? 'Keşfet' : 'Explore'}</p>
-            {exploreLinks.map((l) => (
-              <Link key={l.href} href={l.href} className="py-3 border-b border-rule flex items-center gap-3 text-sage-800">
-                <l.icon size={17} className="text-clay-500" /> {l.label}
-              </Link>
-            ))}
+            <Link href="/community" className="py-3.5 border-b border-rule text-xl font-display">{tr ? 'Topluluk' : 'Community'}</Link>
             <div className="flex items-center justify-between pt-4">
               {!session?.user ? (
                 <Link href="/login?mode=register" className="text-sm font-medium bg-ink text-cream px-5 py-2.5 rounded-md">{t.nav.signIn} / {t.nav.signUp}</Link>

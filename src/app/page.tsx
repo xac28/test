@@ -5,12 +5,14 @@ import { SITE_URL, SITE_DESCRIPTION } from "@/lib/site"
 import HomeView, { HomeData } from "@/components/home-view"
 import { listActiveBroadcasts } from "@/lib/live-rooms"
 import { seatsLeft, workshopState } from "@/lib/workshops"
+import { NEWS_CATEGORIES, NON_EDITORIAL_CATEGORIES } from "@/lib/articles"
 
 export const dynamic = "force-dynamic"
 
 async function loadHome(): Promise<HomeData> {
   try {
-    const [rooms, workshopRows, articleRows, teacherRows] = await Promise.all([
+    const articleSelect = { slug: true, title: true, excerpt: true, category: true, coverUrl: true, publishedAt: true, author: { select: { name: true } } } as const
+    const [rooms, workshopRows, articleRows, newsRows, teacherRows] = await Promise.all([
       listActiveBroadcasts().catch(() => []),
       db.workshop.findMany({
         where: { status: "PUBLISHED", OR: [{ mode: "RECORDED" }, { startsAt: { gte: new Date(Date.now() - 60 * 60_000) } }] },
@@ -22,10 +24,16 @@ async function loadHome(): Promise<HomeData> {
         take: 12,
       }),
       db.article.findMany({
-        where: { status: "PUBLISHED" },
-        select: { slug: true, title: true, excerpt: true, category: true, coverUrl: true, publishedAt: true, author: { select: { name: true } } },
+        where: { status: "PUBLISHED", category: { notIn: NON_EDITORIAL_CATEGORIES } },
+        select: articleSelect,
         orderBy: { publishedAt: "desc" },
-        take: 3,
+        take: 5,
+      }),
+      db.article.findMany({
+        where: { status: "PUBLISHED", category: { in: [...NEWS_CATEGORIES] } },
+        select: articleSelect,
+        orderBy: { publishedAt: "desc" },
+        take: 5,
       }),
       db.teacher.findMany({
         where: { isTrialMode: false, user: { banned: false, ...notSuspended() } },
@@ -60,6 +68,7 @@ async function loadHome(): Promise<HomeData> {
       live: live ? { id: live.id, title: live.title, viewers: live.viewerCount, teacher: live.teacher.name, trial: live.teacher.trial } : null,
       workshops,
       articles: articleRows.map((a) => ({ ...a, publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null })),
+      news: newsRows.map((a) => ({ ...a, publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null })),
       teachers: teacherRows.map((t) => {
         let specialties: string[] = []
         try {
@@ -70,7 +79,7 @@ async function loadHome(): Promise<HomeData> {
     }
   } catch (e) {
     console.error("[HOME_LOAD_ERROR]", e)
-    return { live: null, workshops: [], articles: [], teachers: [] }
+    return { live: null, workshops: [], articles: [], news: [], teachers: [] }
   }
 }
 

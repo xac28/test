@@ -99,8 +99,8 @@ for (const d of DEVICES) {
         await link.click()
         await expect(page).toHaveURL(/\/pozlar$/)
       } else {
-        await page.getByTestId("explore-button").click()
-        await page.getByTestId("explore-menu").locator("a[href='/pozlar']").click()
+        await page.getByTestId("nav-toggle-yoga").click()
+        await page.getByTestId("nav-panel-yoga").locator("a[href='/pozlar']").click()
         await expect(page).toHaveURL(/\/pozlar$/)
       }
       await ctx.close()

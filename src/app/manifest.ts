@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Sertifikalı eğitmenlerle birebir dersler, canlı yayınlar ve atölyeler.",
     start_url: "/",
     display: "standalone",
-    background_color: "#fbf6ee",
-    theme_color: "#fbf6ee",
+    background_color: "#f2f7fd",
+    theme_color: "#f2f7fd",
     lang: "tr",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },

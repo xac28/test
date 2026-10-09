@@ -4,7 +4,7 @@ import { useConfirm } from './admin/ui';
 
 import { useCallback, useEffect, useState } from 'react';
 import { FileText, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
-import { ARTICLE_CATEGORIES } from '@/lib/articles';
+import { ARTICLE_ADMIN_CATEGORIES } from '@/lib/articles';
 
 interface Row {
   id: string;
@@ -26,7 +26,7 @@ interface Draft {
   status: 'DRAFT' | 'PUBLISHED';
 }
 
-const EMPTY: Draft = { title: '', excerpt: '', body: '', category: ARTICLE_CATEGORIES[0], coverUrl: '', status: 'DRAFT' };
+const EMPTY: Draft = { title: '', excerpt: '', body: '', category: ARTICLE_ADMIN_CATEGORIES[0], coverUrl: '', status: 'DRAFT' };
 
 export function AdminArticles() {
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -106,7 +106,7 @@ export function AdminArticles() {
           <div><label className="eyebrow block mb-1.5">Başlık</label><input data-testid="article-title-input" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} className={field} /></div>
           <div><label className="eyebrow block mb-1.5">Özet (20–400 karakter)</label><textarea value={draft.excerpt} onChange={(e) => setDraft({ ...draft, excerpt: e.target.value })} rows={2} className={field} /></div>
           <div className="grid md:grid-cols-2 gap-4">
-            <div><label className="eyebrow block mb-1.5">Kategori</label><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} className={field}>{ARTICLE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></div>
+            <div><label className="eyebrow block mb-1.5">Kategori</label><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} className={field}>{ARTICLE_ADMIN_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></div>
             <div><label className="eyebrow block mb-1.5">Kapak görseli (bağlantı)</label><input value={draft.coverUrl} onChange={(e) => setDraft({ ...draft, coverUrl: e.target.value })} className={field} placeholder="https://…" /></div>
           </div>
           <div>

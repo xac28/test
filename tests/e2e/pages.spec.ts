@@ -16,16 +16,50 @@ test.describe("discovery pages: styles, poses, how it works, FAQ", () => {
     expect(errors).toEqual([])
   })
 
-  test("explore menu lists the info pages and navigates", async ({ page }) => {
+  test("mega menu follows the sketch and navigates", async ({ page }) => {
     await page.goto("/")
-    await page.getByTestId("explore-button").click()
-    const menu = page.getByTestId("explore-menu")
-    await expect(menu).toBeVisible()
-    for (const href of ["/yoga-stilleri", "/pozlar", "/nasil-calisir", "/sss"]) {
-      await expect(menu.locator(`a[href="${href}"]`)).toBeVisible()
+    const expected: Record<string, string[]> = {
+      shop: ["/shop/wellness", "/shop/matlar", "/shop/aromaterapi"],
+      yoga: ["/pozlar", "/teachers"],
+      yazilar: ["/icerikler?category=Sa%C4%9Fl%C4%B1k", "/icerikler?category=Beslenme", "/icerikler?category=Hareket", "/icerikler?category=Ki%C5%9Fisel%20Geli%C5%9Fim", "/icerikler?category=Bak%C4%B1m"],
+      dersler: ["/live"],
+      atolye: ["/atolyeler?mode=LIVE", "/atolyeler?mode=RECORDED"],
+      podcast: ["/podcast"],
     }
-    await menu.locator('a[href="/pozlar"]').click()
+    for (const [id, hrefs] of Object.entries(expected)) {
+      await page.getByTestId(`nav-toggle-${id}`).click()
+      const panel = page.getByTestId(`nav-panel-${id}`)
+      await expect(panel).toBeVisible()
+      for (const href of hrefs) await expect(panel.locator(`a[href="${href}"]`)).toBeVisible()
+    }
+    await page.getByTestId("nav-toggle-yoga").click()
+    await page.getByTestId("nav-panel-yoga").locator('a[href="/pozlar"]').click()
     await expect(page).toHaveURL(/\/pozlar$/)
+  })
+
+  test("home: Yazılar and Duyurular / Haberler boxes, daily pose, breathing break, newsletter", async ({ page }) => {
+    await page.goto("/")
+    await expect(page.getByTestId("home-articles")).toBeVisible()
+    await expect(page.getByTestId("home-news")).toBeVisible()
+    await expect(page.getByTestId("pose-of-day")).toBeVisible()
+    await page.getByTestId("breath-toggle").click()
+    await expect(page.getByTestId("breath-label")).toHaveText("Nefes al")
+    await page.getByTestId("breath-toggle").click()
+    await page.getByTestId("newsletter-email").fill("not-an-email")
+    await page.getByTestId("newsletter-submit").click()
+    await expect(page.getByTestId("newsletter-done")).toHaveCount(0)
+    await page.getByTestId("newsletter-email").fill(`e2e-${Date.now()}@example.com`)
+    await page.getByTestId("newsletter-submit").click()
+    await expect(page.getByTestId("newsletter-done")).toBeVisible()
+  })
+
+  test("shop, podcast and announcements pages open", async ({ page }) => {
+    for (const [path, id] of [["/shop", null], ["/shop/matlar", "shop-soon"], ["/podcast", null], ["/duyurular", null]] as const) {
+      const res = await page.goto(path)
+      expect(res?.status(), path).toBe(200)
+      if (id) await expect(page.getByTestId(id)).toBeVisible()
+    }
+    expect((await page.goto("/shop/yok"))?.status()).toBe(404)
   })
 
   test("pose library: search, category and level filters, detail page with 3D toggle", async ({ page }) => {

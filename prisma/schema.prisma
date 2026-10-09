@@ -890,3 +890,11 @@ model StreamerDevice {
 
   @@index([userId])
 }
+
+// ── Newsletter (Gelişmeleri takip edin) ────────────────────────────────────
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique @db.VarChar(190)
+  createdAt DateTime @default(now())
+}

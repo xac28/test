@@ -69,10 +69,20 @@ export async function GET(req: Request) {
   if (view === "scan") {
     // existing public texts of teachers that already contain off-platform pointers
     const hits: { owner: { id: string; name: string | null; email: string | null }; field: string; where: string; text: string; kinds: PoachKind[]; matches: string[] }[] = []
+    // every row is scanned, in pages of 1000 (a fixed "first N rows" would silently skip the newest ones on a large site)
+    const pages = async <T extends { id: string }>(find: (args: { take: number; skip?: number; cursor?: { id: string } }) => Promise<T[]>): Promise<T[]> => {
+      const all: T[] = []
+      for (let cursor: string | undefined; ; ) {
+        const rows = await find({ take: 1000, ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}) })
+        all.push(...rows)
+        if (rows.length < 1000) return all
+        cursor = rows[rows.length - 1].id
+      }
+    }
     const [teachers, workshops, videos] = await Promise.all([
-      db.teacher.findMany({ where: { bio: { not: null } }, select: { bio: true, user: { select: { id: true, name: true, email: true } } }, take: 3000 }),
-      db.workshop.findMany({ where: { status: "PUBLISHED" }, select: { title: true, subtitle: true, description: true, slug: true, teacher: { select: { user: { select: { id: true, name: true, email: true } } } } }, take: 3000 }),
-      db.teacherVideo.findMany({ select: { title: true, description: true, teacher: { select: { user: { select: { id: true, name: true, email: true } } } } }, take: 3000 }),
+      pages((a) => db.teacher.findMany({ ...a, where: { bio: { not: null } }, orderBy: { id: "asc" }, select: { id: true, bio: true, user: { select: { id: true, name: true, email: true } } } })),
+      pages((a) => db.workshop.findMany({ ...a, where: { status: "PUBLISHED" }, orderBy: { id: "asc" }, select: { id: true, title: true, subtitle: true, description: true, slug: true, teacher: { select: { user: { select: { id: true, name: true, email: true } } } } } })),
+      pages((a) => db.teacherVideo.findMany({ ...a, orderBy: { id: "asc" }, select: { id: true, title: true, description: true, teacher: { select: { user: { select: { id: true, name: true, email: true } } } } } })),
     ])
     const push = (owner: any, field: string, where: string, text: string | null | undefined) => {
       if (!text) return

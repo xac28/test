@@ -3,7 +3,7 @@ import { sendEmail } from "@/lib/email"
 import { SITE_URL } from "@/lib/site"
 import { notifyRestock } from "@/lib/automation"
 import {
-  LOW_STOCK, ORDER_STATUS_LABEL, OrderStatusId, PAY_METHOD_LABEL, UNPAID_ORDER_DAYS,
+  CARD_HOLD_MINUTES, LOW_STOCK, ORDER_STATUS_LABEL, OrderStatusId, PAY_METHOD_LABEL, UNPAID_ORDER_DAYS,
   calcTotals, canTransition, formatKurus, makeOrderCode, nextStatuses,
 } from "@/lib/shop"
 
@@ -30,11 +30,14 @@ async function mailCustomer(o: OrderWithItems, subject: string, lead: string) {
   const bank = o.payMethod === "havale" && o.status === "PENDING_PAYMENT"
     ? `<p style="background:#eef5fe;padding:14px;border-radius:12px;font-size:14px"><strong>Ödeme bilgileri</strong><br>${process.env.SHOP_ACCOUNT_NAME ? `Hesap sahibi: ${esc(process.env.SHOP_ACCOUNT_NAME)}<br>` : ""}${process.env.SHOP_IBAN ? `IBAN: ${esc(process.env.SHOP_IBAN)}<br>` : "IBAN bilgisi ayrıca e-postayla iletilecektir.<br>"}Açıklama: <strong>${esc(o.code)}</strong><br>${UNPAID_ORDER_DAYS} gün içinde ödenmeyen siparişler iptal edilir.</p>`
     : ""
+  const card = o.payMethod === "kart" && o.status === "PENDING_PAYMENT"
+    ? `<p style="background:#eef5fe;padding:14px;border-radius:12px;font-size:14px"><strong>Kart ödemesi</strong><br>Ödemeyi sipariş sayfasından tamamlayabilirsiniz. ${CARD_HOLD_MINUTES / 60} saat içinde tamamlanmazsa sipariş iptal edilir ve ürünler stoğa döner.</p>`
+    : ""
   const track = o.trackingNo ? `<p>Kargo takip no: <strong>${esc(o.trackingNo)}</strong></p>` : ""
   return sendEmail({
     to: o.email,
     subject,
-    html: frame(`<p>Merhaba ${esc(o.name)},</p><p>${lead}</p><p>Sipariş no: <strong>${esc(o.code)}</strong></p>${itemsTable(o)}${bank}${track}<p><a href="${orderUrl(o)}" style="color:#1f62bf">Siparişimi görüntüle</a></p>`),
+    html: frame(`<p>Merhaba ${esc(o.name)},</p><p>${lead}</p><p>Sipariş no: <strong>${esc(o.code)}</strong></p>${itemsTable(o)}${bank}${card}${track}<p><a href="${orderUrl(o)}" style="color:#1f62bf">Siparişimi görüntüle</a></p>`),
   })
 }
 
@@ -45,7 +48,7 @@ async function mailAdmin(subject: string, html: string) {
 
 export interface CreateOrderData {
   name: string; email: string; phone: string; address: string; city: string; note: string | null
-  payMethod: "havale" | "kapida"; items: { productId: string; quantity: number }[]
+  payMethod: "havale" | "kapida" | "kart"; items: { productId: string; quantity: number }[]
 }
 
 /** Reserves the stock and writes the order in one transaction; nothing is kept when any line is out of stock. */
@@ -132,10 +135,17 @@ export async function setOrderStatus(orderId: string, to: OrderStatusId, opts: {
   return updated
 }
 
-/** Cron job: cancels bank-transfer orders nobody paid for, which releases their stock. */
+/**
+ * Cron job: cancels orders nobody paid for, which releases their stock: bank-transfer orders after UNPAID_ORDER_DAYS days,
+ * card orders after CARD_HOLD_MINUTES (the customer was sent to the payment page and did not finish).
+ */
 export async function cancelStaleOrders(now = new Date()) {
   const cutoff = new Date(now.getTime() - UNPAID_ORDER_DAYS * 86_400_000)
-  const stale = await db.order.findMany({ where: { status: "PENDING_PAYMENT", payMethod: "havale", createdAt: { lte: cutoff } }, select: { id: true } })
+  const cardCutoff = new Date(now.getTime() - CARD_HOLD_MINUTES * 60_000)
+  const stale = await db.order.findMany({
+    where: { status: "PENDING_PAYMENT", OR: [{ payMethod: "havale", createdAt: { lte: cutoff } }, { payMethod: "kart", createdAt: { lte: cardCutoff } }] },
+    select: { id: true },
+  })
   let cancelled = 0
   for (const o of stale) {
     try {

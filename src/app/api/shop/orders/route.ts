@@ -5,6 +5,7 @@ import { resolveUser } from "@/lib/auth-utils"
 import { validateOrderInput } from "@/lib/shop"
 import { ShopError, createOrder } from "@/lib/shop-server"
 import { subscribe } from "@/lib/newsletter"
+import { iyzicoMode } from "@/lib/iyzico"
 
 export const dynamic = "force-dynamic"
 
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}))
   const v = validateOrderInput(body)
   if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+  if (v.data.payMethod === "kart" && iyzicoMode() === "off") return NextResponse.json({ error: "Kartla ödeme şu an kullanılamıyor; havale ya da kapıda ödemeyi seçin." }, { status: 400 })
   try {
     const user = await resolveUser(req).catch(() => null)
     const order = await createOrder(v.data, user?.id ?? null)

@@ -203,3 +203,141 @@ describe("shop maintenance cron", () => {
     expect(await stockOf(p.id)).toBe(3) // a second run changes nothing
   })
 })
+
+describe("card payments (iyzico)", () => {
+  const CRON = process.env.CRON_SECRET!
+  const form = (token: string) => { const f = new FormData(); f.set("token", token); return f }
+  const callback = (token: string) => api("/api/iyzico/shop-callback", null, { method: "POST", body: form(token), redirect: "manual" })
+  const where = (r: Response) => r.headers.get("location") ?? ""
+  const tokens = (html: string) => [...html.matchAll(/name="token" value="([^"]+)"/g)].map((m) => m[1])
+
+  /** The card option exists only where iyzico (or its local stand-in) is switched on; elsewhere these tests have nothing to check. */
+  async function cardOn(admin: { token: string }) {
+    const p = await makeProduct(admin, { stock: 1 })
+    const r = await place([{ productId: p.id, quantity: 1 }], { payMethod: "kart" })
+    if (r.status === 400) return false
+    const code = (await r.json()).code
+    await db.order.deleteMany({ where: { code } })
+    return true
+  }
+  async function cardOrder(admin: { token: string }, quantity = 1, stock = 5) {
+    const p = await makeProduct(admin, { stock })
+    const body = buyer()
+    const r = await json("/api/shop/orders", null, "POST", { ...body, payMethod: "kart", items: [{ productId: p.id, quantity }] })
+    expect(r.status).toBe(200)
+    const code = (await r.json()).code as string
+    const pay = await json(`/api/shop/orders/${code}/pay`, null, "POST", { email: body.email })
+    expect(pay.status).toBe(200)
+    const html = (await pay.json()).htmlContent as string
+    const [ok, fail] = tokens(html)
+    return { p, code, email: body.email, ok, fail, html }
+  }
+
+  it("is offered only when switched on; elsewhere a card order is refused", async () => {
+    const admin = await makeUser("ADMIN")
+    const p = await makeProduct(admin)
+    const r = await place([{ productId: p.id, quantity: 1 }], { payMethod: "kart" })
+    if (r.status === 400) {
+      expect((await r.json()).error).toContain("Kartla ödeme")
+      expect(await stockOf(p.id)).toBe(5) // nothing reserved
+    } else expect(r.status).toBe(200)
+  })
+
+  it("holds the stock, opens the payment page only for the order's e-mail, and marks the order paid after a successful payment — once", async () => {
+    const admin = await makeUser("ADMIN")
+    if (!(await cardOn(admin))) return
+    const o = await cardOrder(admin, 2)
+    expect(await stockOf(o.p.id)).toBe(3)
+    const order = () => db.order.findUniqueOrThrow({ where: { code: o.code } })
+    expect((await order()).status).toBe("PENDING_PAYMENT")
+    expect((await order()).payMethod).toBe("kart")
+    expect((await json(`/api/shop/orders/${o.code}/pay`, null, "POST", { email: "baska@aya.test" })).status).toBe(404)
+    expect((await json(`/api/shop/orders/${o.code}/pay`, null, "POST", {})).status).toBe(404)
+    expect(o.html).toContain("mock-pay-ok")
+
+    const done = await Promise.all([callback(o.ok), callback(o.ok)]) // the provider may call twice
+    for (const r of done) { expect(r.status).toBe(303); expect(where(r)).toContain(`/shop/siparis/${o.code}?odeme=ok`) }
+    const paid = await order()
+    expect(paid.status).toBe("PAID")
+    expect(paid.paymentRef).toBeTruthy()
+    expect(await stockOf(o.p.id)).toBe(3)
+    // a third call changes nothing; paying an already paid order is refused
+    expect(where(await callback(o.ok))).toContain("odeme=ok")
+    expect((await order()).status).toBe("PAID")
+    expect((await json(`/api/shop/orders/${o.code}/pay`, null, "POST", { email: o.email })).status).toBe(409)
+    // the public lookup shows the new status
+    expect((await (await api(`/api/shop/orders/${o.code}`)).json()).status).toBe("PAID")
+  })
+
+  it("keeps the order open after a declined payment so it can be tried again", async () => {
+    const admin = await makeUser("ADMIN")
+    if (!(await cardOn(admin))) return
+    const o = await cardOrder(admin)
+    const r = await callback(o.fail)
+    expect(where(r)).toContain(`/shop/siparis/${o.code}?odeme=hata`)
+    expect((await db.order.findUniqueOrThrow({ where: { code: o.code } })).status).toBe("PENDING_PAYMENT")
+    expect((await json(`/api/shop/orders/${o.code}/pay`, null, "POST", { email: o.email })).status).toBe(200)
+  })
+
+  it("never trusts a forged token or a wrong amount", async () => {
+    const admin = await makeUser("ADMIN")
+    if (!(await cardOn(admin))) return
+    const o = await cardOrder(admin)
+    const [tag, payload, sig] = o.ok.split(".")
+    const forged = `${tag}.${Buffer.from(JSON.stringify({ c: o.code, a: 1, r: "ok" })).toString("base64url")}.${sig}`
+    expect(where(await callback(forged))).not.toContain("odeme=ok")
+    expect(where(await callback("rastgele"))).toMatch(/\/shop$/)
+    expect(where(await callback(""))).toMatch(/\/shop$/)
+    expect((await db.order.findUniqueOrThrow({ where: { code: o.code } })).status).toBe("PENDING_PAYMENT")
+    // the total changed after the token was made (e.g. an edit): the payment no longer matches, the order is not confirmed
+    await db.order.update({ where: { code: o.code }, data: { totalKurus: { increment: 500 } } })
+    expect(where(await callback(o.ok))).toContain("odeme=hata")
+    expect((await db.order.findUniqueOrThrow({ where: { code: o.code } })).status).toBe("PENDING_PAYMENT")
+    void payload
+  })
+
+  it("a payment that arrives after the order was cancelled is flagged for a refund, not lost", async () => {
+    const admin = await makeUser("ADMIN")
+    if (!(await cardOn(admin))) return
+    const o = await cardOrder(admin, 2)
+    const order = await db.order.findUniqueOrThrow({ where: { code: o.code } })
+    expect((await json(`/api/admin/orders/${order.id}`, admin, "POST", { status: "CANCELLED" })).status).toBe(200)
+    expect(await stockOf(o.p.id)).toBe(5)
+    const r = await callback(o.ok)
+    expect(where(r)).toContain("odeme=iptal")
+    const after = await db.order.findUniqueOrThrow({ where: { code: o.code } })
+    expect(after.status).toBe("CANCELLED")
+    expect(after.paymentRef).toBeTruthy()
+    expect(after.adminNote).toContain("iade gerekli")
+    expect(await stockOf(o.p.id)).toBe(5) // the shelf is not taken again
+  })
+
+  it("the maintenance job frees the stock of card orders left unpaid for 2 hours, but not fresh ones or bank transfers", async () => {
+    const admin = await makeUser("ADMIN")
+    if (!(await cardOn(admin))) return
+    const old = await cardOrder(admin, 1)
+    const fresh = await cardOrder(admin, 1)
+    const bank = await place([{ productId: (await makeProduct(admin)).id, quantity: 1 }])
+    const bankCode = (await bank.json()).code
+    const past = new Date(Date.now() - 3 * 3_600_000)
+    await db.order.updateMany({ where: { code: { in: [old.code, bankCode] } }, data: { createdAt: past } })
+    const res = await api("/api/cron/shop-maintenance", null, { method: "POST", headers: { authorization: `Bearer ${CRON}` } })
+    expect(res.status).toBe(200)
+    const status = async (c: string) => (await db.order.findUniqueOrThrow({ where: { code: c } })).status
+    expect(await status(old.code)).toBe("CANCELLED")
+    expect(await stockOf(old.p.id)).toBe(5)
+    expect(await status(fresh.code)).toBe("PENDING_PAYMENT")
+    expect(await status(bankCode)).toBe("PENDING_PAYMENT") // bank transfers get 3 days
+    // a late payment for the cancelled one is then caught by the refund rule above
+    expect(where(await callback(old.ok))).toContain("odeme=iptal")
+  })
+
+  it("only a card order can be paid by card", async () => {
+    const admin = await makeUser("ADMIN")
+    if (!(await cardOn(admin))) return
+    const p = await makeProduct(admin)
+    const body = buyer()
+    const code = (await (await json("/api/shop/orders", null, "POST", { ...body, items: [{ productId: p.id, quantity: 1 }] })).json()).code
+    expect((await json(`/api/shop/orders/${code}/pay`, null, "POST", { email: body.email })).status).toBe(400)
+  })
+})

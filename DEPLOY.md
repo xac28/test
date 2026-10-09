@@ -44,13 +44,15 @@ Kontrol: `curl https://aya.ornek.com/api/health` → `{"status":"ok"}`.
 10 3 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/cleanup-recordings
 # her 15 dakika — biten dersleri tamamlandı olarak işaretle
 */15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/process-bookings
-# her gün 04:00 — 3 gündür ödenmeyen havale siparişlerini iptal et (stok geri döner)
-0 4 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/shop-maintenance
-# her 15 dakika — ders/atölye hatırlatmaları (24 saat + 1 saat önce) ve ders sonrası yorum isteği
+# her saat — ödenmeyen havale (3 gün) ve kart (2 saat) siparişlerini iptal et (stok geri döner)
+0 * * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/shop-maintenance
+# her 15 dakika — ders/atölye hatırlatmaları (24 saat + 1 saat önce), ders sonrası yorum isteği,
+#                 ödenmeyen havale siparişi hatırlatması, bekleyen eğitmen başvurusu uyarıları
 */15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/reminders
 # her 5 dakika — zamanlanmış yazı / podcast bölümü / ürünleri yayınla
 */5 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/publish
-# her gün 08:00 — yöneticilere günlük özet; pazartesi günleri abonelere haftalık bülten özeti
+# her gün 08:00 — yöneticilere günlük özet (geciken işler dahil), 1 aydır gelmeyen öğrencilere nazik hatırlatma;
+#                 pazartesi günleri abonelere haftalık bülten özeti
 0 8 * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/digests
 # her gün 03:30 — yedek
 30 3 * * *  cd /opt/aya && BACKUP_DIR=/var/backups/aya ./deploy/backup.sh
@@ -68,6 +70,13 @@ Rehber dışarıdaki hiçbir yapay zekâ servisini kullanmaz: anahtar, kota ya d
 | `AYA_AI_STREAM_MS` | Yanıt yazılırken parça başına bekleme (0 = anında) | otomatik |
 
 Rehber nasıl gelişir: Yönetim → Yapay Zeka sekmesinde “Bilinmeyen sorular” ve “Yardımcı olmadı” listesinden doğru yanıtı öğretirsin; öğretilen yanıt her zaman öncelikli kullanılır. “Rehber analizi” sekmesi soruları, motorun güven puanını ve kullandığı aramaları gösterir; düşük güvenli yanıtlar öğretmek için en iyi adaydır.
+
+## 4c. Shop: kartla ödeme (iyzico)
+`IYZICO_API_KEY` ve `IYZICO_SECRET_KEY` tanımlıysa Shop ödeme adımında “Kredi / banka kartı” seçeneği görünür; tanımlı değilse seçenek hiç çıkmaz (havale ve kapıda ödeme sürer). Önce iyzico **sandbox** anahtarlarıyla deneyin (`IYZICO_BASE_URL` varsayılanı sandbox’tır); canlıda `IYZICO_BASE_URL=https://api.iyzipay.com`.
+- Sipariş oluşunca stok ayrılır; müşteri iyzico’nun güvenli ödeme formunu görür. Ödeme sonucu sunucuda iyzico’ya sorularak doğrulanır; **sipariş kodu ve tutar eşleşmezse sipariş onaylanmaz** (yöneticiye e-posta gider).
+- 2 saat içinde ödenmeyen kart siparişi iptal edilir, stok geri gelir (`/api/cron/shop-maintenance`, günde bir yerine saatlik çağırmanız önerilir: `0 * * * *`).
+- Sipariş iptal edildikten sonra ödeme gelirse sipariş “iade gerekli” notuyla işaretlenir ve yöneticiye e-posta gider; tutarı iyzico panelinden iade edin.
+- Anahtarsız deneme: `IYZICO_MOCK=1` (yalnızca geliştirme; üretimde asla çalışmaz) yerel bir sahte ödeme sayfası açar.
 
 ## 5. Güvenlik başlıkları
 - **CSP**: ilk dağıtımda varsayılan `report-only`: hiçbir şey engellenmez, ihlaller yönetim paneli → Günlükler → Sistem olayları'nda "CSP:" ile görünür. Bir hafta temiz kalırsa `.env` içinde `CSP_MODE=enforce` yapıp `docker compose up -d --build` çalıştırın. Ödeme (Stripe/Iyzico) ve Google girişi akışlarını enforce'a geçince mutlaka deneyin.

@@ -25,7 +25,7 @@ describe("scheduled publishing rules", () => {
 
   it("editing a scheduled draft keeps its time and announcement choice; sending null cancels it", () => {
     const existing = { scheduledAt: new Date(inHours(5)), scheduledNotify: true }
-    expect(scheduleData({ title: "x" }, "DRAFT", existing, now)).toEqual({ ok: true, data: existing })
+    expect(scheduleData({} as any, "DRAFT", existing, now)).toEqual({ ok: true, data: existing })
     expect(scheduleData({ notify: false }, "DRAFT", existing, now)).toEqual({ ok: true, data: { scheduledAt: existing.scheduledAt, scheduledNotify: false } })
     expect(scheduleData({ scheduledAt: null }, "DRAFT", existing, now)).toEqual({ ok: true, data: { scheduledAt: null, scheduledNotify: false } })
   })

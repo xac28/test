@@ -278,3 +278,61 @@ test.describe("menu destinations", () => {
     await expect(page).toHaveURL(/\/podcast$/)
   })
 })
+
+test.describe("shop: card payment (iyzico, local stand-in)", () => {
+  test("a customer pays by card: the payment page opens by itself, a declined try can be repeated, a successful one confirms the order", async ({ browser, request }) => {
+    test.setTimeout(120_000)
+    const status = await request.get("/shop/siparis")
+    test.skip(!(await status.text()).includes("co-pay-kart"), "card payment is not switched on on this server (IYZICO_MOCK=1)")
+    const name = `E2E kart ürünü ${uid()}`
+    const p = await db.product.create({ data: { slug: `kart-${uid()}${uid()}`, name, summary: "Kartla ödeme testi için ürün.", description: "Test ürünü, otomatik oluşturuldu ve silinecek.", category: "wellness", priceKurus: 25000, stock: 3, images: "[]", status: "PUBLISHED" } })
+    const mail = `kart-${uid()}@aya.test`
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, extraHTTPHeaders: { "x-forwarded-for": `10.6.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}` } })
+    const v = await ctx.newPage()
+    try {
+      await v.goto(`/shop/urun/${p.slug}`)
+      await v.getByTestId("add-to-cart").click()
+      await v.goto("/shop/siparis")
+      await expect(v.getByTestId("co-pay-kart")).toBeChecked() // card first when it is available
+      await v.getByTestId("co-name").fill("Ayşe Yılmaz")
+      await v.getByTestId("co-email").fill(mail)
+      await v.getByTestId("co-phone").fill("0532 111 22 33")
+      await v.getByTestId("co-city").fill("İzmir / Karşıyaka")
+      await v.getByTestId("co-address").fill("Bostanlı mah. Deniz sok. No 5 Daire 3")
+      await v.getByTestId("co-submit").click()
+      await expect(v).toHaveURL(/\/shop\/siparis\/AYA-/)
+      const code = v.url().split("/").pop()!.split("?")[0]
+      // the payment page is already open: the e-mail was remembered for this order
+      await expect(v.getByTestId("pay-form")).toBeVisible({ timeout: 15_000 })
+      await v.screenshot({ path: "test-results/shop-card-pay.png", fullPage: true })
+
+      // declined → back on the order page with a message, order still open, payment can be restarted
+      await v.getByTestId("mock-pay-fail").click()
+      await expect(v.getByTestId("pay-result")).toHaveAttribute("data-result", "hata", { timeout: 15_000 })
+      await expect(v.getByTestId("order-status")).toHaveAttribute("data-status", "PENDING_PAYMENT")
+      await expect(v.getByTestId("pay-form")).toBeVisible({ timeout: 15_000 }) // the e-mail is still remembered, the page opens again
+      // a visitor who did not just order has to prove the e-mail first
+      const other = await ctx.newPage()
+      await other.goto(`/shop/siparis/${code}`)
+      await expect(other.getByTestId("pay-email")).toBeVisible()
+      await other.getByTestId("pay-email").fill("yanlis@aya.test")
+      await other.getByTestId("pay-start").click()
+      await expect(other.getByTestId("pay-error")).toContainText("bulunamadı")
+      await other.getByTestId("pay-email").fill(mail)
+      await other.getByTestId("pay-start").click()
+      await expect(other.getByTestId("pay-form")).toBeVisible()
+      await other.close()
+
+      await v.getByTestId("mock-pay-ok").click()
+      await expect(v.getByTestId("pay-result")).toHaveAttribute("data-result", "ok", { timeout: 15_000 })
+      await expect(v.getByTestId("order-status")).toHaveAttribute("data-status", "PAID")
+      await expect(v.getByTestId("card-pay")).toHaveCount(0)
+      await v.screenshot({ path: "test-results/shop-card-paid.png" })
+      expect((await db.order.findUniqueOrThrow({ where: { code } })).status).toBe("PAID")
+    } finally {
+      await ctx.close()
+      await db.order.deleteMany({ where: { email: mail } })
+      await db.product.delete({ where: { id: p.id } }).catch(() => {})
+    }
+  })
+})

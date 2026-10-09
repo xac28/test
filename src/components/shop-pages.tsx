@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowRight, Check, Minus, PackageCheck, Plus, ShoppingBag, Trash2, Truck } from 'lucide-react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowRight, Check, CreditCard, Minus, PackageCheck, Plus, ShoppingBag, Trash2, Truck } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Cover, useDateFormat, useL } from '@/components/editorial';
@@ -233,11 +233,11 @@ export function CartView() {
 
 const fieldCls = 'w-full border border-rule bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ink';
 
-export function CheckoutView({ defaults }: { defaults: { name: string; email: string } }) {
+export function CheckoutView({ defaults, card = false }: { defaults: { name: string; email: string }; card?: boolean }) {
   const L = useL();
   const router = useRouter();
   const { entries, lines, totals } = useCart();
-  const [f, setF] = useState({ name: defaults.name, email: defaults.email, phone: '', address: '', city: '', note: '', payMethod: 'havale', newsletter: false });
+  const [f, setF] = useState({ name: defaults.name, email: defaults.email, phone: '', address: '', city: '', note: '', payMethod: card ? 'kart' : 'havale', newsletter: false });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (k: string, v: string | boolean) => setF((s) => ({ ...s, [k]: v }));
@@ -251,6 +251,7 @@ export function CheckoutView({ defaults }: { defaults: { name: string; email: st
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || L('Sipariş oluşturulamadı.', 'Could not place the order.'));
       writeCart([]);
+      if (f.payMethod === 'kart') { try { sessionStorage.setItem(`aya-order-email-${data.code}`, f.email); } catch { /* private mode */ } }
       router.push(`/shop/siparis/${data.code}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -275,10 +276,10 @@ export function CheckoutView({ defaults }: { defaults: { name: string; email: st
             <input className={fieldCls} placeholder={L('Sipariş notu (isteğe bağlı)', 'Order note (optional)')} value={f.note} onChange={(e) => set('note', e.target.value)} maxLength={300} />
             <fieldset className="space-y-2">
               <legend className="eyebrow mb-2">{L('Ödeme yöntemi', 'Payment method')}</legend>
-              {(['havale', 'kapida'] as const).map((m) => (
+              {((card ? ['kart', 'havale', 'kapida'] : ['havale', 'kapida']) as ('kart' | 'havale' | 'kapida')[]).map((m) => (
                 <label key={m} className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer ${f.payMethod === m ? 'border-ink bg-white' : 'border-rule bg-white/60'}`}>
                   <input type="radio" name="pay" checked={f.payMethod === m} onChange={() => set('payMethod', m)} className="mt-1" data-testid={`co-pay-${m}`} />
-                  <span><span className="font-semibold">{PAY_METHOD_LABEL[m]}</span><span className="block text-sm text-sage-500">{m === 'havale' ? L('Sipariş sonrası IBAN bilgisi e-postayla gelir; 3 gün içinde ödenmezse sipariş iptal olur.', 'IBAN details arrive by email; unpaid orders are cancelled after 3 days.') : L('Ürünü teslim alırken kuryeye ödersiniz.', 'You pay the courier on delivery.')}</span></span>
+                  <span><span className="font-semibold">{PAY_METHOD_LABEL[m]}</span><span className="block text-sm text-sage-500">{m === 'kart' ? L('Güvenli ödeme sayfasında kartınızla hemen ödersiniz (iyzico). 2 saat içinde tamamlanmazsa sipariş iptal olur.', 'Pay right away with your card on a secure page (iyzico). Unpaid orders are cancelled after 2 hours.') : m === 'havale' ? L('Sipariş sonrası IBAN bilgisi e-postayla gelir; 3 gün içinde ödenmezse sipariş iptal olur.', 'IBAN details arrive by email; unpaid orders are cancelled after 3 days.') : L('Ürünü teslim alırken kuryeye ödersiniz.', 'You pay the courier on delivery.')}</span></span>
                 </label>
               ))}
             </fieldset>
@@ -300,12 +301,13 @@ export function CheckoutView({ defaults }: { defaults: { name: string; email: st
   );
 }
 
-export interface OrderView { code: string; status: OrderStatusId; payMethod: string; createdAt: string; city: string; trackingNo: string | null; subtotalKurus: number; shippingKurus: number; totalKurus: number; items: { name: string; unitKurus: number; quantity: number }[]; bank: { name: string | null; iban: string | null } }
+export interface OrderView { code: string; status: OrderStatusId; payMethod: string; createdAt: string; city: string; trackingNo: string | null; subtotalKurus: number; shippingKurus: number; totalKurus: number; items: { name: string; unitKurus: number; quantity: number }[]; bank: { name: string | null; iban: string | null }; cardEnabled?: boolean }
 
 const STEPS: OrderStatusId[] = ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'DELIVERED'];
 
 export function OrderStatusView({ o }: { o: OrderView }) {
   const L = useL();
+  const result = useSearchParams().get('odeme');
   const f = useDateFormat();
   const cod = o.payMethod === 'kapida';
   const steps = cod ? STEPS.filter((s) => s !== 'PAID') : STEPS;
@@ -325,7 +327,13 @@ export function OrderStatusView({ o }: { o: OrderView }) {
             ))}
           </ol>
         )}
-        {o.status === 'PENDING_PAYMENT' && !cod && (
+        {result && (
+          <p role="status" data-testid="pay-result" data-result={result} className={`mt-6 rounded-2xl p-4 text-sm ${result === 'ok' ? 'bg-green-50 text-green-900' : 'bg-amber-50 text-amber-900'}`}>
+            {result === 'ok' ? L('Ödemeniz alındı, teşekkürler! Siparişiniz hazırlanıyor.', 'Payment received, thank you! We are preparing your order.') : result === 'iptal' ? L('Ödeme süresinde tamamlanmadığı için sipariş iptal edilmişti. Tutarı iade edeceğiz; dilerseniz yeni bir sipariş verebilirsiniz.', 'The order had been cancelled because the payment took too long. We will refund the amount; you can place a new order.') : L('Ödeme tamamlanamadı. Aşağıdan tekrar deneyebilirsiniz.', 'The payment was not completed. You can try again below.')}
+          </p>
+        )}
+        {o.status === 'PENDING_PAYMENT' && o.payMethod === 'kart' && o.cardEnabled && <CardPayPanel code={o.code} />}
+        {o.status === 'PENDING_PAYMENT' && !cod && o.payMethod !== 'kart' && (
           <div className="mt-6 rounded-2xl bg-teal-50 p-5 text-sm" data-testid="bank-info">
             <p className="font-semibold mb-1">{L('Ödeme bilgileri', 'Payment details')}</p>
             {o.bank.name && <p>{L('Hesap sahibi', 'Account holder')}: {o.bank.name}</p>}
@@ -342,5 +350,67 @@ export function OrderStatusView({ o }: { o: OrderView }) {
         <p className="text-sm text-sage-500 mt-6">{L('Bu sayfanın bağlantısını saklayın; siparişinizin durumunu buradan izleyebilirsiniz. Teslimat şehri: ', 'Keep this link to follow your order. Delivery city: ')}{o.city}</p>
       </div>
     </SectionFrame>
+  );
+}
+
+
+/** Runs the scripts of a payment form that was inserted as HTML (they do not run on their own). */
+function PayForm({ html }: { html: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    box.innerHTML = html;
+    box.querySelectorAll('script').forEach((old) => {
+      const s = document.createElement('script');
+      for (const a of Array.from(old.attributes)) s.setAttribute(a.name, a.value);
+      s.text = old.text;
+      old.replaceWith(s);
+    });
+  }, [html]);
+  return <div ref={ref} id="iyzipay-checkout-form" data-testid="pay-form" className="responsive" />;
+}
+
+function CardPayPanel({ code }: { code: string }) {
+  const L = useL();
+  const [email, setEmail] = useState('');
+  const [html, setHtml] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const start = useCallback(async (mail: string) => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/shop/orders/${code}/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: mail }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || L('Ödeme başlatılamadı.', 'Could not start the payment.'));
+      setHtml(data.htmlContent);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [code, L]);
+  // right after ordering the e-mail is still known: the payment page opens by itself (once, even when React runs effects twice)
+  const auto = useRef(false);
+  useEffect(() => {
+    if (auto.current) return;
+    auto.current = true;
+    let saved = '';
+    try { saved = sessionStorage.getItem(`aya-order-email-${code}`) || ''; } catch { /* private mode */ }
+    if (saved) { setEmail(saved); start(saved); }
+  }, [code, start]);
+  return (
+    <div className="mt-6 rounded-2xl bg-teal-50 p-5 text-sm" data-testid="card-pay">
+      <p className="font-semibold mb-2 flex items-center gap-2"><CreditCard size={16} /> {L('Kartla ödeme', 'Pay by card')}</p>
+      {html ? <PayForm html={html} /> : (
+        <form onSubmit={(e) => { e.preventDefault(); start(email.trim()); }} className="space-y-3">
+          <p>{L('Ödemeyi başlatmak için siparişte kullandığınız e-posta adresini yazın.', 'Enter the e-mail address you used for the order to start the payment.')}</p>
+          <input className={fieldCls} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={L('E-posta', 'Email')} data-testid="pay-email" />
+          <button type="submit" disabled={busy} className="btn-cta disabled:opacity-60" data-testid="pay-start">{busy ? '…' : L('Ödemeye geç', 'Go to payment')}</button>
+        </form>
+      )}
+      {error && <p role="alert" data-testid="pay-error" className="mt-3 text-red-700">{error}</p>}
+    </div>
   );
 }

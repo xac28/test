@@ -1017,7 +1017,7 @@ model Order {
   address     String      @db.VarChar(400)
   city        String      @db.VarChar(80)
   note        String?     @db.VarChar(300)
-  // "havale" (bank transfer) | "kapida" (pay on delivery)
+  // "havale" (bank transfer) | "kapida" (pay on delivery) | "kart" (card, through iyzico)
   payMethod   String      @db.VarChar(12)
   status      OrderStatus @default(PENDING_PAYMENT)
   subtotalKurus Int
@@ -1028,6 +1028,8 @@ model Order {
   stockRestored Boolean   @default(false)
   // automation mark: the "your transfer is still awaited" reminder is sent once
   payReminderAt DateTime?
+  // card payments: the payment provider's reference of the successful payment
+  paymentRef  String?     @db.VarChar(80)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   items       OrderItem[]

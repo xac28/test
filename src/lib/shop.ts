@@ -94,7 +94,7 @@ export function calcTotals(lines: { unitKurus: number; quantity: number }[]) {
 
 export interface OrderInput { name?: unknown; email?: unknown; phone?: unknown; address?: unknown; city?: unknown; note?: unknown; payMethod?: unknown; items?: unknown }
 export type OrderValidation =
-  | { ok: true; data: { name: string; email: string; phone: string; address: string; city: string; note: string | null; payMethod: "havale" | "kapida"; items: CartLine[] } }
+  | { ok: true; data: { name: string; email: string; phone: string; address: string; city: string; note: string | null; payMethod: "havale" | "kapida" | "kart"; items: CartLine[] } }
   | { ok: false; error: string }
 
 export function validateOrderInput(i: OrderInput): OrderValidation {
@@ -110,7 +110,7 @@ export function validateOrderInput(i: OrderInput): OrderValidation {
   if (city.length < 2 || city.length > 80) return { ok: false, error: "İl / ilçe girin." }
   const note = str(i.note) || null
   if (note && note.length > 300) return { ok: false, error: "Not en fazla 300 karakter olabilir." }
-  if (i.payMethod !== "havale" && i.payMethod !== "kapida") return { ok: false, error: "Ödeme yöntemini seçin." }
+  if (i.payMethod !== "havale" && i.payMethod !== "kapida" && i.payMethod !== "kart") return { ok: false, error: "Ödeme yöntemini seçin." }
   if (!Array.isArray(i.items) || i.items.length === 0) return { ok: false, error: "Sepetiniz boş." }
   if (i.items.length > 20) return { ok: false, error: "Tek siparişte en fazla 20 farklı ürün olabilir." }
   const merged = new Map<string, number>()
@@ -132,7 +132,9 @@ export type OrderStatusId = "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "DELIVERED"
 export const ORDER_STATUS_LABEL: Record<OrderStatusId, string> = {
   PENDING_PAYMENT: "Ödeme bekleniyor", PAID: "Ödendi", SHIPPED: "Kargoda", DELIVERED: "Teslim edildi", CANCELLED: "İptal edildi",
 }
-export const PAY_METHOD_LABEL: Record<string, string> = { havale: "Havale / EFT", kapida: "Kapıda ödeme" }
+export const PAY_METHOD_LABEL: Record<string, string> = { havale: "Havale / EFT", kapida: "Kapıda ödeme", kart: "Kredi / banka kartı" }
+/** an unpaid card order only holds its stock this long (the customer is at the payment page right now) */
+export const CARD_HOLD_MINUTES = 120
 
 /**
  * Which status an order may move to next.

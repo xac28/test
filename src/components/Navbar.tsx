@@ -129,11 +129,11 @@ export default function Navbar() {
                   <Link
                     href={g.href}
                     aria-current={isActive(g.href) ? 'page' : undefined}
-                    onFocus={() => openMenu(g.id)}
+                    onFocus={(e) => { if (e.currentTarget.matches(':focus-visible')) openMenu(g.id); }}
                     className={`relative text-[0.92rem] font-semibold py-2 transition-colors ${groupActive(g) || open ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}
                   >
                     {g.label}
-                    {g.live && <span title="Şu anda canlı yayın var" className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle animate-pulse" />}
+                    {g.live && <span aria-hidden className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle animate-pulse" />}
                   </Link>
                   <button
                     onClick={() => openMenu(g.id)}

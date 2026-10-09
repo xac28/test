@@ -36,7 +36,7 @@ test.describe("public pages", () => {
 
   test("navigation links work and mobile menu opens", async ({ page, browser }) => {
     await page.goto("/")
-    for (const [label, url] of [["Atölyeler", /\/atolyeler$/], ["Eğitmenler", /\/teachers$/], ["İçerikler", /\/icerikler$/], ["Paketler", /\/pricing$/]] as const) {
+    for (const [label, url] of [["Atölye", /\/atolyeler$/], ["Yazılar", /\/icerikler$/], ["Shop", /\/shop$/], ["Podcast", /\/podcast$/], ["Topluluk", /\/community$/]] as const) {
       await page.getByRole("navigation", { name: "Ana menü" }).getByRole("link", { name: label, exact: true }).click()
       await expect(page).toHaveURL(url)
     }
@@ -44,7 +44,7 @@ test.describe("public pages", () => {
     const m = await ctx.newPage()
     await m.goto("/")
     await m.getByRole("button", { name: "Menüyü aç" }).click()
-    await expect(m.getByRole("link", { name: "Atölyeler" }).first()).toBeVisible()
+    await expect(m.getByRole("link", { name: "Atölye", exact: true }).first()).toBeVisible()
     const overflow = await m.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     expect(overflow).toBeLessThanOrEqual(1)
     await ctx.close()

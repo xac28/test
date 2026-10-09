@@ -22,6 +22,7 @@ test.describe("community", () => {
 
     // ── composer: live warning, disabled until valid
     await o.page.goto("/community")
+    await o.page.getByTestId("composer-open").click()
     await expect(o.page.getByTestId("composer")).toBeVisible()
     await expect(o.page.getByTestId("composer-submit")).toBeDisabled()
     await o.page.getByTestId("composer-file").setInputFiles(fixture() as any)
@@ -73,12 +74,16 @@ test.describe("community", () => {
 
     // ── a fan likes (optimistic, persisted) and comments; swearing is blocked, polite text goes through
     await f.page.goto("/community")
+    // the feed opens as a photo grid (Instagram style): the tile links to the post, the list view shows full cards
+    await expect(f.page.locator(`a[href="/community/${postId}"]`).first()).toBeVisible({ timeout: 15_000 })
+    await f.page.getByRole("button", { name: "Liste görünüm" }).click()
     const fcard = f.page.getByTestId("post-card").filter({ hasText: caption })
     await expect(fcard).toBeVisible({ timeout: 15_000 })
     await fcard.getByTestId("like-btn").click()
     await expect(fcard.getByTestId("like-count")).toHaveText("1")
     await expect(fcard.getByTestId("like-btn")).toHaveAttribute("aria-pressed", "true")
     await f.page.reload()
+    await f.page.getByRole("button", { name: "Liste görünüm" }).click()
     await expect(f.page.getByTestId("post-card").filter({ hasText: caption }).getByTestId("like-btn")).toHaveAttribute("aria-pressed", "true")
 
     await f.page.goto(`/community/${postId}`)
@@ -166,6 +171,7 @@ test.describe("community", () => {
     const s = await newSession(browser, u.email)
     await s.page.setViewportSize({ width: 390, height: 800 })
     await s.page.goto("/community")
+    await s.page.getByTestId("composer-open").click()
     await expect(s.page.getByTestId("composer")).toBeVisible()
     const overflow = await s.page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     expect(overflow).toBeLessThanOrEqual(0)

@@ -38,6 +38,17 @@ function PhotoTile({ post }: { post: CommunityPost }) {
         </div>
       </div>
 
+      {post.status === "PENDING" && (
+        <span data-testid="post-pending" className="absolute bottom-2 left-2 text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded">
+          Onay bekliyor
+        </span>
+      )}
+      {post.status === "REMOVED" && (
+        <span data-testid="post-removed" className="absolute bottom-2 left-2 text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 border border-red-300 px-1.5 py-0.5 rounded">
+          Kaldırıldı
+        </span>
+      )}
+
       {/* Teacher badge */}
       {post.author.isTeacher && (
         <span className="absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider bg-ink/70 text-cream px-1.5 py-0.5 rounded">

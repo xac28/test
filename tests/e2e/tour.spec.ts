@@ -61,9 +61,9 @@ test.describe("site tour", () => {
     const errors = watch(page)
     await page.goto("/")
     const nav = page.getByRole("navigation", { name: "Ana menü" })
-    // "Canlı Yayın" asks visitors to sign in first (the live pages are members-only), then returns to /live
-    for (const [label, url] of [["Atölyeler", /\/atolyeler$/], ["Canlı Yayın", /\/(live$|login\?callbackUrl=%2Flive$)/], ["Eğitmenler", /\/teachers$/], ["İçerikler", /\/icerikler$/], ["Topluluk", /\/community$/], ["Paketler", /\/pricing$/]] as const) {
-      await nav.getByRole("link", { name: label }).click()
+    // "Dersler" asks visitors to sign in first (the live pages are members-only), then returns to /live
+    for (const [label, url] of [["Atölye", /\/atolyeler$/], ["Dersler", /\/(live$|login\?callbackUrl=%2Flive$)/], ["Yoga", /\/yoga-stilleri$/], ["Yazılar", /\/icerikler$/], ["Shop", /\/shop$/], ["Podcast", /\/podcast$/], ["Topluluk", /\/community$/]] as const) {
+      await nav.getByRole("link", { name: label, exact: true }).click()
       await expect(page).toHaveURL(url)
       await expect(page.locator("h1").first()).toBeVisible()
     }
@@ -80,7 +80,7 @@ test.describe("site tour", () => {
     await page.getByRole("button", { name: /^en$/i }).first().click()
     await expect(page.getByRole("navigation", { name: "Ana menü" })).toContainText("Workshops")
     await page.getByRole("button", { name: /^tr$/i }).first().click()
-    await expect(page.getByRole("navigation", { name: "Ana menü" })).toContainText("Atölyeler")
+    await expect(page.getByRole("navigation", { name: "Ana menü" })).toContainText("Atölye")
     // the guide opens, answers, links
     await page.getByTestId("ai-toggle").click()
     await page.getByTestId("ai-input").fill("Bel ağrım için hangi yoga?")

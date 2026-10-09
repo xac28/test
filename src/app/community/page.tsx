@@ -34,7 +34,7 @@ function CommunityContent() {
     feed.setItems((l) => l && l.map((x) => (x.id === p.id ? p : x)))
 
   const chip = (active: boolean) =>
-    `px-4 py-2 min-h-[38px] text-sm font-medium border rounded-full transition-colors ${
+    `px-4 py-2 min-h-[38px] text-sm font-medium border rounded-full transition-colors whitespace-nowrap shrink-0 ${
       active ? "bg-ink text-cream border-ink" : "border-rule text-sage-700 hover:border-ink"
     }`
 
@@ -61,6 +61,7 @@ function CommunityContent() {
                   if (gate.needLogin()) return
                   setComposerOpen((x) => !x)
                 }}
+                data-testid="composer-open"
                 className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] bg-ink text-cream text-sm font-semibold rounded-xl hover:bg-sage-900 transition-colors shrink-0"
               >
                 <Camera size={17} />
@@ -107,7 +108,7 @@ function CommunityContent() {
         {/* Tabs + View toggle */}
         <section className="border-b border-rule bg-cream sticky top-16 z-30">
           <div className="max-w-5xl mx-auto px-6 h-12 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2" role="tablist" aria-label="Akış filtresi">
+            <div className="flex items-center gap-2 min-w-0 overflow-x-auto hide-scrollbar" role="tablist" aria-label="Akış filtresi">
               <button role="tab" aria-selected={tab === "all"} onClick={() => setTab("all")} className={chip(tab === "all")}>
                 Herkes
               </button>
@@ -121,7 +122,7 @@ function CommunityContent() {
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => setView("grid")}
                 aria-label="Grid görünüm"

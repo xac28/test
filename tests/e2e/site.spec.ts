@@ -280,6 +280,43 @@ test.describe("scheduled publishing (admin editor)", () => {
   })
 })
 
+test.describe("writing helper (admin editor)", () => {
+  test("suggests an excerpt and titles, shows a checklist, and drafts a newsletter from recent content", async ({ browser }) => {
+    const admin = await makeAccount("ADMIN")
+    const a = await newSession(browser, admin.email)
+    await a.page.goto("/admin?tab=articles")
+    await a.page.getByTestId("new-article").click()
+    await expect(a.page.getByTestId("suggest-excerpt")).toBeDisabled() // nothing to summarise yet
+    await a.page.getByTestId("article-body-input").fill("Yin yoga, duruşların üç ila beş dakika boyunca tutulduğu yavaş ve derin bir esneme pratiğidir. Kasları değil, bağ dokusunu ve eklemleri hedefler. Bu yüzden yin yoga, günün yorgunluğunu atmak isteyenler için çok uygundur. Nefes yin yogada en önemli araçtır; her duruşta nefesi izlemek zihni de sakinleştirir.")
+    await a.page.getByTestId("suggest-excerpt").click()
+    const excerpt = await a.page.getByTestId("article-excerpt-input").inputValue()
+    expect(excerpt.length).toBeGreaterThan(40)
+    expect(excerpt.length).toBeLessThanOrEqual(200)
+    expect(excerpt.startsWith("Yin yoga, duruşların")).toBe(true)
+    await a.page.getByTestId("suggest-title").click()
+    const ideas = a.page.getByTestId("title-ideas").getByRole("button")
+    expect(await ideas.count()).toBeGreaterThanOrEqual(2)
+    const first = (await ideas.first().innerText()).trim()
+    await ideas.first().click()
+    await expect(a.page.getByTestId("article-title-input")).toHaveValue(first)
+    await expect(a.page.getByTestId("article-score")).toBeVisible()
+    await a.page.getByTestId("article-check").getByRole("button").click()
+    await expect(a.page.getByTestId("check-length")).toHaveAttribute("data-ok", "false") // far below 300 words
+    await expect(a.page.getByTestId("check-cover")).toBeVisible()
+    await a.page.screenshot({ path: "test-results/admin-writing.png", fullPage: true })
+
+    // newsletter draft from what was published in the last days
+    const art = await db.article.create({ data: { slug: `e2e-${Date.now()}`, title: `Taslak yazısı ${Date.now()}`, excerpt: "Bülten taslağı için yazılmış kısa bir özet cümlesi burada.", body: "x".repeat(200), category: "Sağlık", status: "PUBLISHED", publishedAt: new Date(), authorId: admin.user.id } })
+    await a.page.goto("/admin?tab=newsletter")
+    await a.page.getByTestId("nl-draft").click()
+    await expect(a.page.getByTestId("nl-body")).toHaveValue(/Merhaba,[\s\S]*Yeni yazılar/, { timeout: 15_000 })
+    await expect(a.page.getByTestId("nl-body")).toHaveValue(new RegExp(art.title))
+    await expect(a.page.getByTestId("nl-subject")).toHaveValue(/AYA/)
+    await a.ctx.close()
+    await db.article.delete({ where: { id: art.id } }).catch(() => {})
+  })
+})
+
 test.describe("articles (admin writes, public reads)", () => {
   test("draft is hidden; publishing shows it in the list and renders the body safely", async ({ browser, page }) => {
     const admin = await makeAccount("ADMIN")

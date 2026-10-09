@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, Send, Trash2, UserPlus } from "lucide-react"
+import { Mail, Send, Sparkles, Trash2, UserPlus } from "lucide-react"
 import { Button, DownloadCsv, Empty, ErrorNote, Pager, Pill, SearchBox, SectionTitle, Segmented, Spinner, Stat, Table, api, fmtDateTime, useConfirm, useDebounced, useLoader, useToast } from "./ui"
 import { Field, inputCls } from "./forms"
 
@@ -17,6 +17,17 @@ export function NewsletterTab() {
   const [emails, setEmails] = useState("")
   const { show, toast } = useToast()
   const { ask, dialog } = useConfirm()
+
+  /** A draft from what was published in the last 7 days: the editor reads it, changes it, sends it. */
+  const makeDraft = async () => {
+    setBusy(true)
+    try {
+      const d = await api("/api/admin/writing?draft=newsletter&days=7")
+      if (!d.count) { show("Son 7 günde yeni içerik yok; taslak için önce içerik yayınla."); return }
+      setForm((f) => ({ ...f, subject: d.subject, body: d.body, ctaLabel: f.ctaLabel || "AYA'yı aç", ctaHref: f.ctaHref || window.location.origin }))
+      show(`${d.count} içerikten taslak hazırlandı; göndermeden önce oku`)
+    } catch (e: any) { show(e.message) } finally { setBusy(false) }
+  }
 
   const run = async (action: "send" | "test") => {
     setBusy(true)
@@ -44,7 +55,10 @@ export function NewsletterTab() {
       )}
 
       <section className="rounded-2xl border border-rule bg-paper p-5 space-y-3">
-        <h3 className="font-display text-2xl">Yeni kampanya</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-display text-2xl">Yeni kampanya</h3>
+          <Button disabled={busy} data-testid="nl-draft" onClick={makeDraft}><Sparkles size={15} /> Son içeriklerden taslak oluştur</Button>
+        </div>
         <Field label="Konu"><input className={inputCls} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} maxLength={200} data-testid="nl-subject" /></Field>
         <Field label="İleti" hint="Boş satır yeni paragraf açar. Düz bağlantılar tıklanabilir olur."><textarea className={inputCls} rows={6} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} data-testid="nl-body" /></Field>
         <div className="grid sm:grid-cols-2 gap-3">

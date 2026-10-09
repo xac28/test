@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, Eye, EyeOff, Package, Pencil, Plus, Star, Trash2, X } from "lucide-react"
+import { AlertTriangle, Eye, EyeOff, Package, Pencil, Plus, Sparkles, Star, Trash2, X } from "lucide-react"
 import { Button, Drawer, Empty, ErrorNote, Pill, SearchBox, SectionTitle, Segmented, Spinner, Stat, Table, api, useConfirm, useDebounced, useLoader, useToast } from "./ui"
 import { Field, UploadField, inputCls, ScheduleField } from "./forms"
 import { formatSchedule, fromLocalInput, toLocalInput } from "@/lib/schedule"
+import { summarize } from "@/lib/writing"
 import { LOW_STOCK, SHOP_CATEGORIES, formatKurus, parseImages } from "@/lib/shop"
 
 interface Draft { id?: string; name: string; summary: string; description: string; category: string; priceTL: string; stock: string; images: string[]; featured: boolean; status: "DRAFT" | "PUBLISHED"; notify: boolean; scheduledAt: string }
@@ -82,7 +83,12 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
       {draft && (
         <Drawer title={draft.id ? "Ürünü düzenle" : "Yeni ürün"} onClose={() => setDraft(null)} testid="product-drawer">
           <Field label="Ürün adı"><input className={inputCls} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} maxLength={160} data-testid="product-name" /></Field>
-          <Field label="Kısa açıklama" hint="Kartlarda ve arama sonuçlarında görünür (10–300 karakter)."><input className={inputCls} value={draft.summary} onChange={(e) => setDraft({ ...draft, summary: e.target.value })} maxLength={300} data-testid="product-summary" /></Field>
+          <Field label="Kısa açıklama" hint="Kartlarda ve arama sonuçlarında görünür (10–300 karakter).">
+            <div className="space-y-1.5">
+              <input className={inputCls} value={draft.summary} onChange={(e) => setDraft({ ...draft, summary: e.target.value })} maxLength={300} data-testid="product-summary" />
+              <button type="button" data-testid="product-suggest-summary" disabled={draft.description.trim().length < 40} onClick={() => setDraft({ ...draft, summary: summarize(draft.description, { max: 160, sentences: 1, min: 10 }) })} className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 hover:underline disabled:opacity-40 disabled:no-underline"><Sparkles size={13} /> Açıklamadan özet öner</button>
+            </div>
+          </Field>
           <Field label="Açıklama"><textarea className={inputCls} rows={5} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} data-testid="product-description" /></Field>
           <div className="grid grid-cols-3 gap-3">
             <Field label="Kategori"><select className={inputCls} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} data-testid="product-cat">{SHOP_CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name.tr}</option>)}</select></Field>

@@ -108,8 +108,8 @@ export const RIGS: Record<string, PoseRig> = {
     aim: {
       ...spineUp, Spine2: v(0, 1, 0.03),
       ...arms(v(0.3, -0.85, 0.45), v(0.35, -0.65, 0.7), v(0.3, -0.45, 0.85)),
-      LeftUpLeg: v(0.55, -0.05, 0.83), LeftLeg: v(-0.85, -0.02, -0.52), LeftFoot: v(-1, -0.05, 0), LeftToeBase: v(-1, 0, 0),
-      RightUpLeg: v(-0.55, -0.05, 0.83), RightLeg: v(0.85, 0.12, -0.52), RightFoot: v(1, 0.05, 0), RightToeBase: v(1, 0, 0),
+      LeftUpLeg: v(0.55, -0.04, 0.83), LeftLeg: v(-0.93, -0.03, -0.2), LeftFoot: v(-0.85, -0.2, -0.4), LeftToeBase: v(-0.9, -0.05, -0.4),
+      RightUpLeg: v(-0.55, -0.04, 0.83), RightLeg: v(0.92, 0.15, -0.12), RightFoot: v(0.85, -0.12, -0.4), RightToeBase: v(0.9, -0.05, -0.4),
     },
   },
   "savasana": {

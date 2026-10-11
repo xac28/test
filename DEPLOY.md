@@ -119,3 +119,22 @@ STREAMER_MIN_VERSION=1.1.0 STREAMER_SERVER_URL=… ./scripts/build-streamer.sh  
 
 ## Docker'sız kurulum notu
 `npm ci && npx prisma generate && npx prisma db push && NEXT_PUBLIC_SITE_URL=https://aya.ornek.com ENABLE_HSTS=true npx next build && npx next start -p 3000`; süreci `systemd` ya da `pm2` ile yönetin, MariaDB ve LiveKit'i ayrıca kurun, ters vekil olarak Caddy/Nginx kullanın.
+
+
+## 6. Satışa / canlıya çıkmadan önce kontrol listesi
+Sunucu açılışında `/api/health` ve “env-check” eksikleri uyarır; aşağıdakilerin hepsi tamamsa hazırsınız.
+
+| # | Konu | Ne yapılır |
+|---|---|---|
+| 1 | Gizli anahtarlar | `AUTH_SECRET`, `CRON_SECRET` rastgele ve uzun (`openssl rand -base64 32`) |
+| 2 | Adres / TLS | `NEXT_PUBLIC_SITE_URL` ve `NEXTAUTH_URL` https; Caddy/Nginx ile TLS (`deploy/Caddyfile`) |
+| 3 | Veritabanı | MariaDB/MySQL, `npx prisma db push` (ya da docker-entrypoint), günlük yedek (`deploy/backup.sh`) ve geri yükleme denemesi |
+| 4 | Canlı video | Kendi LiveKit anahtarlarınız (`LIVEKIT_KEYS`), `LIVEKIT_URL=wss://…`; Linux’ta denemek için `scripts/livekit-linux.sh` |
+| 5 | E-posta | `SMTP_USER`, `SMTP_PASS` (şifre sıfırlama, doğrulama, bülten, hatırlatmalar bununla gider) |
+| 6 | Ödeme | Stripe ve/veya iyzico canlı anahtarları (§4c); ilk gerçek siparişi küçük tutarla deneyin |
+| 7 | Zamanlanmış işler | §4’teki cron satırları (yayın, hatırlatma, özet, sipariş bakımı, kayıt temizliği, yedek) |
+| 8 | Kalıcı disk | `public/uploads/` ve `storage/` kalıcı diskte ve yedekte |
+| 9 | Yönetici | `ADMIN_EMAIL` hesabıyla giriş yapıp Yönetim → Güvenlik/Günlükler’i kontrol edin |
+| 10 | Güvenlik başlığı | Günlük temizse `CSP_MODE=enforce`, https’te HSTS satırını açın |
+
+Bilinen not: Next.js 14 hattı için bazı güvenlik bültenleri yalnızca Next 16 sürümünde kapanıyor. Görsel iyileştirici (`next/image`) yalnızca WebP üretir (AVIF kapalı), uygulama Windows’ta barındırılmıyor ve i18n/Pages Router kullanılmıyor; bu yüzden en kritik maddeler bu kurulumu etkilemez. Yine de Next 16’ya geçiş planlanmalıdır.

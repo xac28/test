@@ -7,7 +7,7 @@ import type { Page } from "@playwright/test"
 test.use({ video: { mode: "on", size: { width: 1280, height: 800 } }, viewport: { width: 1280, height: 800 } })
 
 const SHOTS = "tour-output"
-const IGNORED = [/Failed to fetch RSC payload/, /authjs\.dev#autherror/, /ERR_TUNNEL_CONNECTION_FAILED/, /Failed to load resource/, /favicon/, /fonts\.g/, /pravatar/, /unsplash/, /DevTools/, /WebSocket/i, /livekit/i, /ERR_NAME_NOT_RESOLVED/, /net::ERR/]
+const IGNORED = [/Failed to fetch RSC payload/, /authjs\.dev#autherror/, /ERR_TUNNEL_CONNECTION_FAILED/, /Failed to load resource/, /favicon/, /fonts\.g/, /pravatar/, /unsplash/, /DevTools/, /WebSocket/i, /livekit/i, /ERR_NAME_NOT_RESOLVED/, /net::ERR/, /GLTFLoader: Couldn.t load texture blob:/]
 // Playwright's open-source Chromium has no H.264 decoder, so playback is checked with a WebM (VP8/Opus); an MP4 is only uploaded.
 const SAMPLE = path.join(process.cwd(), "tests", "fixtures", "sample.webm")
 

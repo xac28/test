@@ -7,7 +7,8 @@ import { RATE_LIMIT_API } from "@/lib/rate-limit"
 export const dynamic = "force-dynamic"
 
 // GET /api/teachers/:id/reviews — the written reviews of an approved teacher (public; hidden ones never show)
-export async function GET(req: Request, { params }: { params: { slug: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, RATE_LIMIT_API)
   if (blocked) return blocked
   const teacher = await db.teacher.findFirst({ where: { isTrialMode: false, user: notSuspended(), OR: [{ id: params.slug }, { userId: params.slug }] }, select: { id: true } })

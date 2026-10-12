@@ -35,10 +35,11 @@ const nextConfig = {
     minimumCacheTTL: 60,
   },
 
-  experimental: {
-    instrumentationHook: true,
-    optimizeCss: false,
-    serverComponentsExternalPackages: ['iyzipay'],
+  serverExternalPackages: ['iyzipay'],
+  turbopack: {
+    resolveAlias: {
+      '@mediapipe/pose': './src/lib/stubs/mediapipe-pose.js',
+    },
   },
 
   async redirects() {

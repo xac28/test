@@ -14,7 +14,8 @@ import { STYLE_BY_SLUG } from "@/lib/yoga-styles"
 export function generateStaticParams() {
   return POSES.map((p) => ({ slug: p.slug }))
 }
-export function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const p = POSE_BY_SLUG[params.slug]
   return p
     ? {
@@ -26,7 +27,8 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
     : {}
 }
 
-export default function PosePage({ params }: { params: { slug: string } }) {
+export default async function PosePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const p = POSE_BY_SLUG[params.slug]
   if (!p) notFound()
   const idx = POSES.findIndex((x) => x.slug === p.slug)

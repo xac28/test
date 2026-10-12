@@ -13,7 +13,8 @@ const NOTICE_MAX = 240
 
 // POST /api/admin/live-monitor/:id/notice { message, audience: "teacher" | "all" }
 // A message from the officials: shown to the teacher on top of the studio ("teacher") or to everybody in the room ("all").
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, RATE_LIMIT_WRITE)
   if (blocked) return blocked
   const g = await requireAdmin(req)

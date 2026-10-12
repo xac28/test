@@ -7,7 +7,8 @@ import { scheduleData } from "@/lib/schedule"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const a = await requireAdmin(req)
   if ("response" in a) return a.response
   const episode = await db.podcastEpisode.findUnique({ where: { id: params.id } })
@@ -15,7 +16,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // PATCH — edit, publish, unpublish
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const a = await requireAdmin(req)
   if ("response" in a) return a.response
   const existing = await db.podcastEpisode.findUnique({ where: { id: params.id } })
@@ -35,7 +37,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ success: true, episode, newsletter })
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const a = await requireAdmin(req)
   if ("response" in a) return a.response
   await db.podcastEpisode.deleteMany({ where: { id: params.id } })

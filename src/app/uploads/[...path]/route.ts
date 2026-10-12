@@ -18,7 +18,8 @@ const TYPES: Record<string, string> = {
  * files uploaded at runtime (avatars, teacher videos, certificates, podcast audio, product pictures) would 404 in
  * production. This route serves them (with Range support for video seeking).
  */
-export async function GET(req: Request, { params }: { params: { path: string[] } }) {
+export async function GET(req: Request, props: { params: Promise<{ path: string[] }> }) {
+  const params = await props.params;
   const root = path.resolve(process.cwd(), "public", "uploads")
   const full = path.resolve(root, ...params.path)
   const type = TYPES[path.extname(full).toLowerCase()]

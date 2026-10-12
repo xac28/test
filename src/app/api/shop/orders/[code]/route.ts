@@ -6,7 +6,8 @@ import { extractIp } from "@/lib/ban-engine"
 export const dynamic = "force-dynamic"
 
 // GET /api/shop/orders/:code — what the customer may see: items, totals, status, tracking. Never the address or phone.
-export async function GET(req: Request, { params }: { params: { code: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   if (!rateLimit(`order-lookup:${extractIp(req)}`, { maxRequests: 20, windowMs: 60_000 }).allowed) return NextResponse.json({ error: "Çok fazla deneme." }, { status: 429 })
   const o = await db.order.findUnique({ where: { code: params.code.toUpperCase() }, include: { items: true } })
   if (!o) return NextResponse.json({ error: "Sipariş bulunamadı" }, { status: 404 })

@@ -3,7 +3,8 @@ import { requireAdmin } from "@/lib/admin-api"
 import { executeReportAction } from "@/lib/report-server"
 
 // POST /api/admin/reports/:id/action { action: warn | ban | revoke_teacher | close_room | unpublish_workshop, note }
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const g = await requireAdmin(req)
     if ("response" in g) return g.response

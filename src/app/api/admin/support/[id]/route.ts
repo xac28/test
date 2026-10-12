@@ -8,7 +8,8 @@ import { sanitizeReportText } from "@/lib/reports"
 export const dynamic = "force-dynamic"
 
 // GET /api/admin/support/:id?after= — the whole conversation incl. internal notes, plus who the user is
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const t = await db.supportTicket.findUnique({ where: { id: params.id }, include: { user: { select: { id: true, name: true, email: true, role: true, banned: true, createdAt: true } } } })
@@ -38,7 +39,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // POST /api/admin/support/:id { action: reply | note | close | reopen | assign | unassign | priority, content?, priority? }
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const t = await db.supportTicket.findUnique({ where: { id: params.id } })

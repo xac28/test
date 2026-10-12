@@ -7,7 +7,8 @@ import { trialRoleFor } from "@/lib/trial"
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Deneme Yayını" }
 
-export default async function TrialRoomPage({ params }: { params: { teacherId: string } }) {
+export default async function TrialRoomPage(props: { params: Promise<{ teacherId: string }> }) {
+  const params = await props.params;
   const session = await auth()
   if (!session?.user?.id) redirect(`/login?callbackUrl=/room/trial/${params.teacherId}`)
 

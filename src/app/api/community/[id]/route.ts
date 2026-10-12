@@ -10,7 +10,8 @@ import { cleanReason } from "@/lib/admin-api"
 export const dynamic = "force-dynamic"
 
 // GET /api/community/:id — one post with its comments (non-public posts only for the owner and the admins)
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, RATE_LIMIT_API)
   if (blocked) return blocked
   try {
@@ -38,7 +39,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // DELETE /api/community/:id { reason? } — the owner takes a post down; an admin must give a reason (the owner is told)
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

@@ -6,7 +6,8 @@ import { ShopError, setOrderStatus } from "@/lib/shop-server"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const a = await requireAdmin(req)
   if ("response" in a) return a.response
   const order = await db.order.findUnique({ where: { id: params.id }, include: { items: true } })
@@ -14,7 +15,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // POST { status?, trackingNo?, adminNote? } — moves the order along its path and/or edits the notes
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const a = await requireAdmin(req)
   if ("response" in a) return a.response
   const body = await req.json().catch(() => ({}))

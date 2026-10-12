@@ -5,7 +5,8 @@ import { sendEmail } from "@/lib/email"
 import { nextPayoutStatus, PAYOUT_STATUS_LABEL_TR } from "@/lib/payouts"
 
 // PATCH /api/admin/payouts/:id  { action: "approve" | "reject" | "mark_paid", note? }
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const admin = await resolveUser(req)
     if (!admin || admin.role !== "ADMIN") {

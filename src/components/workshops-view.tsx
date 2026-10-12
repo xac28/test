@@ -6,6 +6,19 @@ import Footer from '@/components/Footer';
 import { WorkshopCard, WorkshopCardData, useL } from '@/components/editorial';
 import { WORKSHOP_CATEGORIES } from '@/lib/workshops';
 
+function Chip({ active, to, children, testId }: { active: boolean; to: string; children: React.ReactNode; testId?: string }) {
+  return (
+    <Link
+      href={to}
+      data-testid={testId}
+      aria-current={active ? 'true' : undefined}
+      className={`px-4 py-2 text-sm border rounded-md transition-colors ${active ? 'bg-ink text-cream border-ink' : 'border-rule text-sage-700 hover:border-ink'}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export default function WorkshopsView({
   items,
   filters,
@@ -23,17 +36,6 @@ export default function WorkshopsView({
     const s = q.toString();
     return `/atolyeler${s ? `?${s}` : ''}`;
   };
-
-  const Chip = ({ active, to, children, testId }: { active: boolean; to: string; children: React.ReactNode; testId?: string }) => (
-    <Link
-      href={to}
-      data-testid={testId}
-      aria-current={active ? 'true' : undefined}
-      className={`px-4 py-2 text-sm border rounded-md transition-colors ${active ? 'bg-ink text-cream border-ink' : 'border-rule text-sage-700 hover:border-ink'}`}
-    >
-      {children}
-    </Link>
-  );
 
   return (
     <>

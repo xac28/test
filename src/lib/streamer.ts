@@ -87,7 +87,7 @@ export async function mintSessionCookie(userId: string) {
 }
 
 // ── the installer ───────────────────────────────────────────────────────────
-export const DOWNLOAD_DIR = path.join(process.env.STREAMER_DIR || path.join(process.cwd(), "storage", "downloads"))
+export const DOWNLOAD_DIR = path.join(process.env.STREAMER_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "downloads"))
 export interface StreamerRelease { version: string; file: string; size: number; sha256: string; builtAt: string; minVersion?: string }
 
 /** Reads storage/downloads/streamer.json (written by scripts/build-streamer.sh) and checks the file is really there. */

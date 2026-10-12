@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic"
 
 
 // GET /api/admin/reports/:id — everything an admin needs to decide
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const g = await requireAdmin(req)
     if ("response" in g) return g.response
@@ -89,7 +90,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // PATCH /api/admin/reports/:id { status?, adminNote?, priority? }
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const g = await requireAdmin(req)
     if ("response" in g) return g.response

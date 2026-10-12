@@ -36,7 +36,7 @@ export default function Navbar() {
   }, []);
   const [openId, setOpenId] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const openMenu = (id: string) => { clearTimeout(closeTimer.current); setOpenId(id); };
   const scheduleClose = () => { clearTimeout(closeTimer.current); closeTimer.current = setTimeout(() => setOpenId(null), 160); };
   // the drawer must end at the bottom of the screen wherever the header currently is (a notice bar can sit above it)

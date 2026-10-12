@@ -7,7 +7,8 @@ import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { notify } from "@/lib/notifications"
 
 // POST /api/community/:id/like — toggles the like; returns the new state and count
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, { maxRequests: 60, windowMs: 60_000 })
   if (blocked) return blocked
   try {

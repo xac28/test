@@ -6,7 +6,8 @@ import { isBannableIp } from "@/lib/ban-engine"
 export const dynamic = "force-dynamic"
 
 // GET /api/admin/users/:id — profile, teacher state, reports, warnings, IP history and recent admin actions
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const id = params.id

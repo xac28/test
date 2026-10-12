@@ -16,7 +16,7 @@ const ID_PATTERN = /^[a-z0-9]{10,40}$/i
  * authenticated download endpoint.
  */
 export function recordingsRoot(): string {
-  return process.env.RECORDINGS_DIR || path.join(process.cwd(), "storage", "recordings")
+  return process.env.RECORDINGS_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "recordings")
 }
 
 export function isValidRecordingId(id: string): boolean {
@@ -79,7 +79,7 @@ export async function mergeChunks(
 ): Promise<{ filePath: string; sizeBytes: number }> {
   const dir = recordingDir(id)
   const fileName = mergedFileName(id, mimeType)
-  const out = createWriteStream(path.join(dir, fileName))
+  const out = createWriteStream(path.join(/*turbopackIgnore: true*/ dir, fileName))
   try {
     for (let i = 0; i < count; i++) {
       const p = chunkPath(id, i)
@@ -92,8 +92,8 @@ export async function mergeChunks(
   for (let i = 0; i < count; i++) {
     await rm(chunkPath(id, i), { force: true })
   }
-  const { size } = await stat(path.join(dir, fileName))
-  return { filePath: path.join(id, fileName), sizeBytes: size }
+  const { size } = await stat(path.join(/*turbopackIgnore: true*/ dir, fileName))
+  return { filePath: path.join(/*turbopackIgnore: true*/ id, fileName), sizeBytes: size }
 }
 
 /** Resolve a stored relative file path, refusing anything that escapes the root. */

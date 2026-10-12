@@ -6,12 +6,14 @@ import { findWorkshop, presentWorkshop } from "@/lib/workshop-server"
 
 export const dynamic = "force-dynamic"
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const w = await db.workshop.findFirst({ where: { slug: params.slug, status: "PUBLISHED" }, select: { title: true, subtitle: true } }).catch(() => null)
   return w ? { title: w.title, description: w.subtitle ?? undefined } : { title: "Atölye" }
 }
 
-export default async function WorkshopPage({ params }: { params: { slug: string } }) {
+export default async function WorkshopPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const session = await auth()
   const viewer = session?.user?.id ? { id: session.user.id, role: session.user.role as string } : null
 

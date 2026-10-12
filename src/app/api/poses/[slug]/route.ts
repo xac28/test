@@ -5,7 +5,8 @@ import { STYLE_BY_SLUG } from "@/lib/yoga-styles"
 export const dynamic = "force-dynamic"
 
 // GET /api/poses/:slug → one pose, fully written, with the poses that balance it and the styles it belongs to
-export async function GET(_req: Request, { params }: { params: { slug: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const p = POSE_BY_SLUG[params.slug]
   if (!p) return NextResponse.json({ error: "Poz bulunamadı" }, { status: 404 })
   return NextResponse.json(

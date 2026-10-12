@@ -5,7 +5,8 @@ import { livekitRoomService } from "@/lib/livekit"
 import { parseRoomSettings, serializeRoomSettings, SLOW_MODE_OPTIONS } from "@/lib/live-chat"
 
 // POST /api/live/:id/moderate  { action: "chat-settings", chatEnabled?, slowModeSec? } | { action: "kick", identity }
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

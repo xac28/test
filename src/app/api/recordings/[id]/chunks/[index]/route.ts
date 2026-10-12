@@ -4,7 +4,8 @@ import { resolveUser } from "@/lib/auth-utils"
 import { isValidRecordingId, isValidChunkIndex, saveChunk, MAX_CHUNK_BYTES } from "@/lib/recordings"
 
 // PUT /api/recordings/:id/chunks/:index — upload one MediaRecorder chunk (idempotent per index)
-export async function PUT(req: Request, { params }: { params: { id: string; index: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string; index: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

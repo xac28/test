@@ -9,12 +9,14 @@ export const dynamic = "force-dynamic"
 
 const load = (slug: string) => db.product.findFirst({ where: { slug, status: "PUBLISHED" } }).catch(() => null)
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const p = await load(params.slug)
   return p ? { title: `${p.name} · Shop`, description: p.summary } : { title: "Shop" }
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
+export default async function ProductPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const p = await load(params.slug)
   if (!p) notFound()
   const data = toProductData(p)

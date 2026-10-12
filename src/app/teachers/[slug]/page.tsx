@@ -1,4 +1,5 @@
-'use client';
+'use client';;
+import { use } from "react";
 
 import { TeacherBadge } from '@/components/teacher-badge';
 import Link from 'next/link';
@@ -15,7 +16,8 @@ import { MessageTeacherButton } from '@/components/message-teacher-button';
 import { ReportButton } from '@/components/report-dialog';
 import { TeacherReviews } from '@/components/teacher-reviews';
 
-export default function TeacherProfilePage({ params }: { params: { slug: string } }) {
+export default function TeacherProfilePage(props: { params: Promise<{ slug: string }> }) {
+  const params = use(props.params);
   const { slug } = params;
   const { teacher, loading } = useTeacher(slug);
   const { t, locale } = useI18n();

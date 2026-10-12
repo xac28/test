@@ -4,7 +4,8 @@ import { requireAdmin, cleanReason } from "@/lib/admin-api"
 import { keysFromInput, safeHref } from "@/lib/ai-learning"
 
 // PATCH /api/admin/ai/taught/:id { question?, answer?, keywords?, linkLabel?, linkHref?, active? }
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const row = await db.aiTaughtAnswer.findUnique({ where: { id: params.id } })
@@ -38,7 +39,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ success: true })
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const row = await db.aiTaughtAnswer.findUnique({ where: { id: params.id } })

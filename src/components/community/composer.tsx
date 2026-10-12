@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useRef, useState } from "react"
 import { ImagePlus, Loader2, X } from "lucide-react"
 import { CommunityPost, ModeratedField, liveWarning, useAuthGate } from "./parts"
@@ -91,7 +92,7 @@ export function Composer({ onPosted }: { onPosted: (post: CommunityPost, pending
     <form onSubmit={submit} data-testid="composer" className="bg-paper border border-rule rounded-xl p-4 sm:p-5 space-y-4">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-2xl">Bir an paylaş</h2>
-        <a href="/community/rules" className="text-xs underline text-sage-600 hover:text-ink">Topluluk kuralları</a>
+        <Link href="/community/rules" className="text-xs underline text-sage-600 hover:text-ink">Topluluk kuralları</Link>
       </div>
 
       {preview ? (

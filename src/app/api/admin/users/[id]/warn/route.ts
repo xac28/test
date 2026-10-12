@@ -4,7 +4,8 @@ import { requireAdmin, cleanReason } from "@/lib/admin-api"
 import { issueWarning } from "@/lib/report-server"
 
 // POST /api/admin/users/:id/warn { message } — official warning (banner + e-mail)
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const body = await req.json().catch(() => ({}))

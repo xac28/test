@@ -8,7 +8,8 @@ import { validateWorkshopInput } from "@/lib/workshops"
 export const dynamic = "force-dynamic"
 
 // GET /api/workshops/:idOrSlug
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const viewer = await resolveUser(req).catch(() => null)
     const w = await findWorkshop(params.id)
@@ -26,7 +27,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // PATCH /api/workshops/:id — owner/admin: edit, publish/unpublish or cancel
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

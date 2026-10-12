@@ -3,7 +3,8 @@ import { resolveUser } from "@/lib/auth-utils"
 import { decideTrial } from "@/lib/trial-server"
 
 // POST /api/admin/teachers/:id/trial  { action: "approve" | "reject" | "revoke", note? }
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const admin = await resolveUser(req)
     if (!admin || admin.role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

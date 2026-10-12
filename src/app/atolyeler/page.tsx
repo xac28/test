@@ -5,7 +5,10 @@ import { seatsLeft, workshopState } from "@/lib/workshops"
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Atölyeler" }
 
-export default async function WorkshopsPage({ searchParams }: { searchParams: { mode?: string; category?: string; past?: string } }) {
+export default async function WorkshopsPage(
+  props: { searchParams: Promise<{ mode?: string; category?: string; past?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const mode = searchParams.mode === "LIVE" || searchParams.mode === "RECORDED" ? searchParams.mode : null
   const category = searchParams.category || null
   const past = searchParams.past === "1"

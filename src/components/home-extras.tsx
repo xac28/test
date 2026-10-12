@@ -18,7 +18,7 @@ export function BreathBreak() {
   const [running, setRunning] = useState(false);
   const [phase, setPhase] = useState(2);
   const [cycles, setCycles] = useState(0);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (!running) return;

@@ -11,12 +11,14 @@ async function load(slug: string) {
   return db.podcastEpisode.findFirst({ where: { slug, status: "PUBLISHED" } }).catch(() => null)
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const e = await load(params.slug)
   return e ? { title: `${e.title} · Podcast`, description: e.description.slice(0, 160) } : { title: "Podcast" }
 }
 
-export default async function EpisodePage({ params }: { params: { slug: string } }) {
+export default async function EpisodePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const e = await load(params.slug)
   if (!e) notFound()
   return (

@@ -19,7 +19,7 @@ export function PoseCard({ slug }: { slug: string }) {
   const [hover, setHover] = useState(false)
   const [pinned, setPinned] = useState(false)
   const [ready, setReady] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const active = hover || pinned
 
   useEffect(() => { if (!active) setReady(false) }, [active])

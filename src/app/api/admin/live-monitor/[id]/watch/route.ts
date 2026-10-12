@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic"
 
 // POST /api/admin/live-monitor/:id/watch → a hidden, subscribe-only token: the official sees and hears the broadcast
 // without showing up in the participant list or the viewer count. Every session is written to the audit log.
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, RATE_LIMIT_WRITE)
   if (blocked) return blocked
   const g = await requireAdmin(req)

@@ -7,7 +7,8 @@ import { extractIp } from "@/lib/ban-engine"
 export const dynamic = "force-dynamic"
 
 // DELETE /api/streamer/devices/:id → the app loses access at once (its next request is refused)
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await resolveUser(req)
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const r = await db.streamerDevice.updateMany({ where: { id: params.id, userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } })

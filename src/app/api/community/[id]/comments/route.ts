@@ -10,7 +10,8 @@ import { moderateText, strikeHint } from "@/lib/moderation"
 import { notify } from "@/lib/notifications"
 
 // POST /api/community/:id/comments { content } — every comment passes the automatic moderation first
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, RATE_LIMIT_WRITE)
   if (blocked) return blocked
   try {

@@ -3,7 +3,8 @@ import { NextResponse } from "next/server"
 import { requireAdmin, cleanReason } from "@/lib/admin-api"
 
 // POST /api/admin/workshops/:id/unpublish { reason } — back to draft (the teacher can fix and re-publish)
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const body = await req.json().catch(() => ({}))

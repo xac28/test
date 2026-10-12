@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic"
 
 // POST /api/shop/orders/:code/pay { email } — starts (or restarts) the card payment of an unpaid card order.
 // The e-mail of the order is the proof that the person knows this order; the amount always comes from the order, never from the browser.
-export async function POST(req: Request, { params }: { params: { code: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   const ip = extractIp(req)
   if (!rateLimit(`order-pay:${ip}`, { maxRequests: 20, windowMs: 60_000 }).allowed) return NextResponse.json({ error: "Çok fazla deneme. Biraz sonra tekrar deneyin." }, { status: 429 })
   if (iyzicoMode() === "off") return NextResponse.json({ error: "Kartla ödeme şu an kullanılamıyor." }, { status: 503 })

@@ -11,7 +11,8 @@ async function adminOnly(req: Request) {
 }
 
 // GET one (full body) for the editor
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!(await adminOnly(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const article = await db.article.findUnique({ where: { id: params.id } })
   if (!article) return NextResponse.json({ error: "Yazı bulunamadı" }, { status: 404 })
@@ -19,7 +20,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // PATCH — edit / publish / unpublish
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const admin = await adminOnly(req)
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -48,7 +50,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!(await adminOnly(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   await db.article.deleteMany({ where: { id: params.id } })
   return NextResponse.json({ success: true })

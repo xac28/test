@@ -4,7 +4,8 @@ import { resolveUser } from "@/lib/auth-utils"
 import { findWorkshop } from "@/lib/workshop-server"
 
 // GET /api/workshops/:id/enrollments — the teacher's participant list
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

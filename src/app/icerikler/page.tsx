@@ -4,7 +4,8 @@ import ArticlesView from "@/components/articles-view"
 export const dynamic = "force-dynamic"
 export const metadata = { title: "İçerikler" }
 
-export default async function ArticlesPage({ searchParams }: { searchParams: { category?: string } }) {
+export default async function ArticlesPage(props: { searchParams: Promise<{ category?: string }> }) {
+  const searchParams = await props.searchParams;
   const category = searchParams.category || null
   const rows = await db.article
     .findMany({

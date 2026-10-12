@@ -4,7 +4,8 @@ import { resolveUser } from "@/lib/auth-utils"
 import { isValidRecordingId, mergeChunks, purgeRecordingFiles } from "@/lib/recordings"
 
 // POST /api/recordings/:id/finalize — teacher ends the recording; chunks are merged into one file
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

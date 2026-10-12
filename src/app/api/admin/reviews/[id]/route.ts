@@ -4,7 +4,8 @@ import { requireAdmin, cleanReason } from "@/lib/admin-api"
 import { notify } from "@/lib/notifications"
 
 // POST /api/admin/reviews/:id { action: remove | restore, reason? } — a removed review stops counting and showing
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const body = await req.json().catch(() => ({}))

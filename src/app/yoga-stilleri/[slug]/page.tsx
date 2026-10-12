@@ -12,12 +12,14 @@ import { poseImage } from "@/lib/yoga-poses"
 export function generateStaticParams() {
   return STYLES.map((s) => ({ slug: s.slug }))
 }
-export function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const s = STYLE_BY_SLUG[params.slug]
   return s ? { title: `${s.name} yoga`, description: s.tagline, alternates: { canonical: `/yoga-stilleri/${s.slug}` }, openGraph: { title: `${s.name} yoga · AYA`, description: s.tagline, images: [{ url: `/poses/${s.cover}.webp`, width: 900, height: 1125 }] } } : {}
 }
 
-export default function StylePage({ params }: { params: { slug: string } }) {
+export default async function StylePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const s = STYLE_BY_SLUG[params.slug]
   if (!s) notFound()
   const others = STYLES.filter((x) => x.slug !== s.slug)

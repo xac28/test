@@ -5,7 +5,8 @@ import { notify } from "@/lib/notifications"
 import { cleanReason } from "@/lib/admin-api"
 
 // DELETE /api/community/comments/:cid { reason? } — the author, the owner of the photo, or an admin may remove a comment
-export async function DELETE(req: Request, { params }: { params: { cid: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ cid: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

@@ -4,7 +4,8 @@ import { requireAdmin, cleanReason } from "@/lib/admin-api"
 import { isValidRecordingId, purgeRecordingFiles } from "@/lib/recordings"
 
 // DELETE /api/admin/recordings/:id { reason } — removes the file for good (e.g. a recording that breaks the rules)
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const g = await requireAdmin(req)
   if ("response" in g) return g.response
   const body = await req.json().catch(() => ({}))

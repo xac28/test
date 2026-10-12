@@ -7,7 +7,8 @@ import { iyzicoMode } from "@/lib/iyzico"
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Sipariş durumu", robots: { index: false } }
 
-export default async function OrderPage({ params }: { params: { code: string } }) {
+export default async function OrderPage(props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   const o = await db.order.findUnique({ where: { code: params.code.toUpperCase() }, include: { items: true } }).catch(() => null)
   if (!o) notFound()
   return (

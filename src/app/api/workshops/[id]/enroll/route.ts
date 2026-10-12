@@ -9,7 +9,8 @@ import { findWorkshop } from "@/lib/workshop-server"
 import { canEnroll, initialEnrollmentStatus, seatsLeft } from "@/lib/workshops"
 
 // POST /api/workshops/:id/enroll — take a seat (free → confirmed, paid → reserved until payment is confirmed)
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, RATE_LIMIT_WRITE)
   if (blocked) return blocked
   try {
@@ -53,7 +54,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 }
 
 // DELETE /api/workshops/:id/enroll — give the seat back
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

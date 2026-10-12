@@ -6,7 +6,8 @@ import { createLiveKitToken } from "@/lib/livekit"
 import { canAccessContent } from "@/lib/workshops"
 
 // POST /api/live/:id/join — watch a broadcast: subscribe-only token (+ data for chat)
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

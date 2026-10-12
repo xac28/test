@@ -17,7 +17,8 @@ async function mine(req: Request, id: string) {
 }
 
 // GET /api/support/:id?after=<iso> — messages (for polling) and the ticket state
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, { maxRequests: 120, windowMs: 60_000 })
   if (blocked) return blocked
   const g = await mine(req, params.id)
@@ -38,7 +39,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // POST /api/support/:id { content } — write in an open conversation
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, RATE_LIMIT_WRITE)
   if (blocked) return blocked
   const g = await mine(req, params.id)
@@ -56,7 +58,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 }
 
 // PATCH /api/support/:id { action: "close", rating?, comment? } — the member ends the conversation and may rate it
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blocked = applyRateLimit(req, RATE_LIMIT_WRITE)
   if (blocked) return blocked
   const g = await mine(req, params.id)

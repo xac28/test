@@ -6,12 +6,14 @@ import { toProductData } from "@/lib/shop-data"
 
 export const dynamic = "force-dynamic"
 
-export function generateMetadata({ params }: { params: { cat: string } }) {
+export async function generateMetadata(props: { params: Promise<{ cat: string }> }) {
+  const params = await props.params;
   const c = SHOP_BY_SLUG[params.cat]
   return { title: c ? `Shop · ${c.name.tr}` : "Shop" }
 }
 
-export default async function ShopCategoryPage({ params }: { params: { cat: string } }) {
+export default async function ShopCategoryPage(props: { params: Promise<{ cat: string }> }) {
+  const params = await props.params;
   const c = SHOP_BY_SLUG[params.cat]
   if (!c) notFound()
   const products = await db.product.findMany({ where: { status: "PUBLISHED", category: c.slug }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] }).catch(() => [])

@@ -8,14 +8,16 @@ import { scheduleData } from "@/lib/schedule"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const a = await requireAdmin(req)
   if ("response" in a) return a.response
   const product = await db.product.findUnique({ where: { id: params.id } })
   return product ? NextResponse.json({ product }) : NextResponse.json({ error: "Ürün bulunamadı" }, { status: 404 })
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const a = await requireAdmin(req)
   if ("response" in a) return a.response
   const existing = await db.product.findUnique({ where: { id: params.id } })
@@ -34,7 +36,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // Orders keep their own copy of name and price, so deleting a product never breaks an old order.
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const a = await requireAdmin(req)
   if ("response" in a) return a.response
   await db.product.deleteMany({ where: { id: params.id } })

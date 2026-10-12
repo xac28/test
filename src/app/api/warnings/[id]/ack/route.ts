@@ -3,7 +3,8 @@ import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 
 // POST /api/warnings/:id/ack — "I have read this"
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await resolveUser(req)
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const res = await db.userWarning.updateMany({

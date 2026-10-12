@@ -4,7 +4,8 @@ import { resolveUser } from "@/lib/auth-utils"
 import { findWorkshop } from "@/lib/workshop-server"
 
 // PATCH /api/workshops/:id/enrollments/:userId { status: "CONFIRMED" | "CANCELLED" } — mark a payment received / remove a participant
-export async function PATCH(req: Request, { params }: { params: { id: string; userId: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string; userId: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

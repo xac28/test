@@ -85,7 +85,7 @@ test.describe("lesson recording (real browser recording → server → download)
     const { ctx: octx, page: op } = await newSession(browser, outsider.email)
     expect((await op.request.get(`/api/recordings/${rec!.id}/download`)).status()).toBe(404)
     await op.goto("/dashboard")
-    await expect(op.getByTestId("recordings-section")).toContainText("Henüz indirilebilir ders kaydı yok", { timeout: 20_000 })
+    await expect(op.getByRole("main").getByTestId("recordings-section")).toContainText("Henüz indirilebilir ders kaydı yok", { timeout: 20_000 })
 
     await tctx.close()
     await sctx.close()

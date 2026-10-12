@@ -79,7 +79,7 @@ test.describe("teacher vetting: trial room", () => {
     await expect(a.page.getByTestId("trial-row").filter({ hasText: name })).toBeVisible({ timeout: 20_000 })
     await t.page.goto("/teach")
     await expect(t.page.getByText("Deneme Aşamasındasınız")).toBeVisible()
-    await expect(t.page.getByTestId("trial-note")).toContainText("Uygunsuz davranış bildirimi")
+    await expect(t.page.getByRole("main").getByTestId("trial-note")).toContainText("Uygunsuz davranış bildirimi")
 
     await t.ctx.close(); await a.ctx.close(); await s.ctx.close()
   })
@@ -100,7 +100,7 @@ test.describe("teacher vetting: trial room", () => {
 
     const t = await newSession(browser, cand.email)
     await t.page.goto("/teach")
-    await expect(t.page.getByTestId("trial-note")).toContainText("Görüntü ve ses kalitesi yetersiz")
+    await expect(t.page.getByRole("main").getByTestId("trial-note")).toContainText("Görüntü ve ses kalitesi yetersiz")
     await t.ctx.close(); await a.ctx.close()
   })
 })

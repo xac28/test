@@ -1,5 +1,5 @@
 # AYA web — multi-stage image. Build:  docker build -t aya --build-arg NEXT_PUBLIC_SITE_URL=https://aya.example.com .
-FROM node:20-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 

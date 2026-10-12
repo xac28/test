@@ -1,7 +1,7 @@
 # AYA
 
 Yoga, nefes ve meditasyon için bir okul: sertifikalı eğitmenlerle **birebir dersler**, herkese açık **canlı yayınlar**, küçük gruplarla **atölyeler** ve **içerikler** (yazılar).
-Web (Next.js 14) + mobil uygulama (Expo, `namaste-mobile/` klasörü — adı değişmedi) + LiveKit ile canlı video.
+Web (Next.js 16, React 19) + mobil uygulama (Expo, `namaste-mobile/` klasörü — adı değişmedi) + LiveKit ile canlı video.
 
 ## Özellikler
 
@@ -53,7 +53,7 @@ npm test                 # birim testleri (vitest)
 npm run test:api         # API entegrasyon testleri — çalışan sunucu + veritabanı gerekir
 npm run test:e2e         # tarayıcı testleri (Playwright) — sunucu + LiveKit gerekir
 npm run typecheck        # tsc
-npm run lint             # next lint (ESLint, next/core-web-vitals)
+npm run lint             # ESLint 9 (eslint-config-next, core-web-vitals)
 AYA_RECORD_DIR=tour-output/videos npx playwright test tests/e2e/tour.spec.ts   # sitenin tamamını gezen, video kaydeden tur testi (ekran görüntüleri tour-output/ altına)
 ```
 

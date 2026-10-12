@@ -194,7 +194,7 @@ export function AiAssistant() {
       if (wrote) patchLast((m) => ({ ...m, streaming: false, status: undefined, text: `${m.text}\n\n_Bağlantı koptu. Soruyu tekrar gönder._` }))
       else { setMessages((prev) => (prev.at(-1)?.streaming ? prev.slice(0, -1) : prev)); say("Bağlantı hatası oluştu. Lütfen tekrar dene.") }
     } finally {
-      abortRef.current = null
+      if (abortRef.current === ctrl) abortRef.current = null
     }
   }
 
@@ -210,7 +210,8 @@ export function AiAssistant() {
     await ask(userMsg, history)
   }
 
-  const stop = () => abortRef.current?.abort()
+  // a stopped answer frees the input at once; the old request's cleanup must not touch a newer one
+  const stop = () => { abortRef.current?.abort(); abortRef.current = null }
 
   const lastQuestion = () => [...messages].reverse().find((m) => m.role === "user" && !/canli|canlı|destek|yetkili|temsilci/i.test(m.text))?.text ?? ""
 

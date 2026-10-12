@@ -137,4 +137,4 @@ Sunucu açılışında `/api/health` ve “env-check” eksikleri uyarır; aşa�
 | 9 | Yönetici | `ADMIN_EMAIL` hesabıyla giriş yapıp Yönetim → Güvenlik/Günlükler’i kontrol edin |
 | 10 | Güvenlik başlığı | Günlük temizse `CSP_MODE=enforce`, https’te HSTS satırını açın |
 
-Bilinen not: Next.js 14 hattı için bazı güvenlik bültenleri yalnızca Next 16 sürümünde kapanıyor. Görsel iyileştirici (`next/image`) yalnızca WebP üretir (AVIF kapalı), uygulama Windows’ta barındırılmıyor ve i18n/Pages Router kullanılmıyor; bu yüzden en kritik maddeler bu kurulumu etkilemez. Yine de Next 16’ya geçiş planlanmalıdır.
+Not: uygulama Next.js 16 / React 19 üzerinde çalışır (Node 20.9+; Dockerfile Node 22 kullanır). `npm audit` çıktısında kalan uyarıları çalıştırmadan önce gözden geçirin.

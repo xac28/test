@@ -1,17 +1,16 @@
 import { test, expect, makeAccount, newSession } from "./helpers"
 
 test.describe("landing page: motion, 3D and sign-up funnel", () => {
-  test("hero shows the 3D scene (or its static fallback) without errors, and the join CTA leads to registration", async ({ page }) => {
+  test("hero shows the five doors of the platform without errors, and the join CTA leads to registration", async ({ page }) => {
     const errors: string[] = []
     page.on("pageerror", (e) => errors.push(e.message))
     await page.goto("/")
-    const scene = page.getByTestId("scene-3d").first()
-    await expect(scene).toBeVisible()
-    await expect(scene.locator("canvas, svg").first()).toBeAttached({ timeout: 15_000 })
-    if (await scene.locator("canvas").count()) {
-      const box = await scene.locator("canvas").boundingBox()
-      expect(box!.width).toBeGreaterThan(200)
-      expect(box!.height).toBeGreaterThan(250)
+    // no yoga figure on the home page any more (the pose library has it)
+    await expect(page.getByTestId("scene-3d")).toHaveCount(0)
+    const hrefs: Record<string, string> = { "pillar-live": "/live", "pillar-workshops": "/atolyeler", "pillar-podcast": "/podcast", "pillar-community": "/community", "pillar-shop": "/shop" }
+    for (const [id, href] of Object.entries(hrefs)) {
+      await expect(page.getByTestId(id)).toBeVisible()
+      await expect(page.getByTestId(id)).toHaveAttribute("href", href)
     }
     await expect(page.getByTestId("hero-join")).toBeVisible()
     await page.getByTestId("hero-join").click()

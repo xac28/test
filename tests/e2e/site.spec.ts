@@ -62,9 +62,9 @@ test.describe("public pages", () => {
   test("English switch translates the new pages", async ({ page }) => {
     await page.goto("/")
     await page.getByRole("button", { name: "en", exact: true }).first().click()
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("A live school for breath,")
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Your one place to")
     await page.getByRole("button", { name: "tr", exact: true }).first().click()
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Nefes, beden ve zihin için")
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("İyi hissetmenin")
   })
 })
 

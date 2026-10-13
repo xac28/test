@@ -1,15 +1,13 @@
 import { test, expect, makeAccount, newSession } from "./helpers"
 
 test.describe("discovery pages: styles, poses, how it works, FAQ", () => {
-  test("home page walks visitors through styles, poses, workshops and FAQ", async ({ page }) => {
+  test("home page walks visitors through styles, workshops and FAQ", async ({ page }) => {
     const errors: string[] = []
     page.on("pageerror", (e) => errors.push(e.message))
     await page.goto("/")
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
     await page.getByTestId("home-styles").scrollIntoViewIfNeeded()
     await expect(page.getByTestId("home-styles").locator("a[href^='/yoga-stilleri/']").first()).toBeVisible()
-    await page.getByTestId("home-poses").scrollIntoViewIfNeeded()
-    await expect(page.getByTestId("home-poses").locator("a[href^='/pozlar/']").first()).toBeVisible()
     await page.getByTestId("home-faq").scrollIntoViewIfNeeded()
     await page.getByTestId("home-faq").getByTestId("faq-item").first().click()
     await expect(page.getByTestId("home-faq").getByTestId("faq-item").first()).toHaveAttribute("open", "")
@@ -37,11 +35,11 @@ test.describe("discovery pages: styles, poses, how it works, FAQ", () => {
     await expect(page).toHaveURL(/\/pozlar$/)
   })
 
-  test("home: Yazılar and Duyurular / Haberler boxes, daily pose, breathing break, newsletter", async ({ page }) => {
+  test("home: Yazılar and Duyurular / Haberler boxes, community, breathing break, newsletter", async ({ page }) => {
     await page.goto("/")
     await expect(page.getByTestId("home-articles")).toBeVisible()
     await expect(page.getByTestId("home-news")).toBeVisible()
-    await expect(page.getByTestId("pose-of-day")).toBeVisible()
+    await expect(page.getByTestId("home-community")).toBeVisible()
     await page.getByTestId("breath-toggle").click()
     await expect(page.getByTestId("breath-label")).toHaveText("Nefes al")
     await page.getByTestId("breath-toggle").click()

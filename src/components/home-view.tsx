@@ -2,25 +2,21 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { ArrowRight, ArrowUpRight, Check, Megaphone, Radio, Video, CalendarCheck, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowRight, ArrowUpRight, CalendarCheck, Check, Heart, Megaphone, MessageCircle, Mic, Radio, ShoppingBag, Sparkles, Users, Video } from 'lucide-react';
+import type { ReactNode } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ArticleCardData, Cover, LiveNowCard, SectionHead, WorkshopCard, WorkshopCardData, useDateFormat, useL } from '@/components/editorial';
-import { BreathBreak, PoseOfTheDay } from '@/components/home-extras';
+import { BreathBreak } from '@/components/home-extras';
 import { EpisodeData, NewsletterBand, WaveDivider } from '@/components/section-pages';
 import { PodcastPlayer } from '@/components/podcast-player';
 import { ProductCard, ProductData } from '@/components/shop-pages';
 import { ARTICLE_CATEGORIES } from '@/lib/articles';
-import dynamic from 'next/dynamic';
 import { Aurora, ClipReveal, Counter, Magnetic, Marquee, Parallax, PhotoBackdrop, PointerField, Reveal, Spotlight, SplitText, Stagger, StaggerItem, Tilt } from '@/components/motion';
 import { FaqList } from '@/components/marketing';
-import { PoseCard } from '@/components/poses/pose-library';
-import { POSES, POSE_BY_SLUG, poseImage } from '@/lib/yoga-poses';
+import { POSES } from '@/lib/yoga-poses';
 import { STYLES, TONE_CLASS } from '@/lib/yoga-styles';
 
-const YogiScene = dynamic(() => import('@/components/three/yogi-scene').then((m) => m.YogiScene), { ssr: false, loading: () => <div className="absolute inset-0" aria-hidden /> });
-const HERO_POSES = ['kolay-oturus', 'dag-durusu', 'savasci-2', 'agac', 'ayakta-yukari-uzanis'];
 import { PHOTOS } from '@/lib/photos';
 
 export interface HomeData {
@@ -38,7 +34,6 @@ export default function HomeView({ data }: { data: HomeData }) {
   const f = useDateFormat();
   const { status } = useSession();
   const visitor = status === 'unauthenticated';
-  const [heroPose, setHeroPose] = useState(HERO_POSES[0]);
 
   return (
     <>
@@ -47,20 +42,20 @@ export default function HomeView({ data }: { data: HomeData }) {
         {/* ── Hero ─────────────────────────────────────────────── */}
         <PointerField className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-clay-50 via-cream to-teal-100" aria-hidden />
-          <PhotoBackdrop sources={PHOTOS.hero} opacity={0.12} />
+          <PhotoBackdrop sources={PHOTOS.hero} opacity={0.1} />
           <div className="pointer-drift absolute inset-0" style={{ ['--drift' as string]: '-46px' }} aria-hidden><Aurora /></div>
           <div className="pointer-glow" aria-hidden />
-          <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-14 lg:pt-16 lg:pb-20 grid lg:grid-cols-12 gap-6 lg:gap-10 items-center">
+          <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-14 lg:pt-16 lg:pb-20 grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             <div className="lg:col-span-6">
-              <p className="eyebrow mb-6 animate-fade-up" style={{ animationDelay: '0.05s', opacity: 0 }}>{L('Yoga · Nefes · Meditasyon', 'Yoga · Breath · Meditation')}</p>
+              <p className="eyebrow mb-6 animate-fade-up" style={{ animationDelay: '0.05s', opacity: 0 }}>{L('Wellness platformu', 'Wellness platform')}</p>
               <h1 className="font-display font-light text-[3.1rem] sm:text-7xl lg:text-[5.2rem] leading-[0.98] tracking-tight">
-                <SplitText text={L('Nefes, beden ve zihin için', 'A live school for breath,')} delay={0.1} />{' '}
-                <em className="italic pr-1"><SplitText text={L('canlı bir okul.', 'body and mind.')} wordClassName="text-gradient" delay={0.5} /></em>
+                <SplitText text={L('İyi hissetmenin', 'Your one place to')} delay={0.1} />{' '}
+                <em className="italic pr-1"><SplitText text={L('tek adresi.', 'feel well.')} wordClassName="text-gradient" delay={0.5} /></em>
               </h1>
               <p className="mt-7 text-lg text-sage-600 max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
                 {L(
-                  'Sertifikalı eğitmenlerle birebir dersler, herkese açık canlı yayınlar ve küçük gruplarla atölyeler. Evinizden, kendi temponuzla.',
-                  'One-to-one lessons with certified teachers, open live broadcasts and small-group workshops. From home, at your own pace.'
+                  'Canlı dersler ve atölyeler, podcast konuşmaları, topluluk ve wellness mağazası bir arada. Evinden, kendi temponla.',
+                  'Live lessons and workshops, podcast conversations, a community and a wellness shop, all in one place. From home, at your own pace.'
                 )}
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-4 animate-fade-up" style={{ animationDelay: '0.45s', opacity: 0 }}>
@@ -86,16 +81,13 @@ export default function HomeView({ data }: { data: HomeData }) {
               </ul>
             </div>
             <div className="lg:col-span-6">
-              <div className="relative h-[420px] sm:h-[520px] lg:h-[600px]">
-                <div className="pointer-drift absolute inset-0 flex items-center justify-center pointer-events-none" style={{ ['--drift' as string]: '26px' }} aria-hidden>
-                  <div className="orbit orbit-a w-[74%] aspect-square"><i /></div>
-                  <div className="orbit orbit-b w-[94%] aspect-square"><i /></div>
-                </div>
-                <YogiScene poses={HERO_POSES} className="absolute inset-0" label={setHeroPose} />
-                <Link href={`/pozlar/${heroPose}`} data-testid="hero-pose-chip" className="absolute left-1/2 -translate-x-1/2 bottom-2 inline-flex items-center gap-2 bg-paper/90 backdrop-blur border border-rule shadow-md rounded-full pl-4 pr-3 py-2 min-h-[44px] text-sm font-medium hover:border-ink transition">
-                  <span className="w-2 h-2 rounded-full bg-clay-500 animate-pulse" aria-hidden /> {POSE_BY_SLUG[heroPose]?.name} <span className="text-sage-500 italic hidden sm:inline">{POSE_BY_SLUG[heroPose]?.sanskrit}</span> <ArrowRight size={14} />
-                </Link>
-              </div>
+              <Stagger className="grid grid-cols-2 gap-3 md:gap-4" gap={0.1}>
+                <Pillar wide href="/live" icon={<Radio size={20} />} title={L('Canlı dersler', 'Live lessons')} text={L('Canlı yayınlar ve birebir dersler, sohbetli ve kayıtlı.', 'Live broadcasts and one-to-one lessons, with chat and recordings.')} photo={PHOTOS.studio} live={!!data.live} testId="pillar-live" tall />
+                <Pillar href="/atolyeler" icon={<CalendarCheck size={20} />} title={L('Atölyeler', 'Workshops')} text={L('Küçük gruplarla, canlı ya da kayıtlı.', 'Small groups, live or recorded.')} photo={PHOTOS.meditation} testId="pillar-workshops" />
+                <Pillar href="/podcast" icon={<Mic size={20} />} title="Podcast" text={L('Uzmanlarla konuşmalar.', 'Conversations with experts.')} tone="from-teal-700 to-teal-500" art={<Equalizer />} testId="pillar-podcast" />
+                <Pillar href="/community" icon={<Users size={20} />} title={L('Topluluk', 'Community')} text={L('Paylaş, ilham al, birlikte ilerle.', 'Share, get inspired, grow together.')} tone="from-sky-500 to-teal-400" art={<HeartsArt />} testId="pillar-community" />
+                <Pillar href="/shop" icon={<ShoppingBag size={20} />} title="Shop" text={L('Mat, aromaterapi ve wellness ürünleri.', 'Mats, aromatherapy and wellness products.')} photo={PHOTOS.breath} testId="pillar-shop" />
+              </Stagger>
               {data.live ? (
                 <LiveNowCard id={data.live.id} title={data.live.title} teacher={data.live.teacher} viewers={data.live.viewers} trial={data.live.trial} />
               ) : (
@@ -128,6 +120,50 @@ export default function HomeView({ data }: { data: HomeData }) {
             ))}
           </Stagger>
         </section>
+
+        {/* ── 01 Workshops ─────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-20">
+          <SectionHead
+            num="01"
+            label={L('Atölyeler', 'Workshops')}
+            title={L('Küçük gruplarla, canlı ya da kayıtlı atölyeler', 'Small-group workshops, live or recorded')}
+            href="/atolyeler"
+            linkLabel={L('Tüm atölyeler', 'All workshops')}
+          />
+          {data.workshops.length === 0 ? (
+            <p className="text-sage-600">{L('Yeni atölyeler çok yakında burada.', 'New workshops are coming soon.')}</p>
+          ) : (
+            <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+              {data.workshops.map((w) => (
+                <StaggerItem key={w.slug}><WorkshopCard w={w} /></StaggerItem>
+              ))}
+            </Stagger>
+          )}
+        </section>
+
+        {/* ── Podcast + Shop ───────────────────────────────────── */}
+        {(data.episode || data.products.length > 0) && (
+          <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-16" data-testid="home-podcast-shop">
+            <div className="grid lg:grid-cols-12 gap-6">
+              {data.episode && (
+                <div className="lg:col-span-5 rounded-3xl border border-rule bg-white p-6 md:p-8" data-testid="home-episode">
+                  <p className="eyebrow mb-3">{L('Podcast · Konuşmalar', 'Podcast · Conversations')}</p>
+                  <h2 className="font-display text-3xl leading-tight"><Link href={`/podcast/${data.episode.slug}`} className="hover:underline underline-offset-4 decoration-1">{data.episode.title}</Link></h2>
+                  {data.episode.guest && <p className="text-sm text-teal-700 font-medium mt-1">{L('Konuk', 'Guest')}: {data.episode.guest}</p>}
+                  <p className="text-sage-600 mt-3 line-clamp-3">{data.episode.description}</p>
+                  <PodcastPlayer id={data.episode.id} src={data.episode.audioUrl} className="mt-5" />
+                  <Link href="/podcast" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-700">{L('Tüm bölümler', 'All episodes')} <ArrowRight size={15} /></Link>
+                </div>
+              )}
+              {data.products.length > 0 && (
+                <div className={data.episode ? 'lg:col-span-7' : 'lg:col-span-12'}>
+                  <div className="flex items-end justify-between mb-4"><h2 className="font-display text-3xl">Shop</h2><Link href="/shop" className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700">{L('Tüm ürünler', 'All products')} <ArrowRight size={15} /></Link></div>
+                  <div className="grid sm:grid-cols-3 gap-4">{data.products.map((p) => <ProductCard key={p.id} p={p} />)}</div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ── Yazılar + Duyurular / Haberler (from the sketch) ─────── */}
         <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-10" data-testid="home-feed">
@@ -198,124 +234,24 @@ export default function HomeView({ data }: { data: HomeData }) {
           </div>
 
           <div className="grid lg:grid-cols-12 gap-6 mt-6">
-            <div className="lg:col-span-5"><PoseOfTheDay /></div>
+            <div className="lg:col-span-5"><CommunityCard /></div>
             <div className="lg:col-span-7"><BreathBreak /></div>
           </div>
         </section>
 
-        {/* ── Podcast + Shop ───────────────────────────────────── */}
-        {(data.episode || data.products.length > 0) && (
-          <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-16" data-testid="home-podcast-shop">
-            <div className="grid lg:grid-cols-12 gap-6">
-              {data.episode && (
-                <div className="lg:col-span-5 rounded-3xl border border-rule bg-white p-6 md:p-8" data-testid="home-episode">
-                  <p className="eyebrow mb-3">{L('Podcast · Konuşmalar', 'Podcast · Conversations')}</p>
-                  <h2 className="font-display text-3xl leading-tight"><Link href={`/podcast/${data.episode.slug}`} className="hover:underline underline-offset-4 decoration-1">{data.episode.title}</Link></h2>
-                  {data.episode.guest && <p className="text-sm text-teal-700 font-medium mt-1">{L('Konuk', 'Guest')}: {data.episode.guest}</p>}
-                  <p className="text-sage-600 mt-3 line-clamp-3">{data.episode.description}</p>
-                  <PodcastPlayer id={data.episode.id} src={data.episode.audioUrl} className="mt-5" />
-                  <Link href="/podcast" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-teal-700">{L('Tüm bölümler', 'All episodes')} <ArrowRight size={15} /></Link>
-                </div>
-              )}
-              {data.products.length > 0 && (
-                <div className={data.episode ? 'lg:col-span-7' : 'lg:col-span-12'}>
-                  <div className="flex items-end justify-between mb-4"><h2 className="font-display text-3xl">Shop</h2><Link href="/shop" className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700">{L('Tüm ürünler', 'All products')} <ArrowRight size={15} /></Link></div>
-                  <div className="grid sm:grid-cols-3 gap-4">{data.products.map((p) => <ProductCard key={p.id} p={p} />)}</div>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
         {/* ── category ticker ──────────────────────────────────── */}
         <div className="border-y border-rule py-4 mt-16 font-display text-2xl text-sage-600">
           <Marquee
-            items={['Hatha', 'Vinyasa', 'Yin', 'Restoratif', 'Nefes', 'Meditasyon', 'Yoga Nidra'].map((c) => (
-              <Link key={c} href={`/atolyeler?category=${encodeURIComponent(c)}`} className="tap-area hover:text-clay-600 italic">
+            items={[
+              ['Yoga', '/yoga-stilleri'], ['Nefes', '/atolyeler?category=Nefes'], ['Meditasyon', '/atolyeler?category=Meditasyon'], ['Podcast', '/podcast'],
+              ['Atölyeler', '/atolyeler'], ['Topluluk', '/community'], ['Wellness', '/shop/wellness'], ['Aromaterapi', '/shop/aromaterapi'], ['Yazılar', '/icerikler'],
+            ].map(([c, href]) => (
+              <Link key={c} href={href} className="tap-area hover:text-clay-600 italic">
                 {c} <span className="text-clay-400 not-italic px-3">✦</span>
               </Link>
             ))}
           />
         </div>
-
-        {/* ── Styles ───────────────────────────────────────────── */}
-        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-24" data-testid="home-styles">
-          <SectionHead num="01" label={L('Yoga stilleri', 'Yoga styles')} title={L('Sana hangi yoga uygun?', 'Which yoga is right for you?')} href="/yoga-stilleri" linkLabel={L('Tüm stiller', 'All styles')} />
-          <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {STYLES.map((st) => (
-              <StaggerItem key={st.slug}>
-                <Tilt className="rounded-3xl"><Link href={`/yoga-stilleri/${st.slug}`} className="group relative block rounded-3xl overflow-hidden border border-rule shadow-md hover:shadow-xl transition-shadow duration-500">
-                  <div className={`aspect-[5/4] bg-gradient-to-br ${TONE_CLASS[st.tone]} relative`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={poseImage(st.cover)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]" />
-                    <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/40 to-transparent transition-opacity duration-500 group-hover:opacity-90" aria-hidden />
-                    <span className="hover-arrow" aria-hidden><ArrowUpRight size={18} /></span>
-                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                      <h3 className="font-display text-4xl">{st.name}</h3>
-                      <p className="text-sm text-white/85 mt-1 line-clamp-2">{st.tagline}</p>
-                    </div>
-                  </div>
-                </Link></Tilt>
-              </StaggerItem>
-            ))}
-          </Stagger>
-        </section>
-
-        {/* ── Pose library teaser ──────────────────────────────── */}
-        <section className="mt-24 surface-mint border-y border-rule" data-testid="home-poses">
-          <div className="max-w-7xl mx-auto px-6 lg:px-12 py-20">
-            <SectionHead num="02" label={L('Poz kütüphanesi', 'Pose library')} title={L('Her pozu adım adım, 3B olarak öğren', 'Learn every pose step by step, in 3D')} href="/pozlar" linkLabel={L('Tüm pozlar', 'All poses')} />
-            <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              {['savasci-2', 'agac', 'asagi-bakan-kopek', 'kolay-oturus'].map((slug) => (
-                <StaggerItem key={slug}><PoseCard slug={slug} /></StaggerItem>
-              ))}
-            </Stagger>
-          </div>
-        </section>
-
-        {/* ── 01 Workshops ─────────────────────────────────────── */}
-        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-24">
-          <SectionHead
-            num="03"
-            label={L('Atölyeler', 'Workshops')}
-            title={L('Küçük gruplarla, canlı ya da kayıtlı atölyeler', 'Small-group workshops, live or recorded')}
-            href="/atolyeler"
-            linkLabel={L('Tüm atölyeler', 'All workshops')}
-          />
-          {data.workshops.length === 0 ? (
-            <p className="text-sage-600">{L('Yeni atölyeler çok yakında burada.', 'New workshops are coming soon.')}</p>
-          ) : (
-            <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-              {data.workshops.map((w) => (
-                <StaggerItem key={w.slug}><WorkshopCard w={w} /></StaggerItem>
-              ))}
-            </Stagger>
-          )}
-        </section>
-
-        {/* ── 02 One-to-one ────────────────────────────────────── */}
-        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28">
-          <SectionHead
-            num="04"
-            label={L('Birebir dersler', 'One-to-one lessons')}
-            title={L('Size göre bir eğitmen, size göre bir saat', 'A teacher and a time that fit you')}
-            href="/teachers"
-            linkLabel={L('Eğitmenleri gör', 'Meet the teachers')}
-          />
-          <Stagger className="grid md:grid-cols-3 gap-10" gap={0.14}>
-            {[
-              [L('Eğitmeninizi seçin', 'Choose your teacher'), L('Stile, seviyeye ve deneyime göre filtreleyin; tanıtım videosunu izleyin.', 'Filter by style, level and experience; watch the intro video.')],
-              [L('Deneme dersi alın', 'Take a trial lesson'), L('İlk dersi yarı fiyatına deneyin. Deneme derslerinden komisyon almıyoruz.', 'Try the first lesson at half price. We take no commission on trial lessons.')],
-              [L('Canlı pratik yapın', 'Practise live'), L('Kendi saat diliminizde, görüntülü ve birebir. İsterseniz dersi kaydedip 30 gün boyunca indirin.', 'In your own time zone, face to face. Record the lesson and download it for 30 days.')],
-            ].map(([t, d], i) => (
-              <StaggerItem key={t} className="border-t border-ink pt-5 lift p-0">
-                <span className="font-display text-5xl text-clay-500 leading-none">{String(i + 1).padStart(2, '0')}</span>
-                <h3 className="font-display text-2xl mt-4 mb-2">{t}</h3>
-                <p className="text-sage-600 leading-relaxed">{d}</p>
-              </StaggerItem>
-            ))}
-          </Stagger>
-        </section>
 
         {/* ── 03 Live studio band ──────────────────────────────── */}
         <section className="relative overflow-hidden mt-28 bg-stage text-cream grain">
@@ -325,7 +261,7 @@ export default function HomeView({ data }: { data: HomeData }) {
           <Aurora dark />
           <div className="relative max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6">
-              <p className="eyebrow !text-cream/50 mb-4"><span className="text-accent">05</span> — {L('Canlı yayın', 'Live broadcast')}</p>
+              <p className="eyebrow !text-cream/50 mb-4"><span className="text-accent">02</span> — {L('Canlı yayın', 'Live broadcast')}</p>
               <h2 className="font-display text-4xl md:text-5xl leading-[1.05]">
                 {L('Evinizden bir stüdyoya dönüşen yayın deneyimi', 'A broadcast studio that fits in your living room')}
               </h2>
@@ -357,10 +293,53 @@ export default function HomeView({ data }: { data: HomeData }) {
           </div>
         </section>
 
+        {/* ── 02 One-to-one ────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28">
+          <SectionHead
+            num="03"
+            label={L('Birebir dersler', 'One-to-one lessons')}
+            title={L('Size göre bir eğitmen, size göre bir saat', 'A teacher and a time that fit you')}
+            href="/teachers"
+            linkLabel={L('Eğitmenleri gör', 'Meet the teachers')}
+          />
+          <Stagger className="grid md:grid-cols-3 gap-10" gap={0.14}>
+            {[
+              [L('Eğitmeninizi seçin', 'Choose your teacher'), L('Stile, seviyeye ve deneyime göre filtreleyin; tanıtım videosunu izleyin.', 'Filter by style, level and experience; watch the intro video.')],
+              [L('Deneme dersi alın', 'Take a trial lesson'), L('İlk dersi yarı fiyatına deneyin. Deneme derslerinden komisyon almıyoruz.', 'Try the first lesson at half price. We take no commission on trial lessons.')],
+              [L('Canlı pratik yapın', 'Practise live'), L('Kendi saat diliminizde, görüntülü ve birebir. İsterseniz dersi kaydedip 30 gün boyunca indirin.', 'In your own time zone, face to face. Record the lesson and download it for 30 days.')],
+            ].map(([t, d], i) => (
+              <StaggerItem key={t} className="border-t border-ink pt-5 lift p-0">
+                <span className="font-display text-5xl text-clay-500 leading-none">{String(i + 1).padStart(2, '0')}</span>
+                <h3 className="font-display text-2xl mt-4 mb-2">{t}</h3>
+                <p className="text-sage-600 leading-relaxed">{d}</p>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </section>
+
+        {/* ── Yoga styles ──────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28" data-testid="home-styles">
+          <SectionHead num="04" label={L('Yoga stilleri', 'Yoga styles')} title={L('Yoga yapmak istersen: sana hangisi uygun?', 'Want to try yoga? Find your style')} href="/yoga-stilleri" linkLabel={L('Tüm stiller', 'All styles')} />
+          <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" gap={0.08}>
+            {STYLES.map((st, i) => (
+              <StaggerItem key={st.slug}>
+                <Tilt className="rounded-3xl"><Link href={`/yoga-stilleri/${st.slug}`} className={`group relative flex flex-col justify-between min-h-[190px] rounded-3xl overflow-hidden border border-rule p-6 bg-gradient-to-br ${TONE_CLASS[st.tone]} shadow-md hover:shadow-xl transition-shadow duration-500`}>
+                  <span className="font-display text-6xl leading-none text-ink/10 transition-transform duration-700 group-hover:translate-x-2">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="hover-arrow" aria-hidden><ArrowUpRight size={18} /></span>
+                  <div className="mt-8">
+                    <h3 className="font-display text-3xl">{st.name}</h3>
+                    <p className="text-sm text-sage-700 mt-1 line-clamp-2">{st.tagline}</p>
+                  </div>
+                </Link></Tilt>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </section>
+
         {/* ── Teachers ─────────────────────────────────────────── */}
         {data.teachers.length > 0 && (
           <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28">
-            <SectionHead num="07" label={L('Eğitmenler', 'Teachers')} title={L('Pratiğinize eşlik edecek eğitmenler', 'Teachers who will guide your practice')} href="/teachers" linkLabel={L('Tüm eğitmenler', 'All teachers')} />
+            <SectionHead num="05" label={L('Eğitmenler', 'Teachers')} title={L('Pratiğinize eşlik edecek eğitmenler', 'Teachers who will guide your practice')} href="/teachers" linkLabel={L('Tüm eğitmenler', 'All teachers')} />
             <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {data.teachers.map((t) => (
                 <StaggerItem key={t.id}>
@@ -377,7 +356,7 @@ export default function HomeView({ data }: { data: HomeData }) {
 
         {/* ── FAQ teaser ───────────────────────────────────────── */}
         <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-28" data-testid="home-faq">
-          <SectionHead num="08" label={L('Sık sorulanlar', 'FAQ')} title={L('Aklına takılanlar', 'Questions you might have')} href="/sss" linkLabel={L('Tüm sorular', 'All questions')} />
+          <SectionHead num="06" label={L('Sık sorulanlar', 'FAQ')} title={L('Aklına takılanlar', 'Questions you might have')} href="/sss" linkLabel={L('Tüm sorular', 'All questions')} />
           <FaqList
             items={[
               { q: L('AYA ücretsiz mi?', 'Is AYA free?'), a: L('Üyelik ve canlı yayınları izlemek ücretsiz. Birebir ders ve atölyeler eğitmenin belirlediği ücretle yapılır; ilk deneme dersi yarı fiyatına.', 'Membership and watching broadcasts are free. One-to-one lessons and workshops are priced by the teacher; your first trial lesson is half price.') },
@@ -463,5 +442,72 @@ export default function HomeView({ data }: { data: HomeData }) {
       </main>
       <Footer />
     </>
+  );
+}
+
+
+/** One of the five doors of the platform shown next to the headline. */
+function Pillar({ href, icon, title, text, photo, tone, art, live, wide, tall, testId }: {
+  href: string; icon: ReactNode; title: string; text: string; photo?: readonly string[]; tone?: string; art?: ReactNode; live?: boolean; wide?: boolean; tall?: boolean; testId: string;
+}) {
+  const L = useL();
+  return (
+    <StaggerItem className={wide ? 'col-span-2' : ''}>
+      <Tilt className="rounded-3xl h-full" max={4}>
+        <Link href={href} data-testid={testId} className={`group relative flex flex-col justify-end overflow-hidden rounded-3xl border border-white/60 text-white shadow-lg hover:shadow-2xl transition-shadow duration-500 p-5 ${tall ? 'min-h-[210px] lg:min-h-[230px]' : 'min-h-[170px] lg:min-h-[190px]'} bg-gradient-to-br ${tone ?? 'from-teal-800 to-teal-600'}`}>
+          {photo && <PhotoBackdrop sources={photo} opacity={0.95} drift={false} className="transition-transform duration-[1200ms] ease-out group-hover:scale-110" />}
+          {photo && <div className="absolute inset-0 bg-gradient-to-t from-teal-950/85 via-teal-900/35 to-teal-900/10" aria-hidden />}
+          {art && <div className="absolute inset-0 pointer-events-none" aria-hidden>{art}</div>}
+          <span className="absolute top-4 left-4 inline-flex w-10 h-10 items-center justify-center rounded-full bg-white/20 backdrop-blur ring-1 ring-white/30">{icon}</span>
+          {live && <span className="absolute top-5 right-5 inline-flex items-center gap-1.5 bg-accent text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded-full"><span className="live-dot w-1.5 h-1.5 rounded-full bg-white" /> {L('Canlı', 'Live')}</span>}
+          <span className="hover-arrow !top-auto !bottom-4 !right-4" aria-hidden><ArrowUpRight size={18} /></span>
+          <div className="relative pr-10">
+            <h2 className="font-display text-2xl md:text-3xl leading-tight">{title}</h2>
+            <p className="text-sm text-white/85 mt-1 leading-snug line-clamp-2">{text}</p>
+          </div>
+        </Link>
+      </Tilt>
+    </StaggerItem>
+  );
+}
+
+/** Podcast tile artwork: bars that move like a sound level. */
+function Equalizer() {
+  return (
+    <div className="absolute right-5 top-5 flex items-end gap-1 h-10">
+      {[0, 1, 2, 3, 4, 5].map((i) => <span key={i} className="eq-bar" style={{ animationDelay: `${i * 0.17}s` }} />)}
+    </div>
+  );
+}
+
+/** Community tile artwork: overlapping bubbles with hearts and speech. */
+function HeartsArt() {
+  return (
+    <div className="absolute right-4 top-4 flex -space-x-3">
+      {[Heart, MessageCircle, Sparkles].map((I, i) => (
+        <span key={i} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur ring-2 ring-white/40 flex items-center justify-center float-soft" style={{ animationDelay: `${i * 0.6}s` }}><I size={17} /></span>
+      ))}
+    </div>
+  );
+}
+
+/** Home teaser for the community area. */
+function CommunityCard() {
+  const L = useL();
+  return (
+    <Link href="/community" data-testid="home-community" className="group relative flex h-full min-h-[320px] flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500 via-teal-500 to-teal-700 text-white p-7 shadow-lg card-lift">
+      <div className="absolute -left-10 -bottom-12 w-64 h-64 rounded-full bg-white/10 blur-2xl" aria-hidden />
+      <div className="relative flex -space-x-3">
+        {[Heart, MessageCircle, Users, Sparkles].map((I, i) => (
+          <span key={i} className="w-12 h-12 rounded-full bg-white/20 backdrop-blur ring-2 ring-white/40 flex items-center justify-center float-soft" style={{ animationDelay: `${i * 0.5}s` }}><I size={20} /></span>
+        ))}
+      </div>
+      <div className="relative">
+        <p className="eyebrow !text-white/70 mb-2">{L('Topluluk', 'Community')}</p>
+        <h3 className="font-display text-3xl leading-tight">{L('Yalnız değilsin: birlikte daha kolay.', 'You are not alone: easier together.')}</h3>
+        <p className="text-sm text-white/85 mt-2 max-w-sm">{L('Fotoğraf paylaş, beğen, yorum yap; yolculuğundaki insanlarla tanış.', 'Share photos, like and comment; meet people on the same journey.')}</p>
+        <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold">{L('Topluluğa katıl', 'Join the community')} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" /></span>
+      </div>
+    </Link>
   );
 }

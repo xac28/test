@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AYA — Yoga ve meditasyonda canlı dersler",
+    name: "AYA — Wellness, yoga ve canlı dersler",
     short_name: "AYA",
     description: "Sertifikalı eğitmenlerle birebir dersler, canlı yayınlar ve atölyeler.",
     start_url: "/",

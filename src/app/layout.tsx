@@ -30,11 +30,11 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: 'AYA — Yoga ve meditasyonda canlı dersler', template: '%s · AYA' },
+  title: { default: 'AYA — Wellness, yoga ve canlı dersler', template: '%s · AYA' },
   description: SITE_DESCRIPTION,
   applicationName: 'AYA',
-  openGraph: { type: 'website', siteName: 'AYA', locale: 'tr_TR', title: 'AYA — Yoga ve meditasyonda canlı dersler', description: SITE_DESCRIPTION },
-  twitter: { card: 'summary_large_image', title: 'AYA — Yoga ve meditasyonda canlı dersler', description: SITE_DESCRIPTION },
+  openGraph: { type: 'website', siteName: 'AYA', locale: 'tr_TR', title: 'AYA — Wellness, yoga ve canlı dersler', description: SITE_DESCRIPTION },
+  twitter: { card: 'summary_large_image', title: 'AYA — Wellness, yoga ve canlı dersler', description: SITE_DESCRIPTION },
 };
 
 export const viewport: Viewport = {

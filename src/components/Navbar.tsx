@@ -116,12 +116,12 @@ export default function Navbar() {
     ] },
     { id: 'yazilar', label: tr ? 'Yazılar' : 'Articles', href: '/icerikler', items: ARTICLE_CATEGORIES.map((c) => ({ href: `/icerikler?category=${encodeURIComponent(c)}`, label: c })) },
     { id: 'dersler', label: tr ? 'Dersler' : 'Lessons', href: '/live', live: liveCount > 0, items: [
-      { href: '/live', label: tr ? 'Canlı' : 'Live' },
-      { href: '/dersler/kayit', label: tr ? 'Kayıt' : 'Recordings' },
+      { href: '/live', label: tr ? 'Canlı dersler' : 'Live lessons' },
+      { href: '/dersler/kayit', label: tr ? 'Kayıtlı dersler' : 'Recorded lessons' },
     ] },
     { id: 'atolye', label: tr ? 'Atölye' : 'Workshops', href: '/atolyeler', items: [
-      { href: '/atolyeler?mode=LIVE', label: tr ? 'Canlı' : 'Live' },
-      { href: '/atolyeler?mode=RECORDED', label: tr ? 'Kayıt' : 'Recorded' },
+      { href: '/atolyeler?mode=LIVE', label: tr ? 'Canlı atölyeler' : 'Live workshops' },
+      { href: '/atolyeler?mode=RECORDED', label: tr ? 'Kayıtlı atölyeler' : 'Recorded workshops' },
     ] },
     { id: 'podcast', label: 'Podcast', href: '/podcast', items: [
       { href: '/podcast', label: tr ? 'Konuşmalar' : 'Conversations' },

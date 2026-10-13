@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og"
 
-export const alt = "AYA — Yoga ve meditasyonda canlı dersler"
+export const alt = "AYA — Wellness, yoga ve canlı dersler"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
@@ -14,10 +14,10 @@ export default function OpengraphImage() {
           <div style={{ fontSize: 44, letterSpacing: 10 }}>AYA</div>
         </div>
         <div style={{ marginTop: 40, fontSize: 84, lineHeight: 1.05, display: "flex", flexDirection: "column" }}>
-          <span>Nefes, beden ve zihin için</span>
-          <span style={{ color: "#2f7de1", fontStyle: "italic" }}>canlı bir okul.</span>
+          <span>İyi hissetmenin</span>
+          <span style={{ color: "#2f7de1", fontStyle: "italic" }}>tek adresi.</span>
         </div>
-        <div style={{ marginTop: 36, fontSize: 32, color: "#4d6764", display: "flex" }}>Birebir dersler · Canlı yayınlar · Atölyeler · 3B poz kütüphanesi</div>
+        <div style={{ marginTop: 36, fontSize: 32, color: "#4d6764", display: "flex" }}>Canlı dersler · Atölyeler · Podcast · Topluluk · Shop</div>
       </div>
     ),
     size,

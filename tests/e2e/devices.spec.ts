@@ -106,7 +106,7 @@ for (const d of DEVICES) {
       await ctx.close()
     })
 
-    test("hero: headline, call to action and 3D scene fit inside the screen", async ({ browser }) => {
+    test("hero: headline, call to action and the pillar tiles fit inside the screen", async ({ browser }) => {
       const { ctx, page } = await open(browser, d.opts)
       await page.goto("/")
       const W = page.viewportSize()!.width
@@ -117,12 +117,12 @@ for (const d of DEVICES) {
       const c = (await cta.boundingBox())!
       expect(c.height, "primary button height").toBeGreaterThanOrEqual(44)
       expect(c.x + c.width).toBeLessThanOrEqual(W)
-      const scene = page.getByTestId("scene-3d").first()
+      const scene = page.getByTestId("pillar-live")
       await scene.scrollIntoViewIfNeeded()
       const s = (await scene.boundingBox())!
       expect(s.x).toBeGreaterThanOrEqual(-1)
       expect(s.x + s.width).toBeLessThanOrEqual(W + 1)
-      expect(s.height).toBeGreaterThan(250)
+      expect(s.height).toBeGreaterThan(150)
       await ctx.close()
     })
   })
@@ -203,7 +203,7 @@ test.describe("fallbacks", () => {
     const errors: string[] = []
     page.on("pageerror", (e) => errors.push(e.message))
     await page.goto("/")
-    await expect(page.getByTestId("scene-3d").first().locator("img")).toBeVisible()
+    await expect(page.getByTestId("pillar-live")).toBeVisible()
     await page.goto("/pozlar")
     await page.getByTestId("pose-card").first().getByTestId("pose-play").tap()
     await expect(page.getByTestId("pose-card").first().locator("img")).toBeVisible()
@@ -221,7 +221,7 @@ test.describe("fallbacks", () => {
     const errors: string[] = []
     page.on("pageerror", (e) => errors.push(e.message))
     await page.goto("/")
-    await expect(page.getByTestId("scene-3d").first().locator("img")).toBeVisible()
+    await expect(page.getByTestId("pillar-live")).toBeVisible()
     await page.goto("/pozlar/savasci-2")
     await expect(page.getByTestId("pose-image")).toBeVisible()
     await page.getByTestId("pose-3d-toggle").tap()

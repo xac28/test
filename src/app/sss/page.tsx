@@ -9,7 +9,7 @@ const GROUPS: { title: string; items: { q: string; a: React.ReactNode }[] }[] = 
   {
     title: "Başlarken",
     items: [
-      { q: "AYA nedir?", a: "AYA; sertifikalı eğitmenlerle birebir dersler, herkese açık canlı yayınlar ve küçük gruplarla atölyeler sunan bir online yoga ve meditasyon okuludur." },
+      { q: "AYA nedir?", a: "AYA; canlı dersler ve atölyeler, podcast, topluluk ve wellness mağazasını bir araya getiren bir wellness platformudur. Sertifikalı eğitmenlerle birebir dersler, herkese açık canlı yayınlar ve küçük gruplarla atölyeler sunar." },
       { q: "Üyelik ücretli mi?", a: "Hayır, üyelik ücretsizdir. Ders, atölye ya da paket almak istediğinde ödeme yaparsın; bazı atölyeler ücretsizdir." },
       { q: "Hiç yoga yapmadım, başlayabilir miyim?", a: <>Elbette. Önce <Link href="/yoga-stilleri/hatha" className="underline">Hatha</Link> ya da <Link href="/yoga-stilleri/yin" className="underline">Yin</Link> gibi sakin stillere göz at; <Link href="/pozlar" className="underline">poz kütüphanesinden</Link> temel duruşları öğren ve bir eğitmenle deneme dersi al.</> },
       { q: "Neye ihtiyacım var?", a: "İnternete bağlı bir cihaz (tercihen kameralı), bir yoga matı ve birkaç metrekare boş alan. Kurulum gerekmez; tarayıcıdan katılırsın." },

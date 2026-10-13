@@ -62,7 +62,7 @@ export default function Footer() {
           <div className="md:col-span-4">
             <Link href="/" className="text-cream text-4xl"><Wordmark /></Link>
             <p className="font-display text-2xl leading-snug text-cream/90 mt-6 max-w-sm">
-              {tr ? 'Nefes, beden ve zihin için bir okul. Canlı, birebir ve herkese açık.' : 'A school for breath, body and mind. Live, one-to-one and open to all.'}
+              {tr ? 'Wellness platformu: canlı dersler, atölyeler, podcast, topluluk ve shop. Hepsi tek yerde.' : 'A wellness platform: live lessons, workshops, podcast, community and shop, all in one place.'}
             </p>
           </div>
           {cols.map((c) => (

@@ -71,14 +71,23 @@ export function StaggerItem({ children, className = "" }: { children: ReactNode;
 export function PhotoBackdrop({ sources, className = "", opacity = 1, drift = true }: { sources: readonly string[]; className?: string; opacity?: number; drift?: boolean }) {
   const [i, setI] = useState(0)
   const [ready, setReady] = useState(false)
+  const img = useRef<HTMLImageElement>(null)
   useEffect(() => {
     setI(0)
     setReady(false)
   }, [sources])
+  // a picture that finished (or failed) before React attached its handlers would otherwise stay hidden / never fall back
+  useEffect(() => {
+    const el = img.current
+    if (!el || !el.complete) return
+    if (el.naturalWidth > 0) setReady(true)
+    else setI((n) => n + 1)
+  }, [i, sources])
   if (i >= sources.length) return null
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      ref={img}
       src={sources[i]}
       alt=""
       aria-hidden

@@ -39,16 +39,16 @@ export default function TermsPage() {
             <section>
               <h2 className="text-xl font-bold text-sage-900 mb-3 border-b border-sage-100 pb-2">MADDE 1 – TARAFLAR VE KAPSAM</h2>
               <p>
-                İşbu Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi ("Sözleşme"); www.namaste.com ("Platform") üzerinden elektronik ortamda hizmet satın alan "Öğrenci" (Alıcı) ile Platform üzerinden bu hizmeti sunan "Öğretmen" (Hizmet Sağlayıcı) ve bu iki tarafı bir araya getiren "Namaste Teknolojileri" ("Aracı Hizmet Sağlayıcı" veya "Platform Sahibi") arasındaki ticari ve hukuki kuralları, 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince düzenlemektedir.
+                İşbu Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi ("Sözleşme"); AYA ("Platform") üzerinden elektronik ortamda hizmet satın alan "Öğrenci" (Alıcı) ile Platform üzerinden bu hizmeti sunan "Öğretmen" (Hizmet Sağlayıcı) ve bu iki tarafı bir araya getiren "AYA Teknolojileri" ("Aracı Hizmet Sağlayıcı" veya "Platform Sahibi") arasındaki ticari ve hukuki kuralları, 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince düzenlemektedir.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-sage-900 mb-3 border-b border-sage-100 pb-2">MADDE 2 – PLATFORMUN HUKUKİ STATÜSÜ VE SINIRLARI</h2>
               <ol className="list-decimal pl-5 space-y-3">
-                <li><strong>Aracı Hizmet Sağlayıcı:</strong> Namaste, 6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun uyarınca yalnızca bir "Aracı Hizmet Sağlayıcı" (Pazaryeri) ve 5651 sayılı Kanun uyarınca "Yer Sağlayıcı"dır. Platform, Öğrenci ile Öğretmen arasında kurulan hizmet sözleşmesinin tarafı değildir.</li>
+                <li><strong>Aracı Hizmet Sağlayıcı:</strong> AYA, 6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun uyarınca yalnızca bir "Aracı Hizmet Sağlayıcı" (Pazaryeri) ve 5651 sayılı Kanun uyarınca "Yer Sağlayıcı"dır. Platform, Öğrenci ile Öğretmen arasında kurulan hizmet sözleşmesinin tarafı değildir.</li>
                 <li><strong>Bağımsız Yüklenici:</strong> Öğretmenler, Platform'un çalışanı, işçisi, acentesi veya temsilcisi değildir. Öğretmenler, kendi inisiyatifleri ile serbest meslek erbabı veya şirket statüsünde hizmet veren <strong>bağımsız yüklenicilerdir</strong>.</li>
-                <li><strong>İçerik Sorumluluğu:</strong> Namaste, Öğretmenlerin verdiği dersin kalitesini, içeriğinin bilimsel veya tıbbi doğruluğunu garanti etmez. Platform üzerinden sağlanan tavsiyelerden doğabilecek fiziksel, ruhsal zararlardan veya veri kayıplarından Namaste hiçbir surette sorumlu tutulamaz.</li>
+                <li><strong>İçerik Sorumluluğu:</strong> AYA, Öğretmenlerin verdiği dersin kalitesini, içeriğinin bilimsel veya tıbbi doğruluğunu garanti etmez. Platform üzerinden sağlanan tavsiyelerden doğabilecek fiziksel, ruhsal zararlardan veya veri kayıplarından AYA hiçbir surette sorumlu tutulamaz.</li>
               </ol>
             </section>
 
@@ -93,9 +93,10 @@ export default function TermsPage() {
             <section>
               <h2 className="text-xl font-bold text-sage-900 mb-3 border-b border-sage-100 pb-2">MADDE 7 – GİZLİLİK (KVKK) VE FİKRİ MÜLKİYET HAKLARI</h2>
               <ol className="list-decimal pl-5 space-y-3">
-                <li><strong>Kamera ve Mikrofon Verileri:</strong> Dersler WebRTC tabanlı şifrelenmiş LiveKit altyapısı üzerinden anlık (real-time) olarak aktarılır. Platform, yasal veya adli bir karar olmadıkça özel ders oturumlarını kaydetmez ve sunucularında depolamaz.</li>
-                <li><strong>Kayıt Yasağı:</strong> Öğretmen veya Öğrenci, diğer tarafın açık ve yazılı rızası olmadan ders ekranını harici yazılımlarla kaydedemez, ses kaydı alamaz, yayınlayamaz ve üçüncü kişilerle paylaşamaz. Bu kuralın ihlali 5237 sayılı Türk Ceza Kanunu (Özel Hayatın Gizliliğini İhlal) kapsamında suç teşkil eder ve Platform tarafı hemen ihraç eder.</li>
-                <li><strong>Telif Hakları:</strong> Platformda bulunan tüm yazılım, tasarım, marka, logo ve teknik altyapının fikri mülkiyet hakları Namaste Teknolojilerine aittir. İzinsiz kopyalanamaz, tersine mühendislik (reverse engineering) yapılamaz.</li>
+                <li><strong>Kamera ve Mikrofon Verileri:</strong> Dersler WebRTC tabanlı şifrelenmiş LiveKit altyapısı üzerinden anlık (real-time) olarak aktarılır. Platform, kendiliğinden ders kaydı almaz.</li>
+                <li><strong>Ders Kaydı ve Saklama Süresi:</strong> Öğretmen, ders sırasında “Dersi Kaydet” düğmesine basarak dersi platform üzerinden kayıt altına alabilir; kayıt başladığında odadaki herkese “Bu ders kaydediliyor” uyarısı gösterilir. Kayıt, platformun sunucularında saklanır ve <strong>yalnızca o dersin öğretmeni ve öğrencisi</strong> tarafından kendi hesaplarından indirilebilir; üçüncü kişilere, Platform çalışanlarına dahi açılmaz. Kayıtlar dersin tarihinden itibaren <strong>30 gün</strong> sonra otomatik ve kalıcı olarak silinir; bu süre içinde indirilmeyen kayıtlar için Platform sorumluluk kabul etmez. Yasal veya adli bir karar bulunması hâlinde Platform ilgili mercilere bilgi verme yükümlülüğünü saklı tutar.</li>
+                <li><strong>Kayıt Yasağı:</strong> Platformun sunduğu resmî ders kaydı dışında, Öğretmen veya Öğrenci, diğer tarafın açık ve yazılı rızası olmadan ders ekranını harici yazılımlarla kaydedemez, ses kaydı alamaz, indirilen ders kaydını yayınlayamaz ve üçüncü kişilerle paylaşamaz. Bu kuralın ihlali 5237 sayılı Türk Ceza Kanunu (Özel Hayatın Gizliliğini İhlal) kapsamında suç teşkil eder ve Platform tarafı hemen ihraç eder.</li>
+                <li><strong>Telif Hakları:</strong> Platformda bulunan tüm yazılım, tasarım, marka, logo ve teknik altyapının fikri mülkiyet hakları AYA Teknolojilerine aittir. İzinsiz kopyalanamaz, tersine mühendislik (reverse engineering) yapılamaz.</li>
               </ol>
             </section>
 

@@ -1,13 +1,15 @@
-import React from "react"
+import React, { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Alert } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { usePreventScreenCapture } from "expo-screen-capture"
 import { colors } from "../constants"
+import { ReportSheet } from "../components/ReportSheet"
 
 export default function RoomScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const router = useRouter()
-  
+  const [reporting, setReporting] = useState(false)
+
   // OS-Level Anti-Piracy: Prevents screenshots and screen recordings completely
   usePreventScreenCapture()
 
@@ -15,7 +17,7 @@ export default function RoomScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header bar */}
       <View style={styles.header}>
-        <Text style={styles.headerBrand}>NAMASTE</Text>
+        <Text style={styles.headerBrand}>AYA</Text>
         <View style={styles.headerLive}>
           <View style={styles.headerDot} />
           <Text style={styles.headerLiveText}>LIVE HD</Text>
@@ -28,7 +30,7 @@ export default function RoomScreen() {
           <Text style={styles.iconEmoji}>🎥</Text>
         </View>
         
-        <Text style={styles.title}>LiveKit Ready</Text>
+        <Text style={styles.title}>LiveKit hazır</Text>
         <Text style={styles.subtitle}>Session ID: {bookingId?.slice(0, 8)}...</Text>
         
         {/* Info card */}
@@ -37,23 +39,23 @@ export default function RoomScreen() {
             <Text style={styles.infoIcon}>📹</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.infoTitle}>1080p @ 60 FPS</Text>
-              <Text style={styles.infoDesc}>Enterprise-grade video quality</Text>
+              <Text style={styles.infoDesc}>Profesyonel video kalitesi</Text>
             </View>
           </View>
           <View style={styles.infoDivider} />
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>🔊</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoTitle}>HD Audio</Text>
-              <Text style={styles.infoDesc}>Echo cancellation & noise suppression</Text>
+              <Text style={styles.infoTitle}>HD ses</Text>
+              <Text style={styles.infoDesc}>Yankı ve gürültü engelleme</Text>
             </View>
           </View>
           <View style={styles.infoDivider} />
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>⚡</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoTitle}>Ultra-Low Latency</Text>
-              <Text style={styles.infoDesc}>LiveKit WebRTC infrastructure</Text>
+              <Text style={styles.infoTitle}>Çok düşük gecikme</Text>
+              <Text style={styles.infoDesc}>LiveKit WebRTC altyapısı</Text>
             </View>
           </View>
         </View>
@@ -65,9 +67,16 @@ export default function RoomScreen() {
         </Text>
 
         <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace("/(tabs)")}>
-          <Text style={styles.primaryBtnText}>Return to Practice</Text>
+          <Text style={styles.primaryBtnText}>Pratiğe dön</Text>
         </TouchableOpacity>
+
+        {bookingId ? (
+          <TouchableOpacity style={styles.reportBtn} onPress={() => setReporting(true)}>
+            <Text style={styles.reportBtnText}>⚠️  Sorun bildir</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
+      {bookingId ? <ReportSheet visible={reporting} bookingId={bookingId} onClose={() => setReporting(false)} /> : null}
     </SafeAreaView>
   )
 }
@@ -119,5 +128,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     shadowColor: colors.sage[600], shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12,
   },
+  reportBtn: { marginTop: 18, paddingHorizontal: 20, paddingVertical: 10 },
+  reportBtnText: { color: "#fca5a5", fontSize: 14 },
   primaryBtnText: { color: colors.white, fontWeight: "700", fontSize: 16, letterSpacing: 0.5 },
 })

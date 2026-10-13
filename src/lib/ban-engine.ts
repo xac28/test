@@ -1,5 +1,5 @@
 /**
- * 🛡️ Namaste Ban Engine — IP Ban & Evasion Detection System
+ * 🛡️ AYA Ban Engine — IP Ban & Evasion Detection System
  * 
  * Merkezi ban motoru. Tüm ban kontrolleri, IP loglama ve evasion tespiti
  * bu modül üzerinden yapılır. Auth, register ve admin endpoint'leri bu
@@ -14,6 +14,7 @@
  */
 
 import { db } from "@/lib/db"
+import { endLiveRoom } from "@/lib/live-rooms"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,19 @@ export function extractIp(req: Request): string {
 
   // Fallback
   return "127.0.0.1"
+}
+
+/**
+ * Automatic IP bans must never hit loopback / private / unknown addresses: behind a proxy or a
+ * shared network those belong to everybody, and banning them would lock every user out.
+ */
+export function isBannableIp(ip: string): boolean {
+  if (!ip || ip === "unknown" || ip === "::1" || ip === "localhost") return false
+  if (/^127\./.test(ip) || /^10\./.test(ip) || /^192\.168\./.test(ip) || /^169\.254\./.test(ip)) return false
+  const m = /^172\.(\d+)\./.exec(ip)
+  if (m && Number(m[1]) >= 16 && Number(m[1]) <= 31) return false
+  if (/^f[cd][0-9a-f]{2}:/i.test(ip) || /^fe80:/i.test(ip)) return false
+  return true
 }
 
 // ─── IP Ban Check ───────────────────────────────────────────────────────────
@@ -375,6 +389,18 @@ export async function applyFullBan(
     data: { status: "CANCELLED" }
   })
 
+  // 2b. Eğitmense: öğrencileriyle olan dersleri iptal et, canlı yayınlarını kapat, atölyelerini yayından kaldır
+  const teacher = await db.teacher.findUnique({ where: { userId } })
+  if (teacher) {
+    await db.booking.updateMany({
+      where: { teacherId: teacher.id, status: { in: ["PENDING", "CONFIRMED"] } },
+      data: { status: "CANCELLED" },
+    })
+    const rooms = await db.liveRoom.findMany({ where: { teacherId: teacher.id, isActive: true }, select: { id: true } })
+    for (const r of rooms) await endLiveRoom(r.id).catch(() => {})
+    await db.workshop.updateMany({ where: { teacherId: teacher.id, status: "PUBLISHED" }, data: { status: "DRAFT" } })
+  }
+
   // 3. Tüm aktif session'ları sil (anlık oturumu düşür)
   const sessionsResult = await db.session.deleteMany({
     where: { userId }
@@ -387,6 +413,7 @@ export async function applyFullBan(
 
   let ipsBanned = 0
   for (const log of ipLogs) {
+    if (!isBannableIp(log.ipAddress)) continue
     const existing = await db.ipBan.findFirst({
       where: { ipAddress: log.ipAddress, isActive: true }
     })

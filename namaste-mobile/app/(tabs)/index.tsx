@@ -34,7 +34,7 @@ export default function DashboardScreen() {
         setBookings(data.bookings || [])
       }
     } catch (e) {
-      console.error("Failed to fetch bookings", e)
+      console.error("Rezervasyonlar alınamadı", e)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -61,8 +61,8 @@ export default function DashboardScreen() {
   const renderBooking = ({ item }: { item: Booking }) => {
     const live = isLive(item)
     const otherName = user?.role === "TEACHER"
-      ? item.student?.name || "Student"
-      : item.teacher?.user?.name || "Teacher"
+      ? item.student?.name || "Öğrenci"
+      : item.teacher?.user?.name || "Eğitmen"
     const initial = otherName[0]?.toUpperCase() || "?"
 
     return (
@@ -97,18 +97,18 @@ export default function DashboardScreen() {
 
         <View style={styles.cardInfo}>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Duration</Text>
+            <Text style={styles.infoLabel}>Süre</Text>
             <Text style={styles.infoValue}>60 min</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Price</Text>
+            <Text style={styles.infoLabel}>Ücret</Text>
             <Text style={styles.infoValue}>${item.price?.toFixed(2) || "0.00"}</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Status</Text>
+            <Text style={styles.infoLabel}>Durum</Text>
             <View style={[styles.statusBadge, item.status === "CONFIRMED" ? styles.statusConfirmed : styles.statusPending]}>
               <Text style={[styles.statusText, item.status === "CONFIRMED" ? styles.statusConfirmedText : styles.statusPendingText]}>
-                {item.status === "CONFIRMED" ? "Confirmed" : item.status === "COMPLETED" ? "Done" : "Pending"}
+                {item.status === "CONFIRMED" ? "Onaylandı" : item.status === "COMPLETED" ? "Tamamlandı" : "Bekliyor"}
               </Text>
             </View>
           </View>
@@ -116,7 +116,7 @@ export default function DashboardScreen() {
 
         {item.status === "CONFIRMED" && (
           <View style={[styles.joinButton, live && styles.joinButtonLive]}>
-            <Text style={styles.joinText}>{live ? "🔴 Join Live Now" : "Join Session"}</Text>
+            <Text style={styles.joinText}>{live ? "🔴 Canlı derse katıl" : "Derse katıl"}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -129,7 +129,7 @@ export default function DashboardScreen() {
         <View style={styles.loaderCircle}>
           <ActivityIndicator size="large" color={colors.sage[600]} />
         </View>
-        <Text style={styles.loaderText}>Loading your practice...</Text>
+        <Text style={styles.loaderText}>Pratiğin yükleniyor…</Text>
       </View>
     )
   }
@@ -140,8 +140,8 @@ export default function DashboardScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Welcome back</Text>
-          <Text style={styles.name}>{user?.name || "Student"}</Text>
+          <Text style={styles.greeting}>Tekrar hoş geldin</Text>
+          <Text style={styles.name}>{user?.name || "Öğrenci"}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <View style={[styles.logoutBtn, { backgroundColor: colors.sage[100], borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 }]}>
@@ -154,23 +154,23 @@ export default function DashboardScreen() {
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>{upcomingBookings.length}</Text>
-          <Text style={styles.statLabel}>Upcoming</Text>
+          <Text style={styles.statLabel}>Yaklaşan</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>{pastBookings.length}</Text>
-          <Text style={styles.statLabel}>Completed</Text>
+          <Text style={styles.statLabel}>Tamamlanan</Text>
         </View>
         <View style={[styles.statCard, styles.statCardAccent]}>
           <Text style={[styles.statNumber, { color: colors.white }]}>{bookings.length}</Text>
-          <Text style={[styles.statLabel, { color: colors.sage[200] }]}>Total</Text>
+          <Text style={[styles.statLabel, { color: colors.sage[200] }]}>Toplam</Text>
         </View>
       </View>
 
       {/* Section Title */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Your Sessions</Text>
+        <Text style={styles.sectionTitle}>Derslerin</Text>
         <TouchableOpacity onPress={onRefresh}>
-          <Text style={styles.sectionAction}>Refresh</Text>
+          <Text style={styles.sectionAction}>Yenile</Text>
         </TouchableOpacity>
       </View>
 
@@ -186,8 +186,8 @@ export default function DashboardScreen() {
             <View style={styles.emptyCircle}>
               <Text style={styles.emptyIcon}>🧘</Text>
             </View>
-            <Text style={styles.emptyTitle}>Your mat is waiting</Text>
-            <Text style={styles.emptyText}>No sessions yet. Book your first practice from our website!</Text>
+            <Text style={styles.emptyTitle}>Matın seni bekliyor</Text>
+            <Text style={styles.emptyText}>Henüz dersin yok. İlk pratiğini eğitmenler sekmesinden ya da web sitemizden ayır!</Text>
           </View>
         }
       />

@@ -5,6 +5,9 @@ import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_AUTH } from "@/lib/rate-limit"
 import { normalizeEmail, isValidEmail, validatePassword } from "@/lib/auth-utils"
 import { checkBanEvasion, extractIp, logUserIp } from "@/lib/ban-engine"
+import { termsAcceptanceData } from "@/lib/terms"
+import { logEvent } from "@/lib/event-log"
+import { sendVerification } from "@/lib/email-verification"
 
 /**
  * POST /api/auth/register
@@ -38,6 +41,14 @@ export async function POST(req: Request) {
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: "Ad, e-posta ve şifre gereklidir." },
+        { status: 400 }
+      )
+    }
+
+    // The terms box is mandatory on every client (web + mobile)
+    if (body.acceptTerms !== true) {
+      return NextResponse.json(
+        { error: "Kayıt olmak için Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi'ni kabul etmelisiniz.", code: "TERMS_REQUIRED" },
         { status: 400 }
       )
     }
@@ -107,30 +118,12 @@ export async function POST(req: Request) {
         )
       }
 
-      // User exists from Google OAuth but has no password — link account
-      const updatedUser = await db.user.update({
-        where: { email },
-        data: {
-          password: hashedPassword,
-          // Keep existing name if already set from Google
-          name: existingUser.name || name.trim(),
-        },
-      })
-
-      // IP logla
-      await logUserIp(updatedUser.id, ip, userAgent)
-
-      return NextResponse.json({
-        success: true,
-        linked: true, // Tells frontend this was an account sync
-        user: {
-          id: updatedUser.id,
-          name: updatedUser.name,
-          email: updatedUser.email,
-          image: updatedUser.image,
-          role: updatedUser.role,
-        },
-      })
+      // The address belongs to an account that was opened with Google and has no password. Registering must NOT hand the
+      // caller a password for it (anyone could type somebody else's address): proving the mailbox is what "forgot password" does.
+      return NextResponse.json(
+        { error: "Bu e-posta adresi Google ile kayıtlı. Google ile giriş yapabilir ya da şifre belirlemek için \"Şifremi unuttum\" bağlantısını kullanabilirsin.", code: "USE_GOOGLE_OR_RESET" },
+        { status: 409 }
+      )
     }
 
     // ── Create New User ─────────────────────────────────────────────────
@@ -141,6 +134,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         role: "STUDENT",
+        ...termsAcceptanceData(),
       },
     })
 
@@ -155,6 +149,8 @@ export async function POST(req: Request) {
 
     // IP logla (yeni kullanıcı)
     await logUserIp(user.id, ip, userAgent)
+    logEvent({ type: "AUTH_REGISTER", message: `Yeni üye (web): ${email}`, userId: user.id, ip })
+    sendVerification({ id: user.id, email: user.email, name: user.name }).catch(() => {}) // never blocks or fails the sign-up
 
     return NextResponse.json({
       success: true,

@@ -1,0 +1,13 @@
+# Automatic HTTPS in front of AYA. Replace the two host names, then:  caddy run --config deploy/Caddyfile
+# (point both DNS records at this machine; set NEXT_PUBLIC_SITE_URL=https://aya.example.com and LIVEKIT_PUBLIC_URL=wss://live.aya.example.com)
+aya.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+	request_body {
+		max_size 520MB   # lesson videos up to 500 MB
+	}
+}
+
+live.aya.example.com {
+	reverse_proxy 127.0.0.1:7880
+}

@@ -2,6 +2,8 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 
+export const dynamic = "force-dynamic"
+
 // GET /api/mobile/teachers/availability — Get current teacher's availability
 export async function GET(req: Request) {
   try {

@@ -1,9 +1,11 @@
+import { logEvent } from "@/lib/event-log";
 import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { db } from "@/lib/db"
 import authConfig from "./auth.config"
 import bcrypt from "bcryptjs"
 import Credentials from "next-auth/providers/credentials"
+import { hasAcceptedCurrentTerms } from "@/lib/terms"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -24,7 +26,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
         rememberMe: { label: "Remember Me", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        const ip = request?.headers?.get?.("x-forwarded-for")?.split(",")[0].trim() || request?.headers?.get?.("x-real-ip") || null;
         if (!credentials?.email || !credentials?.password) return null;
         const email = (credentials.email as string).toLowerCase();
         
@@ -32,11 +35,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email }
         });
 
-        if (!user || !user.password) return null;
+        if (!user || !user.password) {
+          logEvent({ type: "AUTH_FAIL", level: "warn", message: `Giriş başarısız (kullanıcı yok): ${email}`, ip })
+          return null;
+        }
 
         // 🛡️ Banned user kontrolü — login'de engelle
         if (user.banned) {
           console.log(`[AUTH] 🚨 Banned user login attempt: ${email}`)
+          logEvent({ type: "SECURITY", level: "warn", message: `Yasaklı kullanıcı giriş denedi: ${email}`, userId: user.id, ip })
           return null; // NextAuth "Invalid credentials" döner
         }
 
@@ -45,7 +52,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.password
         );
 
+        if (!passwordsMatch) logEvent({ type: "AUTH_FAIL", level: "warn", message: `Giriş başarısız (yanlış şifre): ${email}`, userId: user.id, ip })
         if (passwordsMatch) {
+          logEvent({ type: "AUTH_LOGIN", message: `Giriş yapıldı: ${email}`, userId: user.id, ip })
           // Pass rememberMe flag through user object to jwt callback
           return { ...user, rememberMe: credentials.rememberMe === "true" };
         }
@@ -57,6 +66,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     // 🛡️ Başarılı login/signup sonrası IP loglama (Google OAuth dahil)
     async signIn({ user, account }) {
+      if (user?.id && account?.provider === "google") {
+        // Google proves the mailbox: mark it verified, and drop any password somebody may have set for this address
+        // before the real owner ever signed in (pre-registration takeover)
+        try {
+          const row = await db.user.findUnique({ where: { id: user.id }, select: { emailVerified: true, password: true } })
+          if (row && !row.emailVerified) await db.user.update({ where: { id: user.id }, data: { emailVerified: new Date(), ...(row.password ? { password: null } : {}) } })
+        } catch {}
+      }
       if (user?.id) {
         try {
           // IP loglama için bir marker set et — 
@@ -82,15 +99,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true
     },
-    async session({ token, session }) {
-      if (token.sub && session.user) {
-        session.user.id = token.sub;
-      }
-      if (token.role && session.user) {
-        session.user.role = token.role as any;
-      }
-      return session;
-    },
+    session: authConfig.callbacks!.session!,
     async jwt({ token, user }) {
       // On initial sign-in, user object is available
       if (user) {
@@ -115,6 +124,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!existingUser) return token;
 
       // 🛡️ Banned kullanıcıları engelle — oturumu geçersiz kıl
+      if (existingUser.deletedAt) return {} as any // closed accounts lose their session at once
       if (existingUser.banned) {
         console.log(`[AUTH] 🚨 Banned user session invalidated: ${existingUser.email}`)
         return {} as any; // Token'ı boşalt — forces re-login, login de çalışmaz
@@ -132,9 +142,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       
       token.role = existingUser.role;
+      token.termsAccepted = hasAcceptedCurrentTerms(existingUser);
       return token;
     }
   },
-  // FIX #10: Production'da secure cookies aktif, development'ta kapalı
-  useSecureCookies: process.env.NODE_ENV === "production",
+  // Secure cookies are only valid over HTTPS: a Secure/__Secure- cookie set from a plain-HTTP origin
+  // is dropped by the browser and nobody could sign in (e.g. `next start` on an HTTP test server).
+  useSecureCookies: (process.env.NEXTAUTH_URL || "").startsWith("https://"),
 })

@@ -1,0 +1,58 @@
+# AYA — web + MariaDB + LiveKit on one machine.  Copy .env.example to .env, fill it in, then:  docker compose up -d --build
+# TLS: put a reverse proxy (see deploy/Caddyfile) in front of port 3000 and of LiveKit's 7880.
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+      MARIADB_DATABASE: aya
+      MARIADB_USER: aya
+      MARIADB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./deploy/livekit.yaml:/etc/livekit.yaml:ro
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?set LIVEKIT_API_KEY in .env}: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in .env}"
+    ports:
+      - "7880:7880"            # signalling (proxy it with TLS → wss://)
+      - "7881:7881"            # WebRTC over TCP
+      - "50000-50100:50000-50100/udp"   # WebRTC media
+
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        CSP_MODE: ${CSP_MODE:-report-only}
+        ENABLE_HSTS: ${ENABLE_HSTS:-false}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: mysql://aya:${DB_PASSWORD}@db:3306/aya
+      LIVEKIT_URL: ${LIVEKIT_PUBLIC_URL:-ws://localhost:7880}
+      LIVEKIT_SERVER_URL: http://livekit:7880
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/public/uploads
+      - recordings:/app/storage
+
+volumes:
+  db-data:
+  uploads:
+  recordings:

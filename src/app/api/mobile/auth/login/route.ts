@@ -1,3 +1,4 @@
+import { logEvent } from "@/lib/event-log"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
@@ -108,6 +109,7 @@ export async function POST(req: Request) {
 
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
+      logEvent({ type: "AUTH_FAIL", level: "warn", message: `Mobil giriş başarısız (yanlış şifre): ${email}`, userId: user.id, ip })
       return NextResponse.json(
         { error: "E-posta veya şifre hatalı." },
         { status: 401 }
@@ -121,6 +123,7 @@ export async function POST(req: Request) {
 
     // IP logla (başarılı login)
     await logUserIp(user.id, ip, userAgent)
+    logEvent({ type: "AUTH_LOGIN", message: `Mobil giriş: ${email}`, userId: user.id, ip })
 
     // Create new mobile session (doesn't invalidate existing sessions)
     const session = await createMobileSession(user.id)

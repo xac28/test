@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ArticleCardData, Cover, useDateFormat, useL } from '@/components/editorial';
 import { NewsletterForm } from '@/components/newsletter';
-import { Reveal, Stagger, StaggerItem } from '@/components/motion';
+import { Aurora, Reveal, SplitText, Stagger, StaggerItem } from '@/components/motion';
 import { PodcastPlayer } from '@/components/podcast-player';
 import { formatDuration } from '@/lib/podcast';
 import { useI18n } from '@/i18n';
@@ -17,11 +17,12 @@ export function SectionFrame({ eyebrow, title, intro, icon: Icon, children, comp
     <>
       <Navbar />
       <main>
-        <section className="relative overflow-hidden bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600 text-white">
+        <section className="relative overflow-hidden bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600 text-white grain">
           <div className="absolute inset-0 bg-[radial-gradient(60%_90%_at_90%_0%,rgba(124,196,245,0.35),transparent_70%)]" aria-hidden />
+          <Aurora dark />
           <div className={`relative max-w-7xl mx-auto px-6 lg:px-12 ${compact ? "pt-10 pb-6 lg:pt-12 lg:pb-8" : "py-16 lg:py-24"}`}>
             <p className="eyebrow !text-white/70 mb-4 inline-flex items-center gap-2"><Icon size={14} /> {eyebrow}</p>
-            <h1 className={`font-display font-light leading-[1] max-w-3xl ${compact ? "text-4xl md:text-5xl" : "text-5xl md:text-7xl"}`}>{title}</h1>
+            <SplitText as="h1" text={title} delay={0.05} className={`font-display font-light leading-[1] max-w-3xl ${compact ? "text-4xl md:text-5xl" : "text-5xl md:text-7xl"}`} />
             <p className={`text-white/80 max-w-xl leading-relaxed ${compact ? "mt-3" : "mt-6 text-lg"}`}>{intro}</p>
           </div>
           <WaveDivider className="text-cream" />
@@ -46,7 +47,7 @@ export function WaveDivider({ className = '' }: { className?: string }) {
 export function NewsletterBand() {
   const L = useL();
   return (
-    <section data-testid="newsletter-band" className="relative overflow-hidden bg-gradient-to-br from-teal-900 via-teal-800 to-teal-700 text-white">
+    <section data-testid="newsletter-band" className="relative overflow-hidden bg-gradient-to-br from-teal-900 via-teal-800 to-teal-700 text-white grain">
       <div className="absolute inset-0 bg-[radial-gradient(50%_80%_at_85%_20%,rgba(91,156,239,0.35),transparent_70%)]" aria-hidden />
       <div className="relative max-w-7xl mx-auto px-6 lg:px-12 py-16 grid lg:grid-cols-12 gap-8 items-center">
         <div className="lg:col-span-6">

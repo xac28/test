@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUpRight, Radio, Users } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { TeacherBadge } from '@/components/teacher-badge';
 import { PersonAvatar } from '@/components/person-avatar';
+import { DrawLine, SplitText } from '@/components/motion';
 import { formatPriceTR, WorkshopState } from '@/lib/workshops';
 
 /** Pick a string by language: L('Merhaba', 'Hello'). */
@@ -77,7 +78,7 @@ export function Cover({
           loading="lazy"
           onError={() => setFailed(true)}
           onLoad={() => setLoaded(true)}
-          className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-[1.03] ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-[900ms] ease-out ${loaded ? 'opacity-100 scale-100 group-hover:scale-[1.05]' : 'opacity-0 scale-[1.08]'}`}
         />
       )}
     </div>
@@ -98,12 +99,13 @@ export function SectionHead({
   linkLabel?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-6 pb-6 mb-10 border-b border-ink">
+    <div className="relative flex flex-wrap items-end justify-between gap-6 pb-6 mb-10">
+      <div className="absolute inset-x-0 bottom-0"><DrawLine /></div>
       <div>
         <p className="eyebrow mb-3">
           <span className="text-clay-500">{num}</span> — {label}
         </p>
-        <h2 className="font-display text-4xl md:text-5xl leading-[1.05] max-w-2xl">{title}</h2>
+        <SplitText as="h2" inView text={title} className="font-display text-4xl md:text-5xl leading-[1.05] max-w-2xl" />
       </div>
       {href && linkLabel && (
         <Link href={href} className="tap-area group inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-clay-600">

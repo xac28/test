@@ -23,9 +23,9 @@ function glowTexture() {
   c.width = c.height = 128
   const g = c.getContext("2d")!
   const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64)
-  grad.addColorStop(0, "rgba(255,226,190,0.95)")
-  grad.addColorStop(0.4, "rgba(246,170,130,0.45)")
-  grad.addColorStop(1, "rgba(246,170,130,0)")
+  grad.addColorStop(0, "rgba(214,234,255,0.95)")
+  grad.addColorStop(0.4, "rgba(120,176,240,0.34)")
+  grad.addColorStop(1, "rgba(120,176,240,0)")
   g.fillStyle = grad
   g.fillRect(0, 0, 128, 128)
   return new THREE.CanvasTexture(c)
@@ -77,7 +77,7 @@ export function YogiScene({ poses = ["kolay-oturus", "dag-durusu", "savasci-2", 
 
       const scene = new THREE.Scene()
       const camera = new THREE.PerspectiveCamera(24, 1, 0.1, 40)
-      scene.add(new THREE.HemisphereLight(0xfff4e8, 0xcfe6e2, 1.5))
+      scene.add(new THREE.HemisphereLight(0xf4f8ff, 0xcfe0f2, 1.5))
       const key = new THREE.DirectionalLight(0xffffff, 2.3)
       key.position.set(2.4, 4.2, 3.2)
       key.castShadow = !soft
@@ -85,7 +85,7 @@ export function YogiScene({ poses = ["kolay-oturus", "dag-durusu", "savasci-2", 
       key.shadow.camera.left = -2; key.shadow.camera.right = 2; key.shadow.camera.top = 2.5; key.shadow.camera.bottom = -1
       key.shadow.bias = -0.0005
       scene.add(key)
-      const rim = new THREE.DirectionalLight(0xffc9a8, 1.1)
+      const rim = new THREE.DirectionalLight(0xbfdcff, 1.1)
       rim.position.set(-3, 2.5, -2.5)
       scene.add(rim)
 
@@ -99,13 +99,13 @@ export function YogiScene({ poses = ["kolay-oturus", "dag-durusu", "savasci-2", 
 
       // halo behind the figure
       const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), transparent: true, depthWrite: false, opacity: 0.9 }))
-      glow.scale.set(3.6, 3.6, 1)
+      glow.scale.set(2.1, 2.1, 1)
       glow.position.set(0, 0.95, -0.9)
       scene.add(glow)
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.012, 12, 128), new THREE.MeshBasicMaterial({ color: 0xf2bb3a, transparent: true, opacity: 0.55 }))
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.012, 12, 128), new THREE.MeshBasicMaterial({ color: 0x2f7de1, transparent: true, opacity: 0.5 }))
       ring.position.set(0, 0.88, -0.8)
       scene.add(ring)
-      const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.22, 0.006, 12, 128), new THREE.MeshBasicMaterial({ color: 0xe2684a, transparent: true, opacity: 0.35 }))
+      const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.22, 0.006, 12, 128), new THREE.MeshBasicMaterial({ color: 0x5ab9ec, transparent: true, opacity: 0.35 }))
       ring2.position.copy(ring.position)
       scene.add(ring2)
 
@@ -116,7 +116,7 @@ export function YogiScene({ poses = ["kolay-oturus", "dag-durusu", "savasci-2", 
       for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - 0.5) * 3.4; pos[i * 3 + 1] = Math.random() * 2.4; pos[i * 3 + 2] = (Math.random() - 0.5) * 1.6 - 0.2; seed[i] = Math.random() }
       const sparkGeo = new THREE.BufferGeometry()
       sparkGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3))
-      const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ color: 0xffd9a0, size: 0.035, transparent: true, opacity: 0.85, depthWrite: false }))
+      const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ color: 0xbfe0ff, size: 0.035, transparent: true, opacity: 0.85, depthWrite: false }))
       scene.add(sparks)
 
       const fig = prepareFigure(model)

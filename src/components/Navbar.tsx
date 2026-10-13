@@ -27,6 +27,14 @@ export default function Navbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [liveCount, setLiveCount] = useState(0);
   const [cartN, setCartN] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    let raf = 0;
+    const on = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setScrolled(window.scrollY > 12)); };
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', on); };
+  }, []);
   useEffect(() => {
     const sync = () => setCartN(cartCount());
     sync();
@@ -123,8 +131,8 @@ export default function Navbar() {
   const groupActive = (g: NavGroup) => isActive(g.href) || g.items.some((i) => isActive(i.href));
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-rule">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 h-16 flex items-center justify-between gap-8">
+    <header ref={headerRef} data-scrolled={scrolled} className="site-header sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-rule">
+      <div className="site-header-bar max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-8">
         <Link href="/" aria-label="AYA ana sayfa" className="tap-area text-ink text-[1.65rem] leading-none inline-flex items-start gap-0.5">
           <Wordmark /><span aria-hidden className="text-[0.55rem] mt-0.5 font-body text-teal-600">®</span>
         </Link>
@@ -139,7 +147,7 @@ export default function Navbar() {
                     href={g.href}
                     aria-current={isActive(g.href) ? 'page' : undefined}
                     onFocus={(e) => { if (e.currentTarget.matches(':focus-visible')) openMenu(g.id); }}
-                    className={`relative text-[0.92rem] font-semibold py-2 transition-colors ${groupActive(g) || open ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}
+                    className={`nav-link relative text-[0.92rem] font-semibold py-2 transition-colors ${groupActive(g) || open ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}
                   >
                     {g.label}
                     {g.live && <span aria-hidden className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle animate-pulse" />}
@@ -156,8 +164,8 @@ export default function Navbar() {
                   </button>
                 </div>
                 {open && (
-                  <div role="menu" data-testid={`nav-panel-${g.id}`} className="absolute left-0 top-full pt-2 z-50 animate-fade-up" style={{ animationDuration: '0.18s' }}>
-                    <div className="min-w-[13.5rem] bg-white border border-rule rounded-2xl shadow-xl p-2">
+                  <div role="menu" data-testid={`nav-panel-${g.id}`} className="absolute left-0 top-full pt-2 z-50">
+                    <div className="menu-panel min-w-[13.5rem] bg-white/95 backdrop-blur-xl border border-rule rounded-2xl shadow-xl p-2">
                       {g.items.map((i) => (
                         <Link key={i.label + i.href} href={i.href} role="menuitem" className="flex items-center justify-between gap-6 px-4 py-2.5 rounded-xl text-sm text-sage-800 hover:bg-teal-50 hover:text-teal-700 transition-colors">
                           {i.label}
@@ -169,7 +177,7 @@ export default function Navbar() {
               </div>
             );
           })}
-          <Link href="/community" aria-current={isActive('/community') ? 'page' : undefined} className={`text-[0.92rem] font-semibold px-3.5 py-2 transition-colors ${isActive('/community') ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}>
+          <Link href="/community" aria-current={isActive('/community') ? 'page' : undefined} className={`nav-link text-[0.92rem] font-semibold px-3.5 py-2 transition-colors ${isActive('/community') ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}>
             {tr ? 'Topluluk' : 'Community'}
           </Link>
         </nav>
@@ -255,7 +263,7 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="lg:hidden border-t border-rule bg-cream absolute w-full left-0 shadow-lg overflow-y-auto overscroll-contain" style={drawerMax ? { maxHeight: drawerMax } : { maxHeight: 'calc(100dvh - 4.25rem)' }} data-testid="mobile-menu">
+        <div className="drawer-in lg:hidden border-t border-rule bg-cream absolute w-full left-0 shadow-lg overflow-y-auto overscroll-contain" style={drawerMax ? { maxHeight: drawerMax } : { maxHeight: 'calc(100dvh - 4.25rem)' }} data-testid="mobile-menu">
           <nav className="max-w-7xl mx-auto px-6 py-4 flex flex-col">
             {groups.map((g) => (
               <div key={g.id} className="py-3 border-b border-rule">

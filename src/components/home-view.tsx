@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { ArrowRight, Check, Megaphone, Radio, Video, CalendarCheck, Sparkles, Compass, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Check, Megaphone, Radio, Video, CalendarCheck, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -13,10 +13,10 @@ import { PodcastPlayer } from '@/components/podcast-player';
 import { ProductCard, ProductData } from '@/components/shop-pages';
 import { ARTICLE_CATEGORIES } from '@/lib/articles';
 import dynamic from 'next/dynamic';
-import { Aurora, Marquee, PhotoBackdrop, Reveal, Stagger, StaggerItem } from '@/components/motion';
+import { Aurora, ClipReveal, Counter, Magnetic, Marquee, Parallax, PhotoBackdrop, PointerField, Reveal, Spotlight, SplitText, Stagger, StaggerItem, Tilt } from '@/components/motion';
 import { FaqList } from '@/components/marketing';
 import { PoseCard } from '@/components/poses/pose-library';
-import { POSE_BY_SLUG, poseImage } from '@/lib/yoga-poses';
+import { POSES, POSE_BY_SLUG, poseImage } from '@/lib/yoga-poses';
 import { STYLES, TONE_CLASS } from '@/lib/yoga-styles';
 
 const YogiScene = dynamic(() => import('@/components/three/yogi-scene').then((m) => m.YogiScene), { ssr: false, loading: () => <div className="absolute inset-0" aria-hidden /> });
@@ -45,16 +45,17 @@ export default function HomeView({ data }: { data: HomeData }) {
       <Navbar />
       <main>
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden">
+        <PointerField className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-clay-50 via-cream to-teal-100" aria-hidden />
           <PhotoBackdrop sources={PHOTOS.hero} opacity={0.12} />
-          <Aurora />
+          <div className="pointer-drift absolute inset-0" style={{ ['--drift' as string]: '-46px' }} aria-hidden><Aurora /></div>
+          <div className="pointer-glow" aria-hidden />
           <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-14 lg:pt-16 lg:pb-20 grid lg:grid-cols-12 gap-6 lg:gap-10 items-center">
             <div className="lg:col-span-6">
               <p className="eyebrow mb-6 animate-fade-up" style={{ animationDelay: '0.05s', opacity: 0 }}>{L('Yoga · Nefes · Meditasyon', 'Yoga · Breath · Meditation')}</p>
-              <h1 className="font-display font-light text-[3.1rem] sm:text-7xl lg:text-[5.2rem] leading-[0.98] tracking-tight animate-fade-up" style={{ animationDelay: '0.15s', opacity: 0 }}>
-                {L('Nefes, beden ve zihin için', 'A live school for breath,')}{' '}
-                <em className="italic text-gradient pr-1">{L('canlı bir okul.', 'body and mind.')}</em>
+              <h1 className="font-display font-light text-[3.1rem] sm:text-7xl lg:text-[5.2rem] leading-[0.98] tracking-tight">
+                <SplitText text={L('Nefes, beden ve zihin için', 'A live school for breath,')} delay={0.1} />{' '}
+                <em className="italic pr-1"><SplitText text={L('canlı bir okul.', 'body and mind.')} wordClassName="text-gradient" delay={0.5} /></em>
               </h1>
               <p className="mt-7 text-lg text-sage-600 max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
                 {L(
@@ -64,13 +65,13 @@ export default function HomeView({ data }: { data: HomeData }) {
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-4 animate-fade-up" style={{ animationDelay: '0.45s', opacity: 0 }}>
                 {visitor ? (
-                  <Link href="/login?mode=register" data-testid="hero-join" className="btn-cta pulse-cta text-base">
+                  <Magnetic><Link href="/login?mode=register" data-testid="hero-join" className="btn-cta pulse-cta text-base">
                     {L('Ücretsiz üye ol', 'Join for free')} <ArrowRight size={18} />
-                  </Link>
+                  </Link></Magnetic>
                 ) : (
-                  <Link href="/atolyeler" className="btn-cta text-base">
+                  <Magnetic><Link href="/atolyeler" className="btn-cta text-base">
                     {L('Atölyelere göz at', 'Browse workshops')} <ArrowRight size={18} />
-                  </Link>
+                  </Link></Magnetic>
                 )}
                 {visitor ? (
                   <Link href="/nasil-calisir" className="btn-ghost text-base">{L('Nasıl çalışır?', 'How it works')}</Link>
@@ -86,6 +87,10 @@ export default function HomeView({ data }: { data: HomeData }) {
             </div>
             <div className="lg:col-span-6">
               <div className="relative h-[420px] sm:h-[520px] lg:h-[600px]">
+                <div className="pointer-drift absolute inset-0 flex items-center justify-center pointer-events-none" style={{ ['--drift' as string]: '26px' }} aria-hidden>
+                  <div className="orbit orbit-a w-[74%] aspect-square"><i /></div>
+                  <div className="orbit orbit-b w-[94%] aspect-square"><i /></div>
+                </div>
                 <YogiScene poses={HERO_POSES} className="absolute inset-0" label={setHeroPose} />
                 <Link href={`/pozlar/${heroPose}`} data-testid="hero-pose-chip" className="absolute left-1/2 -translate-x-1/2 bottom-2 inline-flex items-center gap-2 bg-paper/90 backdrop-blur border border-rule shadow-md rounded-full pl-4 pr-3 py-2 min-h-[44px] text-sm font-medium hover:border-ink transition">
                   <span className="w-2 h-2 rounded-full bg-clay-500 animate-pulse" aria-hidden /> {POSE_BY_SLUG[heroPose]?.name} <span className="text-sage-500 italic hidden sm:inline">{POSE_BY_SLUG[heroPose]?.sanskrit}</span> <ArrowRight size={14} />
@@ -102,6 +107,26 @@ export default function HomeView({ data }: { data: HomeData }) {
             </div>
           </div>
           <WaveDivider className="relative text-cream" />
+        </PointerField>
+
+        {/* ── numbers ──────────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 -mt-2 relative z-10" data-testid="home-stats" aria-label={L('AYA rakamlarla', 'AYA in numbers')}>
+          <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5" gap={0.1}>
+            {[
+              [POSES.length, '', L('3B poz', '3D poses'), L('adım adım, her açıdan', 'step by step, from every angle')],
+              [STYLES.length, '', L('yoga stili', 'yoga styles'), L('sana uygun olanı bul', 'find the one that fits')],
+              [1080, 'p', L('canlı yayın', 'live streams'), L('izleyici kaliteyi seçer', 'viewers pick the quality')],
+              [30, L(' gün', ' days'), L('ders kaydı', 'lesson recording'), L('yalnız sen indirirsin', 'only you can download')],
+            ].map(([n, suffix, label, hint], i) => (
+              <StaggerItem key={i}>
+                <div className="stat-tile h-full rounded-2xl border border-rule bg-white/85 backdrop-blur p-5 md:p-6 shadow-md">
+                  <p className="font-display text-4xl md:text-5xl leading-none text-ink"><Counter to={n as number} suffix={suffix as string} /></p>
+                  <p className="mt-2 text-sm font-semibold text-teal-700">{label as string}</p>
+                  <p className="text-xs text-sage-500 mt-0.5">{hint as string}</p>
+                </div>
+              </StaggerItem>
+            ))}
+          </Stagger>
         </section>
 
         {/* ── Yazılar + Duyurular / Haberler (from the sketch) ─────── */}
@@ -122,7 +147,7 @@ export default function HomeView({ data }: { data: HomeData }) {
               ) : (
                 <div className="mt-6 grid md:grid-cols-2 gap-6">
                   <Link href={`/icerikler/${data.articles[0].slug}`} data-testid="article-card" className="group block">
-                    <Cover src={data.articles[0].coverUrl} tone="clay" label={data.articles[0].title[0]} className="aspect-[4/3] mb-4 rounded-2xl" />
+                    <ClipReveal className="mb-4"><Cover src={data.articles[0].coverUrl} tone="clay" label={data.articles[0].title[0]} className="aspect-[4/3] rounded-2xl" /></ClipReveal>
                     <p className="eyebrow mb-1.5">{data.articles[0].category}</p>
                     <h3 className="font-display text-2xl leading-snug group-hover:underline underline-offset-4 decoration-1">{data.articles[0].title}</h3>
                     <p className="text-sm text-sage-600 mt-2 line-clamp-2">{data.articles[0].excerpt}</p>
@@ -219,17 +244,18 @@ export default function HomeView({ data }: { data: HomeData }) {
           <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {STYLES.map((st) => (
               <StaggerItem key={st.slug}>
-                <Link href={`/yoga-stilleri/${st.slug}`} className="group relative block rounded-3xl overflow-hidden card-lift border border-rule">
+                <Tilt className="rounded-3xl"><Link href={`/yoga-stilleri/${st.slug}`} className="group relative block rounded-3xl overflow-hidden border border-rule shadow-md hover:shadow-xl transition-shadow duration-500">
                   <div className={`aspect-[5/4] bg-gradient-to-br ${TONE_CLASS[st.tone]} relative`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={poseImage(st.cover)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/40 to-transparent" aria-hidden />
+                    <img src={poseImage(st.cover)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]" />
+                    <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/40 to-transparent transition-opacity duration-500 group-hover:opacity-90" aria-hidden />
+                    <span className="hover-arrow" aria-hidden><ArrowUpRight size={18} /></span>
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                       <h3 className="font-display text-4xl">{st.name}</h3>
                       <p className="text-sm text-white/85 mt-1 line-clamp-2">{st.tagline}</p>
                     </div>
                   </div>
-                </Link>
+                </Link></Tilt>
               </StaggerItem>
             ))}
           </Stagger>
@@ -292,10 +318,11 @@ export default function HomeView({ data }: { data: HomeData }) {
         </section>
 
         {/* ── 03 Live studio band ──────────────────────────────── */}
-        <section className="relative overflow-hidden mt-28 bg-stage text-cream">
+        <section className="relative overflow-hidden mt-28 bg-stage text-cream grain">
           <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_20%,rgba(47,125,225,0.28),transparent_70%),radial-gradient(50%_70%_at_10%_90%,rgba(91,156,240,0.14),transparent_70%)]" aria-hidden />
           <PhotoBackdrop sources={PHOTOS.studio} opacity={0.35} />
           <div className="absolute inset-0 bg-gradient-to-r from-stage via-stage/90 to-stage/40" aria-hidden />
+          <Aurora dark />
           <div className="relative max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6">
               <p className="eyebrow !text-cream/50 mb-4"><span className="text-accent">05</span> — {L('Canlı yayın', 'Live broadcast')}</p>
@@ -317,15 +344,15 @@ export default function HomeView({ data }: { data: HomeData }) {
               </div>
             </div>
             <Reveal className="lg:col-span-6" delay={0.1}>
-              <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-white/15 bg-[radial-gradient(80%_90%_at_70%_30%,rgba(47,125,225,0.45),rgba(26,24,21,0.95)_70%)] shadow-2xl">
+              <Parallax speed={0.05}><Tilt max={4} className="rounded-lg"><div className="relative aspect-video w-full rounded-lg overflow-hidden border border-white/15 bg-[radial-gradient(80%_90%_at_70%_30%,rgba(47,125,225,0.45),rgba(26,24,21,0.95)_70%)] shadow-2xl">
                 <PhotoBackdrop sources={PHOTOS.meditation} opacity={0.9} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" aria-hidden />
-                <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-accent text-white text-[11px] font-bold tracking-wider uppercase px-2 py-1 rounded"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> {L('Canlı', 'Live')}</span>
+                <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-accent text-white text-[11px] font-bold tracking-wider uppercase px-2 py-1 rounded"><span className="live-dot w-1.5 h-1.5 rounded-full bg-white" /> {L('Canlı', 'Live')}</span>
                 <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4 text-sm">
                   <span className="font-display text-xl">{L('Sabah akışı · 1080p60', 'Morning flow · 1080p60')}</span>
                   <span className="flex gap-1.5 text-[11px]">{['1080p', '720p', '360p'].map((q, i) => <span key={q} className={`px-2 py-1 rounded ${i === 0 ? 'bg-white text-ink' : 'bg-white/15'}`}>{q}</span>)}</span>
                 </div>
-              </div>
+              </div></Tilt></Parallax>
             </Reveal>
           </div>
         </section>
@@ -338,7 +365,7 @@ export default function HomeView({ data }: { data: HomeData }) {
               {data.teachers.map((t) => (
                 <StaggerItem key={t.id}>
                   <Link href={`/teachers/${t.id}`} className="group block lift">
-                    <Cover src={t.image} tone="sage" label={t.name[0]} person={t.name} className="aspect-square mb-4" />
+                    <ClipReveal className="mb-4"><Cover src={t.image} tone="sage" label={t.name[0]} person={t.name} className="aspect-square" /></ClipReveal>
                     <h3 className="font-display text-xl group-hover:underline underline-offset-4 decoration-1">{t.name}</h3>
                     <p className="text-sm text-sage-600 line-clamp-2 mt-1">{t.specialties.slice(0, 3).join(' · ') || t.bio}</p>
                   </Link>
@@ -362,10 +389,14 @@ export default function HomeView({ data }: { data: HomeData }) {
         </section>
 
         {/* ── Join ─────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden mt-28 bg-sage-900 text-cream" data-testid="join-band">
+        <section className="relative overflow-hidden mt-28 bg-sage-900 text-cream grain" data-testid="join-band">
           <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_85%_20%,rgba(47,125,225,0.28),transparent_70%),radial-gradient(50%_70%_at_10%_90%,rgba(91,156,240,0.14),transparent_70%)]" aria-hidden />
           <PhotoBackdrop sources={PHOTOS.join} opacity={0.4} />
           <div className="absolute inset-0 bg-gradient-to-br from-sage-900 via-sage-900/85 to-sage-900/40" aria-hidden />
+          <Aurora dark />
+          <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
+            {[8, 21, 34, 47, 62, 74, 88].map((left, i) => <span key={left} className="dust" style={{ left: `${left}%`, bottom: `${8 + (i % 3) * 14}%`, animationDelay: `${i * 1.3}s`, animationDuration: `${8 + (i % 4)}s` }} />)}
+          </div>
           <div className="relative max-w-7xl mx-auto px-6 lg:px-12 py-24 grid lg:grid-cols-12 gap-12 items-center">
             <Reveal className="lg:col-span-6">
               <p className="eyebrow !text-cream/60 mb-4">{L('Aramıza katıl', 'Join us')}</p>
@@ -398,11 +429,13 @@ export default function HomeView({ data }: { data: HomeData }) {
                 const I = Icon as typeof Radio;
                 return (
                   <StaggerItem key={i}>
-                    <div className="h-full border border-white/15 bg-white/5 backdrop-blur-sm rounded-lg p-5 lift">
-                      <I size={22} className="text-clay-200 mb-3" />
-                      <h3 className="font-display text-xl">{title as string}</h3>
-                      <p className="text-sm text-cream/70 mt-1 leading-relaxed">{text as string}</p>
-                    </div>
+                    <Spotlight className="h-full rounded-xl">
+                      <div className="h-full border border-white/15 bg-white/5 backdrop-blur-sm rounded-xl p-5 lift">
+                        <span className="inline-flex w-10 h-10 items-center justify-center rounded-full bg-white/10 mb-3"><I size={20} className="text-clay-200" /></span>
+                        <h3 className="font-display text-xl">{title as string}</h3>
+                        <p className="text-sm text-cream/70 mt-1 leading-relaxed">{text as string}</p>
+                      </div>
+                    </Spotlight>
                   </StaggerItem>
                 );
               })}

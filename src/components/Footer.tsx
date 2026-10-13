@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useI18n } from '@/i18n';
 import { Wordmark } from './Navbar';
+import { Aurora, Reveal } from '@/components/motion';
 
 export default function Footer() {
   const { t, locale } = useI18n();
@@ -54,8 +55,9 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-sage-900 text-cream/80">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-16 pb-10">
+    <footer className="relative overflow-hidden bg-sage-900 text-cream/80 grain">
+      <Aurora dark />
+      <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-16 pb-10">
         <div className="grid md:grid-cols-12 gap-12 pb-12 border-b border-white/15">
           <div className="md:col-span-4">
             <Link href="/" className="text-cream text-4xl"><Wordmark /></Link>
@@ -69,13 +71,14 @@ export default function Footer() {
               <ul className="space-y-2.5 text-sm">
                 {c.links.map((l) => (
                   <li key={l.href + l.label}>
-                    <Link href={l.href} className="hover:text-cream underline-offset-4 hover:underline">{l.label}</Link>
+                    <Link href={l.href} className="footer-link">{l.label}</Link>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
+        <Reveal y={40}><p className="footer-mark font-display text-center pt-8 pb-2 -mb-4" aria-hidden>AYA</p></Reveal>
         <div className="pt-6 text-xs text-cream/50 flex flex-wrap justify-between gap-2">
           <p>© {year} AYA. {t.footer.rights}</p>
           <p>{tr ? 'Dersler yalnızca öğretmen ve öğrenci tarafından indirilebilen kayıtlarla, 30 gün saklanır.' : 'Lesson recordings are available only to teacher and student and kept for 30 days.'}</p>

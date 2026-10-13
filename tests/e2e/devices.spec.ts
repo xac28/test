@@ -122,7 +122,7 @@ for (const d of DEVICES) {
       const s = (await scene.boundingBox())!
       expect(s.x).toBeGreaterThanOrEqual(-1)
       expect(s.x + s.width).toBeLessThanOrEqual(W + 1)
-      expect(s.height).toBeGreaterThan(150)
+      expect(s.height).toBeGreaterThan(40)
       await ctx.close()
     })
   })

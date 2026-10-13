@@ -12,7 +12,9 @@ import { EpisodeData, NewsletterBand, WaveDivider } from '@/components/section-p
 import { PodcastPlayer } from '@/components/podcast-player';
 import { ProductCard, ProductData } from '@/components/shop-pages';
 import { ARTICLE_CATEGORIES } from '@/lib/articles';
-import { Aurora, ClipReveal, Counter, Magnetic, Marquee, Parallax, PhotoBackdrop, PointerField, Reveal, Spotlight, SplitText, Stagger, StaggerItem, Tilt } from '@/components/motion';
+import { Aurora, ClipReveal, Counter, Magnetic, Marquee, Parallax, PhotoBackdrop, Reveal, Spotlight, SplitText, Stagger, StaggerItem, Tilt } from '@/components/motion';
+import { HeroSlider, Slide } from '@/components/home-slider';
+import { NewsletterForm } from '@/components/newsletter';
 import { FaqList } from '@/components/marketing';
 import { POSES } from '@/lib/yoga-poses';
 import { STYLES, TONE_CLASS } from '@/lib/yoga-styles';
@@ -34,76 +36,120 @@ export default function HomeView({ data }: { data: HomeData }) {
   const f = useDateFormat();
   const { status } = useSession();
   const visitor = status === 'unauthenticated';
+  const fallback = [PHOTOS.meditation, PHOTOS.studio, PHOTOS.breath, PHOTOS.join, PHOTOS.hero];
+  const slides: Slide[] = [];
+  const add = (key: string, href: string, eyebrow: string, title: string, cover: string | null | undefined) => {
+    slides.push({ key, href, eyebrow, title, sources: [...(cover ? [cover] : []), ...fallback[slides.length % fallback.length]] });
+  };
+  if (data.articles[0]) add('a0', `/icerikler/${data.articles[0].slug}`, data.articles[0].category, data.articles[0].title, data.articles[0].coverUrl);
+  if (data.workshops[0]) add('w0', `/atolyeler/${data.workshops[0].slug}`, L('Atölye', 'Workshop'), data.workshops[0].title, data.workshops[0].coverUrl);
+  if (data.episode) add('p0', `/podcast/${data.episode.slug}`, 'Podcast', data.episode.title, data.episode.coverUrl);
+  if (data.products[0]) add('s0', `/shop/urun/${data.products[0].slug}`, 'Shop', data.products[0].name, data.products[0].images[0]);
+  add('live', '/live', L('Canlı dersler', 'Live lessons'), L('Canlı derslere evinden katıl', 'Join live lessons from home'), null);
+  if (slides.length < 3) add('community', '/community', L('Topluluk', 'Community'), L('Yalnız değilsin: birlikte daha kolay', 'You are not alone: easier together'), null);
+  const featured = data.articles[1] ?? data.news[0] ?? null;
+  const feature = featured
+    ? { eyebrow: featured.category, title: featured.title, text: featured.excerpt, href: `/icerikler/${featured.slug}`, image: featured.coverUrl }
+    : { eyebrow: L('Başlangıç', 'Getting started'), title: L('AYA nasıl çalışır?', 'How AYA works'), text: L('Canlı dersler, atölyeler, podcast ve topluluk: nereden başlayacağını göster.', 'Live lessons, workshops, podcast and community: see where to start.'), href: '/nasil-calisir', image: null as string | null };
 
   return (
     <>
       <Navbar />
       <main>
-        {/* ── Hero ─────────────────────────────────────────────── */}
-        <PointerField className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-clay-50 via-cream to-teal-100" aria-hidden />
-          <PhotoBackdrop sources={PHOTOS.hero} opacity={0.1} />
-          <div className="pointer-drift absolute inset-0" style={{ ['--drift' as string]: '-46px' }} aria-hidden><Aurora /></div>
-          <div className="pointer-glow" aria-hidden />
-          <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-14 lg:pt-16 lg:pb-20 grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            <div className="lg:col-span-6">
-              <p className="eyebrow mb-6 animate-fade-up" style={{ animationDelay: '0.05s', opacity: 0 }}>{L('Wellness platformu', 'Wellness platform')}</p>
-              <h1 className="font-display font-light text-[3.1rem] sm:text-7xl lg:text-[5.2rem] leading-[0.98] tracking-tight">
-                <SplitText text={L('İyi hissetmenin', 'Your one place to')} delay={0.1} />{' '}
-                <em className="italic pr-1"><SplitText text={L('tek adresi.', 'feel well.')} wordClassName="text-gradient" delay={0.5} /></em>
-              </h1>
-              <p className="mt-7 text-lg text-sage-600 max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
-                {L(
-                  'Canlı dersler ve atölyeler, podcast konuşmaları, topluluk ve wellness mağazası bir arada. Evinden, kendi temponla.',
-                  'Live lessons and workshops, podcast conversations, a community and a wellness shop, all in one place. From home, at your own pace.'
-                )}
-              </p>
-              <div className="mt-9 flex flex-wrap items-center gap-4 animate-fade-up" style={{ animationDelay: '0.45s', opacity: 0 }}>
+        {/* ── Hero: magazine front page ────────────────────────── */}
+        <section className="relative bg-paper border-b border-rule">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12">
+            <div className="py-9 lg:py-12 grid lg:grid-cols-12 gap-6 items-end border-b border-rule">
+              <div className="lg:col-span-8">
+                <p className="eyebrow mb-4 animate-fade-up" style={{ animationDelay: '0.05s', opacity: 0 }}>{L('Wellness platformu', 'Wellness platform')}</p>
+                <h1 className="font-display font-light text-[2.6rem] sm:text-6xl lg:text-[4.2rem] leading-[1] tracking-tight">
+                  <SplitText text={L('İyi hissetmenin', 'Your one place to')} delay={0.1} />{' '}
+                  <em className="italic pr-1"><SplitText text={L('tek adresi.', 'feel well.')} wordClassName="text-gradient" delay={0.5} /></em>
+                </h1>
+                <p className="mt-4 text-base md:text-lg text-sage-600 max-w-2xl leading-relaxed animate-fade-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
+                  {L('Canlı dersler ve atölyeler, podcast, topluluk ve wellness mağazası bir arada.', 'Live lessons and workshops, podcast, community and a wellness shop, all in one place.')}
+                </p>
+              </div>
+              <div className="lg:col-span-4 flex flex-wrap items-center lg:justify-end gap-3 animate-fade-up" style={{ animationDelay: '0.45s', opacity: 0 }}>
                 {visitor ? (
-                  <Magnetic><Link href="/login?mode=register" data-testid="hero-join" className="btn-cta pulse-cta text-base">
+                  <Magnetic><Link href="/login?mode=register" data-testid="hero-join" className="btn-cta pulse-cta">
                     {L('Ücretsiz üye ol', 'Join for free')} <ArrowRight size={18} />
                   </Link></Magnetic>
                 ) : (
-                  <Magnetic><Link href="/atolyeler" className="btn-cta text-base">
-                    {L('Atölyelere göz at', 'Browse workshops')} <ArrowRight size={18} />
-                  </Link></Magnetic>
+                  <Magnetic><Link href="/atolyeler" className="btn-cta">{L('Atölyelere göz at', 'Browse workshops')} <ArrowRight size={18} /></Link></Magnetic>
                 )}
                 {visitor ? (
-                  <Link href="/nasil-calisir" className="btn-ghost text-base">{L('Nasıl çalışır?', 'How it works')}</Link>
+                  <Link href="/nasil-calisir" className="btn-ghost">{L('Nasıl çalışır?', 'How it works')}</Link>
                 ) : (
-                  <Link href="/teachers" className="btn-ghost text-base">{L('Eğitmen bul', 'Find a teacher')}</Link>
+                  <Link href="/teachers" className="btn-ghost">{L('Eğitmen bul', 'Find a teacher')}</Link>
                 )}
               </div>
-              <ul className="mt-9 flex flex-wrap gap-x-7 gap-y-2 text-sm text-sage-700 animate-fade-up" style={{ animationDelay: '0.6s', opacity: 0 }}>
-                {[L('İlk deneme dersi yarı fiyat', 'First trial lesson half price'), L('Canlı yayın ve sohbet', 'Live streams and chat'), L('Dersin kaydı 30 gün indirilebilir', 'Lesson recordings for 30 days')].map((t) => (
-                  <li key={t} className="flex items-center gap-2"><Check size={15} className="text-teal-500" /> {t}</li>
-                ))}
-              </ul>
             </div>
-            <div className="lg:col-span-6">
-              <Stagger className="grid grid-cols-2 gap-3 md:gap-4" gap={0.1}>
-                <Pillar wide href="/live" icon={<Radio size={20} />} title={L('Canlı dersler', 'Live lessons')} text={L('Canlı yayınlar ve birebir dersler, sohbetli ve kayıtlı.', 'Live broadcasts and one-to-one lessons, with chat and recordings.')} photo={PHOTOS.studio} live={!!data.live} testId="pillar-live" tall />
-                <Pillar href="/atolyeler" icon={<CalendarCheck size={20} />} title={L('Atölyeler', 'Workshops')} text={L('Küçük gruplarla, canlı ya da kayıtlı.', 'Small groups, live or recorded.')} photo={PHOTOS.meditation} testId="pillar-workshops" />
-                <Pillar href="/podcast" icon={<Mic size={20} />} title="Podcast" text={L('Uzmanlarla konuşmalar.', 'Conversations with experts.')} tone="from-teal-700 to-teal-500" art={<Equalizer />} testId="pillar-podcast" />
-                <Pillar href="/community" icon={<Users size={20} />} title={L('Topluluk', 'Community')} text={L('Paylaş, ilham al, birlikte ilerle.', 'Share, get inspired, grow together.')} tone="from-sky-500 to-teal-400" art={<HeartsArt />} testId="pillar-community" />
-                <Pillar href="/shop" icon={<ShoppingBag size={20} />} title="Shop" text={L('Mat, aromaterapi ve wellness ürünleri.', 'Mats, aromatherapy and wellness products.')} photo={PHOTOS.breath} testId="pillar-shop" />
-              </Stagger>
-              {data.live ? (
-                <LiveNowCard id={data.live.id} title={data.live.title} teacher={data.live.teacher} viewers={data.live.viewers} trial={data.live.trial} />
-              ) : (
-                <div className="mt-3 bg-teal-900 text-cream/80 px-5 py-4 text-sm rounded-2xl">
-                  {L('Şu anda canlı yayın yok.', 'Nobody is live right now.')}{' '}
-                  <Link href="/live" className="tap-area text-cream underline underline-offset-4">{L('Yayın takvimine bak', 'See live')}</Link>
+
+            <div className="grid lg:grid-cols-12 gap-8 lg:gap-0 py-8 lg:py-12">
+              <div className="lg:col-span-8 lg:pr-10">
+                <ClipReveal className="lg:h-full"><HeroSlider slides={slides} label={L('Öne çıkanlar', 'Featured')} /></ClipReveal>
+              </div>
+              <aside className="lg:col-span-4 lg:border-l border-rule lg:pl-10 flex flex-col gap-8" aria-label={L('Öne çıkan ve bülten', 'Featured and newsletter')}>
+                <Reveal>
+                  <div data-testid="hero-feature">
+                    <p className="eyebrow mb-2">{feature.eyebrow}</p>
+                    <h2 className="font-display text-2xl md:text-[1.7rem] leading-tight">{feature.title}</h2>
+                    <p className="text-sm text-sage-600 mt-2 line-clamp-3">{feature.text}</p>
+                    <Link href={feature.href} className="btn-line mt-4">{L('DEVAMINI OKU', 'READ MORE')} <ArrowRight size={16} /></Link>
+                    <Cover src={feature.image} tone="clay" label={feature.title[0]} className="aspect-[16/9] mt-5" />
+                  </div>
+                </Reveal>
+                <div className="border-t border-rule pt-7">
+                  <h2 className="font-display text-2xl">{L('Bültene üye ol', 'Join the newsletter')}</h2>
+                  <p className="text-sm text-sage-600 mt-2 mb-4 leading-relaxed">{L('Yeni atölyeler, yazılar ve bölümler her hafta e-posta kutunda.', 'New workshops, articles and episodes in your inbox every week.')}</p>
+                  <NewsletterForm variant="line" testId="hero-newsletter" source="home-hero" />
                 </div>
-              )}
+                {data.live ? (
+                  <LiveNowCard id={data.live.id} title={data.live.title} teacher={data.live.teacher} viewers={data.live.viewers} trial={data.live.trial} />
+                ) : (
+                  <div className="border-t border-rule pt-5 text-sm text-sage-600">
+                    <span className="inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-sage-300" aria-hidden /> {L('Şu anda canlı yayın yok.', 'Nobody is live right now.')}</span>{' '}
+                    <Link href="/live" className="tap-area text-ink font-semibold underline underline-offset-4">{L('Yayın takvimine bak', 'See live')}</Link>
+                  </div>
+                )}
+              </aside>
             </div>
           </div>
-          <WaveDivider className="relative text-cream" />
-        </PointerField>
+        </section>
+
+        {/* ── The five doors of the platform ───────────────────── */}
+        <section className="bg-paper border-b border-rule" aria-label={L('Platform', 'Platform')}>
+          <div className="max-w-7xl mx-auto px-6 lg:px-12">
+            <Stagger className="grid grid-cols-2 lg:grid-cols-5 divide-rule lg:divide-x [&>*]:border-b [&>*]:border-rule lg:[&>*]:border-b-0" gap={0.08}>
+              {[
+                ['pillar-live', '/live', Radio, L('Canlı dersler', 'Live lessons'), L('Canlı yayınlar ve birebir dersler', 'Live broadcasts and one-to-one lessons')],
+                ['pillar-workshops', '/atolyeler', CalendarCheck, L('Atölyeler', 'Workshops'), L('Küçük gruplarla, canlı ya da kayıtlı', 'Small groups, live or recorded')],
+                ['pillar-podcast', '/podcast', Mic, 'Podcast', L('Uzmanlarla konuşmalar', 'Conversations with experts')],
+                ['pillar-community', '/community', Users, L('Topluluk', 'Community'), L('Paylaş, ilham al, birlikte ilerle', 'Share, get inspired, grow together')],
+                ['pillar-shop', '/shop', ShoppingBag, 'Shop', L('Mat, aromaterapi, wellness', 'Mats, aromatherapy, wellness')],
+              ].map(([id, href, Icon, title, text], i) => {
+                const I = Icon as typeof Radio;
+                return (
+                  <StaggerItem key={id as string} className={i === 4 ? 'col-span-2 lg:col-span-1' : ''}>
+                    <Link href={href as string} data-testid={id as string} className="group relative flex items-start gap-4 px-2 lg:px-7 py-6 lg:py-8 hover:bg-teal-50/60 transition-colors">
+                      <span className="shrink-0 w-11 h-11 rounded-full border border-rule bg-white flex items-center justify-center text-teal-700 transition-all duration-500 group-hover:bg-teal-700 group-hover:text-white group-hover:scale-110"><I size={19} /></span>
+                      <span className="min-w-0">
+                        <span className="block font-display text-xl leading-tight">{title as string}</span>
+                        <span className="block text-sm text-sage-600 mt-1 leading-snug">{text as string}</span>
+                      </span>
+                      <ArrowUpRight size={16} className="absolute top-5 right-3 lg:right-5 text-sage-300 transition-all duration-300 group-hover:text-teal-700 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
+                    </Link>
+                  </StaggerItem>
+                );
+              })}
+            </Stagger>
+          </div>
+        </section>
 
         {/* ── numbers ──────────────────────────────────────────── */}
-        <section className="max-w-7xl mx-auto px-6 lg:px-12 -mt-2 relative z-10" data-testid="home-stats" aria-label={L('AYA rakamlarla', 'AYA in numbers')}>
-          <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5" gap={0.1}>
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 pt-14 relative z-10" data-testid="home-stats" aria-label={L('AYA rakamlarla', 'AYA in numbers')}>
+          <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8" gap={0.1}>
             {[
               [POSES.length, '', L('3B poz', '3D poses'), L('adım adım, her açıdan', 'step by step, from every angle')],
               [STYLES.length, '', L('yoga stili', 'yoga styles'), L('sana uygun olanı bul', 'find the one that fits')],
@@ -111,7 +157,7 @@ export default function HomeView({ data }: { data: HomeData }) {
               [30, L(' gün', ' days'), L('ders kaydı', 'lesson recording'), L('yalnız sen indirirsin', 'only you can download')],
             ].map(([n, suffix, label, hint], i) => (
               <StaggerItem key={i}>
-                <div className="stat-tile h-full rounded-2xl border border-rule bg-white/85 backdrop-blur p-5 md:p-6 shadow-md">
+                <div className="stat-tile h-full border-t border-ink pt-4 pr-4">
                   <p className="font-display text-4xl md:text-5xl leading-none text-ink"><Counter to={n as number} suffix={suffix as string} /></p>
                   <p className="mt-2 text-sm font-semibold text-teal-700">{label as string}</p>
                   <p className="text-xs text-sage-500 mt-0.5">{hint as string}</p>
@@ -445,51 +491,6 @@ export default function HomeView({ data }: { data: HomeData }) {
   );
 }
 
-
-/** One of the five doors of the platform shown next to the headline. */
-function Pillar({ href, icon, title, text, photo, tone, art, live, wide, tall, testId }: {
-  href: string; icon: ReactNode; title: string; text: string; photo?: readonly string[]; tone?: string; art?: ReactNode; live?: boolean; wide?: boolean; tall?: boolean; testId: string;
-}) {
-  const L = useL();
-  return (
-    <StaggerItem className={wide ? 'col-span-2' : ''}>
-      <Tilt className="rounded-3xl h-full" max={4}>
-        <Link href={href} data-testid={testId} className={`group relative flex flex-col justify-end overflow-hidden rounded-3xl border border-white/60 text-white shadow-lg hover:shadow-2xl transition-shadow duration-500 p-5 ${tall ? 'min-h-[210px] lg:min-h-[230px]' : 'min-h-[170px] lg:min-h-[190px]'} bg-gradient-to-br ${tone ?? 'from-teal-800 to-teal-600'}`}>
-          {photo && <PhotoBackdrop sources={photo} opacity={0.95} drift={false} className="transition-transform duration-[1200ms] ease-out group-hover:scale-110" />}
-          {photo && <div className="absolute inset-0 bg-gradient-to-t from-teal-950/85 via-teal-900/35 to-teal-900/10" aria-hidden />}
-          {art && <div className="absolute inset-0 pointer-events-none" aria-hidden>{art}</div>}
-          <span className="absolute top-4 left-4 inline-flex w-10 h-10 items-center justify-center rounded-full bg-white/20 backdrop-blur ring-1 ring-white/30">{icon}</span>
-          {live && <span className="absolute top-5 right-5 inline-flex items-center gap-1.5 bg-accent text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded-full"><span className="live-dot w-1.5 h-1.5 rounded-full bg-white" /> {L('Canlı', 'Live')}</span>}
-          <span className="hover-arrow !top-auto !bottom-4 !right-4" aria-hidden><ArrowUpRight size={18} /></span>
-          <div className="relative pr-10">
-            <h2 className="font-display text-2xl md:text-3xl leading-tight">{title}</h2>
-            <p className="text-sm text-white/85 mt-1 leading-snug line-clamp-2">{text}</p>
-          </div>
-        </Link>
-      </Tilt>
-    </StaggerItem>
-  );
-}
-
-/** Podcast tile artwork: bars that move like a sound level. */
-function Equalizer() {
-  return (
-    <div className="absolute right-5 top-5 flex items-end gap-1 h-10">
-      {[0, 1, 2, 3, 4, 5].map((i) => <span key={i} className="eq-bar" style={{ animationDelay: `${i * 0.17}s` }} />)}
-    </div>
-  );
-}
-
-/** Community tile artwork: overlapping bubbles with hearts and speech. */
-function HeartsArt() {
-  return (
-    <div className="absolute right-4 top-4 flex -space-x-3">
-      {[Heart, MessageCircle, Sparkles].map((I, i) => (
-        <span key={i} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur ring-2 ring-white/40 flex items-center justify-center float-soft" style={{ animationDelay: `${i * 0.6}s` }}><I size={17} /></span>
-      ))}
-    </div>
-  );
-}
 
 /** Home teaser for the community area. */
 function CommunityCard() {

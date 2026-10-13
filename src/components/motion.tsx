@@ -275,20 +275,23 @@ export function Parallax({ children, speed = 0.12, className = "", style }: { ch
   )
 }
 
-/** Image/card that opens like a curtain when scrolled into view. */
+/** Image/card that opens like a curtain when scrolled into view. The observed wrapper is never clipped itself. */
 export function ClipReveal({ children, className = "", delay = 0, from = "bottom" }: { children: ReactNode; className?: string; delay?: number; from?: "bottom" | "left" }) {
   const reduce = useReducedMotion()
+  const ref = useRef<HTMLDivElement>(null)
+  const seen = useInView(ref, { once: true, margin: "-60px" })
   const hidden = from === "left" ? "inset(0 100% 0 0 round 22px)" : "inset(100% 0 0 0 round 22px)"
   return (
-    <motion.div
-      className={className}
-      initial={reduce ? false : { clipPath: hidden, scale: 1.04 }}
-      whileInView={{ clipPath: "inset(0% 0% 0% 0% round 0px)", scale: 1 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 1.1, delay, ease: EASE }}
-    >
-      {children}
-    </motion.div>
+    <div ref={ref} className={className}>
+      <motion.div
+        className="h-full"
+        initial={reduce ? false : { clipPath: hidden, scale: 1.04 }}
+        animate={seen || reduce ? { clipPath: "inset(0% 0% 0% 0% round 0px)", scale: 1 } : undefined}
+        transition={{ duration: 1.1, delay, ease: EASE }}
+      >
+        {children}
+      </motion.div>
+    </div>
   )
 }
 

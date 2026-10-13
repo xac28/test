@@ -12,6 +12,8 @@ test.describe("landing page: motion, 3D and sign-up funnel", () => {
       await expect(page.getByTestId(id)).toBeVisible()
       await expect(page.getByTestId(id)).toHaveAttribute("href", href)
     }
+    await expect(page.getByTestId("hero-slider")).toBeVisible()
+    await expect(page.getByTestId("hero-slide").first()).toHaveAttribute("href", /.+/)
     await expect(page.getByTestId("hero-join")).toBeVisible()
     await page.getByTestId("hero-join").click()
     await expect(page).toHaveURL(/\/login\?mode=register$/)

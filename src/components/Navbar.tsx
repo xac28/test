@@ -137,7 +137,7 @@ export default function Navbar() {
           <Wordmark /><span aria-hidden className="text-[0.55rem] mt-0.5 font-body text-teal-600">®</span>
         </Link>
 
-        <nav ref={navRef} aria-label="Ana menü" className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1">
+        <nav ref={navRef} aria-label="Ana menü" className="hidden lg:flex items-center justify-center gap-0 xl:gap-1 flex-1">
           {groups.map((g) => {
             const open = openId === g.id;
             return (
@@ -147,7 +147,7 @@ export default function Navbar() {
                     href={g.href}
                     aria-current={isActive(g.href) ? 'page' : undefined}
                     onFocus={(e) => { if (e.currentTarget.matches(':focus-visible')) openMenu(g.id); }}
-                    className={`nav-link relative text-[0.92rem] font-semibold py-2 transition-colors ${groupActive(g) || open ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}
+                    className={`nav-link relative text-[0.78rem] uppercase tracking-[0.07em] font-semibold py-2 transition-colors ${groupActive(g) || open ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}
                   >
                     {g.label}
                     {g.live && <span aria-hidden className="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-accent align-middle animate-pulse" />}
@@ -177,7 +177,7 @@ export default function Navbar() {
               </div>
             );
           })}
-          <Link href="/community" aria-current={isActive('/community') ? 'page' : undefined} className={`nav-link text-[0.92rem] font-semibold px-3.5 py-2 transition-colors ${isActive('/community') ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}>
+          <Link href="/community" aria-current={isActive('/community') ? 'page' : undefined} className={`nav-link text-[0.78rem] uppercase tracking-[0.07em] font-semibold px-3.5 py-2 transition-colors ${isActive('/community') ? 'text-teal-700' : 'text-ink hover:text-teal-700'}`}>
             {tr ? 'Topluluk' : 'Community'}
           </Link>
         </nav>

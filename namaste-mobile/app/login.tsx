@@ -28,7 +28,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter email and password")
+      Alert.alert("Hata", "E-posta ve şifreni gir")
       return
     }
 
@@ -58,7 +58,7 @@ export default function LoginScreen() {
       }, 3500)
     } else {
       setLoading(false)
-      Alert.alert("Login Failed", result.error || "Invalid credentials")
+      Alert.alert("Giriş başarısız", result.error || "E-posta veya şifre hatalı")
     }
   }
 
@@ -69,8 +69,8 @@ export default function LoginScreen() {
           <Animated.View style={[styles.logoCircle, { transform: [{ scale: pulseAnim }], marginBottom: 30, width: 100, height: 100, borderRadius: 50 }]}>
             <Text style={{ fontSize: 40 }}>🧘</Text>
           </Animated.View>
-          <Text style={{ fontFamily: 'serif', fontSize: 24, color: colors.sage[900], letterSpacing: 2 }}>NAMASTE</Text>
-          <Text style={{ color: colors.sage[500], marginTop: 10, fontStyle: 'italic' }}>Preparing your practice...</Text>
+          <Text style={{ fontFamily: 'serif', fontSize: 24, color: colors.sage[900], letterSpacing: 2 }}>AYA</Text>
+          <Text style={{ color: colors.sage[500], marginTop: 10, fontStyle: 'italic' }}>Pratiğin hazırlanıyor…</Text>
         </Animated.View>
       </View>
     )
@@ -92,17 +92,17 @@ export default function LoginScreen() {
               <Text style={styles.logoEmoji}>🧘</Text>
             </View>
           </View>
-          <Text style={styles.brand}>NAMASTE</Text>
-          <Text style={styles.tagline}>Your practice, anywhere you breathe.</Text>
+          <Text style={styles.brand}>AYA</Text>
+          <Text style={styles.tagline}>Pratiğin, nefes aldığın her yerde.</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Welcome Back</Text>
-          <Text style={styles.cardSubtitle}>Sign in to continue your journey</Text>
+          <Text style={styles.cardTitle}>Tekrar hoş geldin</Text>
+          <Text style={styles.cardSubtitle}>Yolculuğuna devam etmek için giriş yap</Text>
 
           <View style={styles.form}>
             <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>E-posta</Text>
               <View style={[styles.inputContainer, focusedField === "email" && styles.inputFocused]}>
                 <Text style={styles.inputIcon}>📧</Text>
                 <TextInput
@@ -120,7 +120,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Şifre</Text>
               <View style={[styles.inputContainer, focusedField === "password" && styles.inputFocused]}>
                 <Text style={styles.inputIcon}>🔒</Text>
                 <TextInput
@@ -142,23 +142,26 @@ export default function LoginScreen() {
               disabled={loading}
               activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>{loading ? "Signing in..." : "Sign In"}</Text>
+              <Text style={styles.buttonText}>{loading ? "Giriş yapılıyor…" : "Giriş yap"}</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity onPress={() => router.push("/forgot-password")} style={{ alignSelf: "center", minHeight: 44, justifyContent: "center", marginBottom: 4 }} accessibilityRole="link">
+              <Text style={{ color: colors.sage[600], textDecorationLine: "underline", fontSize: 14 }}>Şifremi unuttum</Text>
+            </TouchableOpacity>
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}>veya</Text>
               <View style={styles.dividerLine} />
             </View>
 
             <TouchableOpacity onPress={() => router.push("/register")} style={styles.secondaryBtn}>
-              <Text style={styles.secondaryBtnText}>Create New Account</Text>
+              <Text style={styles.secondaryBtnText}>Yeni hesap oluştur</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <Text style={styles.footer}>
-          By signing in, you agree to our Terms of Service{"\n"}and Privacy Policy.
+          Giriş yaparak Kullanım Şartları'nı ve{"\n"}Gizlilik Politikası'nı kabul etmiş olursun.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

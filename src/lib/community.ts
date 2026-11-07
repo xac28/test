@@ -19,7 +19,7 @@ export async function optionalUser(req: Request): Promise<AuthUser | null> {
 /** Only files this very user uploaded through the "post" upload type are accepted as a photo. */
 export async function isOwnUpload(url: unknown, userId: string): Promise<boolean> {
   if (typeof url !== "string") return false
-  const m = /^\/uploads\/posts\/(post-([A-Za-z0-9]+)-\d+\.(?:jpg|jpeg|png|webp))$/.exec(url)
+  const m = /^\/uploads\/posts\/(post-([A-Za-z0-9]+)-\d+(?:-[0-9a-f]{24})?\.(?:jpg|jpeg|png|webp))$/.exec(url)
   if (!m || m[2] !== userId) return false
   try {
     await access(path.join(process.cwd(), "public", "uploads", "posts", m[1]))

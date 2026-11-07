@@ -1,11 +1,15 @@
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/api-protection"
+import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
 import { moderateText, strikeHint } from "@/lib/moderation"
 
 // POST /api/reviews — Leave a review for a booking
 // ── FIX #13: Aynı booking'e duplicate review engeli eklendi ──
 export async function POST(req: Request) {
+  const limited = applyRateLimit(req, RATE_LIMIT_WRITE)
+  if (limited) return limited
   try {
     const user = await resolveUser(req)
     if (!user) {

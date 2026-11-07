@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { db } from "@/lib/db"
 import authConfig from "./auth.config"
 import bcrypt from "bcryptjs"
+import { loginLocked, recordLoginFailure, clearLoginFailures, burnPasswordCheck } from "@/lib/login-throttle"
 import Credentials from "next-auth/providers/credentials"
 import { hasAcceptedCurrentTerms } from "@/lib/terms"
 
@@ -30,12 +31,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ip = request?.headers?.get?.("x-forwarded-for")?.split(",")[0].trim() || request?.headers?.get?.("x-real-ip") || null;
         if (!credentials?.email || !credentials?.password) return null;
         const email = (credentials.email as string).toLowerCase();
-        
+
+        if (loginLocked(email, ip)) {
+          logEvent({ type: "SECURITY", level: "warn", message: `Giriş kilitli (çok fazla başarısız deneme): ${email}`, ip })
+          return null;
+        }
+
         const user = await db.user.findUnique({
           where: { email }
         });
 
         if (!user || !user.password) {
+          await burnPasswordCheck(String(credentials.password))
+          recordLoginFailure(email, ip)
           logEvent({ type: "AUTH_FAIL", level: "warn", message: `Giriş başarısız (kullanıcı yok): ${email}`, ip })
           return null;
         }
@@ -52,8 +60,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.password
         );
 
+        if (!passwordsMatch) recordLoginFailure(email, ip)
         if (!passwordsMatch) logEvent({ type: "AUTH_FAIL", level: "warn", message: `Giriş başarısız (yanlış şifre): ${email}`, userId: user.id, ip })
         if (passwordsMatch) {
+          clearLoginFailures(email)
           logEvent({ type: "AUTH_LOGIN", message: `Giriş yapıldı: ${email}`, userId: user.id, ip })
           // Pass rememberMe flag through user object to jwt callback
           return { ...user, rememberMe: credentials.rememberMe === "true" };

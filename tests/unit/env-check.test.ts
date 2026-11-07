@@ -6,6 +6,7 @@ const good = {
   NEXT_PUBLIC_SITE_URL: "https://aya.example.com", NEXTAUTH_URL: "https://aya.example.com",
   SMTP_USER: "mail@aya.example.com", SMTP_PASS: "app-password", STRIPE_SECRET_KEY: "sk_live_xxx",
   LIVEKIT_API_KEY: "APIabc123", LIVEKIT_API_SECRET: "s3cr3t-value-xyz", LIVEKIT_URL: "wss://live.aya.example.com",
+  CSP_MODE: "enforce", ENABLE_HSTS: "true", REQUIRE_EMAIL_VERIFICATION: "true",
 }
 
 describe("production configuration check", () => {
@@ -16,6 +17,10 @@ describe("production configuration check", () => {
     const p = envProblems({ ...good, AUTH_SECRET: "change-me", CRON_SECRET: "", NEXT_PUBLIC_SITE_URL: "http://localhost:3000", SMTP_USER: "", STRIPE_SECRET_KEY: "sk_test_dummy", LIVEKIT_API_KEY: "devkey", LIVEKIT_API_SECRET: "secret", LIVEKIT_URL: "ws://live.aya.example.com" })
     const text = p.join("\n")
     for (const key of ["AUTH_SECRET", "CRON_SECRET", "NEXT_PUBLIC_SITE_URL", "SMTP_USER", "STRIPE_SECRET_KEY", "development key pair", "wss://"]) expect(text).toContain(key)
+  })
+  it("warns when the browser protections are not switched on", () => {
+    const text = envProblems({ ...good, CSP_MODE: "report-only", ENABLE_HSTS: "false", REQUIRE_EMAIL_VERIFICATION: "false" }).join("\n")
+    for (const key of ["CSP_MODE", "ENABLE_HSTS", "REQUIRE_EMAIL_VERIFICATION"]) expect(text).toContain(key)
   })
   it("warns about a non-https NEXTAUTH_URL", () => {
     expect(envProblems({ ...good, NEXTAUTH_URL: "http://aya.example.com" }).join()).toContain("NEXTAUTH_URL")

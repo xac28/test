@@ -10,5 +10,8 @@ export function envProblems(env: Record<string, string | undefined>): string[] {
   if (!env.STRIPE_SECRET_KEY || /dummy/.test(env.STRIPE_SECRET_KEY)) out.push("STRIPE_SECRET_KEY is a placeholder: card payments will fail (Iyzico may still work).")
   if (env.LIVEKIT_API_KEY === "devkey" || env.LIVEKIT_API_SECRET === "secret") out.push("LiveKit still uses the development key pair (devkey/secret).")
   if (env.LIVEKIT_URL && /^ws:/.test(env.LIVEKIT_URL) && !/localhost|127\.0\.0\.1/.test(env.LIVEKIT_URL)) out.push("LIVEKIT_URL is ws:// on a public host: browsers on https pages need wss://.")
+  if (env.CSP_MODE !== "enforce") out.push('CSP_MODE is not "enforce": the content security policy only reports violations, it does not block injected scripts.')
+  if (env.ENABLE_HSTS !== "true") out.push("ENABLE_HSTS is not true: browsers are not told to always use https (set it once the site is served over https).")
+  if (env.REQUIRE_EMAIL_VERIFICATION !== "true") out.push("REQUIRE_EMAIL_VERIFICATION is not true: anyone can register with an address they do not own.")
   return out
 }

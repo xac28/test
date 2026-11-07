@@ -95,11 +95,7 @@ export default auth((req) => {
   // Referrer-Policy — Controls referrer information
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
 
-  // HSTS disabled for HTTP VDS testing on 5.63.21.194
-  // response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
-
-  // CSP disabled for HTTP VDS testing
-  // response.headers.set('Content-Security-Policy', "upgrade-insecure-requests")
+  // HSTS and the Content-Security-Policy are set in next.config.js (ENABLE_HSTS / CSP_MODE)
 
   return response
 })

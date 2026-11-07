@@ -1,5 +1,7 @@
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/api-protection"
+import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
 import { createLiveKitToken } from "@/lib/livekit"
@@ -8,6 +10,8 @@ import { trialRoleFor, trialRoomName } from "@/lib/trial"
 // POST /api/room/trial { teacherId? } — token for the private trial room.
 // Candidate: a teacher still in trial mode (own room). Reviewer: any admin (needs teacherId).
 export async function POST(req: Request) {
+  const limited = applyRateLimit(req, RATE_LIMIT_WRITE)
+  if (limited) return limited
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

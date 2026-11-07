@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { termsGate } from "@/lib/terms"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
+import { randomBytes } from "crypto"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_UPLOAD } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
@@ -22,7 +23,12 @@ export async function POST(req: Request) {
     const termsBlock = termsGate(user)
     if (termsBlock) return termsBlock
 
-    const formData = await req.formData()
+    let formData: FormData
+    try {
+      formData = await req.formData()
+    } catch {
+      return NextResponse.json({ error: "Expected multipart/form-data" }, { status: 400 })
+    }
     const file = formData.get("file") as File | null
     const type = formData.get("type") as string || "certificate" // 'avatar', 'certificate', 'video', 'post', 'audio' or 'product'
 
@@ -97,7 +103,7 @@ export async function POST(req: Request) {
     }
 
     const prefix = type === "avatar" ? "avatar" : type === "post" ? "post" : type === "video" ? "video" : type === "audio" ? "audio" : type === "product" ? "product" : "cert"
-    const filename = `${prefix}-${user.id}-${Date.now()}${ext.toLowerCase()}`
+    const filename = `${prefix}-${user.id}-${Date.now()}-${randomBytes(12).toString("hex")}${ext.toLowerCase()}`
     const filepath = path.join(uploadsDir, filename)
 
     // Write file
@@ -119,6 +125,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: publicUrl, filename })
   } catch (error: any) {
     console.error("[UPLOAD_ERROR]", error)
-    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 })
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
   }
 }

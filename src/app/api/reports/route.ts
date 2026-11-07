@@ -1,5 +1,7 @@
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/api-protection"
+import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
 import { createReport } from "@/lib/report-server"
@@ -9,6 +11,8 @@ export const dynamic = "force-dynamic"
 
 // POST /api/reports { targetType, targetId, category, description, message? } — file a report (web + mobile)
 export async function POST(req: Request) {
+  const limited = applyRateLimit(req, RATE_LIMIT_WRITE)
+  if (limited) return limited
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Bildirim göndermek için giriş yapın." }, { status: 401 })
@@ -27,6 +31,8 @@ export async function POST(req: Request) {
 
 // GET /api/reports — the signed-in user's own reports and where they stand (never internal notes)
 export async function GET(req: Request) {
+  const limited = applyRateLimit(req, RATE_LIMIT_WRITE)
+  if (limited) return limited
   try {
     const user = await resolveUser(req)
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

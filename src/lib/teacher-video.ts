@@ -10,7 +10,7 @@ export async function validateVideoUrl(raw: unknown, userId: string): Promise<{ 
   const url = raw.trim()
   if (url.length > 500) return { ok: false, error: "Video bağlantısı çok uzun." }
   if (url.startsWith("/uploads/")) {
-    const m = /^\/uploads\/videos\/(video-([A-Za-z0-9]+)-\d+\.(?:mp4|webm|ogg|ogv|mov))$/i.exec(url)
+    const m = /^\/uploads\/videos\/(video-([A-Za-z0-9]+)-\d+(?:-[0-9a-f]{24})?\.(?:mp4|webm|ogg|ogv|mov))$/i.exec(url)
     if (!m || m[2] !== userId) return { ok: false, error: "Yalnızca kendi yüklediğin videoları ekleyebilirsin." }
     try {
       await access(path.join(process.cwd(), "public", "uploads", "videos", m[1]))

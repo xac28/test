@@ -26,7 +26,7 @@ services:
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?set LIVEKIT_API_KEY in .env}: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in .env}"
     ports:
-      - "7880:7880"            # signalling (proxy it with TLS → wss://)
+      - "${PUBLIC_BIND:-127.0.0.1}:7880:7880"   # signalling: reachable only through the TLS proxy (wss://); set PUBLIC_BIND=0.0.0.0 only for tests without a proxy
       - "7881:7881"            # WebRTC over TCP
       - "50000-50100:50000-50100/udp"   # WebRTC media
 
@@ -47,7 +47,7 @@ services:
       LIVEKIT_URL: ${LIVEKIT_PUBLIC_URL:-ws://localhost:7880}
       LIVEKIT_SERVER_URL: http://livekit:7880
     ports:
-      - "3000:3000"
+      - "${PUBLIC_BIND:-127.0.0.1}:3000:3000"   # only the TLS proxy (Caddy) may reach it: client IPs come from X-Forwarded-For, which the proxy must set
     volumes:
       - uploads:/app/public/uploads
       - recordings:/app/storage

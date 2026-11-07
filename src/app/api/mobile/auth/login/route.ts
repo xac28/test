@@ -12,6 +12,7 @@ import {
   cleanupExpiredSessions,
 } from "@/lib/auth-utils"
 import { isIpBanned, isUserBanned, extractIp, logUserIp } from "@/lib/ban-engine"
+import { loginLocked, recordLoginFailure, clearLoginFailures, burnPasswordCheck, LOGIN_LOCKED_MESSAGE } from "@/lib/login-throttle"
 
 /**
  * POST /api/mobile/auth/login
@@ -73,12 +74,24 @@ export async function POST(req: Request) {
       )
     }
 
+    // ── Failed-attempt lock (per account and per address) ───────────────
+
+    if (loginLocked(email, ip)) {
+      logEvent({ type: "SECURITY", level: "warn", message: `Giriş kilitli (çok fazla başarısız deneme): ${email}`, ip })
+      return NextResponse.json(
+        { error: LOGIN_LOCKED_MESSAGE, code: "TOO_MANY_ATTEMPTS" },
+        { status: 429, headers: { "Retry-After": "900" } }
+      )
+    }
+
     // ── User Lookup ─────────────────────────────────────────────────────
 
     const user = await db.user.findUnique({ where: { email } })
 
     if (!user) {
-      // Constant-time response to prevent user enumeration
+      // Same work and same answer as a wrong password, so e-mails cannot be probed by content or timing
+      await burnPasswordCheck(String(password))
+      recordLoginFailure(email, ip)
       return NextResponse.json(
         { error: "E-posta veya şifre hatalı." },
         { status: 401 }
@@ -109,12 +122,15 @@ export async function POST(req: Request) {
 
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
+      recordLoginFailure(email, ip)
       logEvent({ type: "AUTH_FAIL", level: "warn", message: `Mobil giriş başarısız (yanlış şifre): ${email}`, userId: user.id, ip })
       return NextResponse.json(
         { error: "E-posta veya şifre hatalı." },
         { status: 401 }
       )
     }
+
+    clearLoginFailures(email)
 
     // ── Session Creation ────────────────────────────────────────────────
 

@@ -34,7 +34,7 @@ cp .env.example .env
 docker compose up -d --build
 docker compose logs -f web      # "[aya] schema ok" ve "configuration ..." satırlarını görün
 ```
-Site `:3000`, LiveKit `:7880` portunda açılır. TLS için `deploy/Caddyfile` içindeki iki alan adını değiştirip Caddy'yi çalıştırın (sertifikayı kendisi alır); LiveKit için `wss://` gerektiği için ikinci blok şarttır.
+Site `:3000`, LiveKit `:7880` portunda açılır; varsayılan olarak yalnızca sunucunun kendisinden (`127.0.0.1`) erişilir, dışarıya Caddy açar. Vekilsiz deneme için `.env` içine `PUBLIC_BIND=0.0.0.0` yazın (canlıda yazmayın: istemci IP'si `X-Forwarded-For` başlığından okunur, vekilsiz açık porta sahte başlık gönderilerek hız sınırları aşılabilir). TLS için `deploy/Caddyfile` içindeki iki alan adını değiştirip Caddy'yi çalıştırın (sertifikayı kendisi alır); LiveKit için `wss://` gerektiği için ikinci blok şarttır.
 
 Kontrol: `curl https://aya.ornek.com/api/health` → `{"status":"ok"}`.
 

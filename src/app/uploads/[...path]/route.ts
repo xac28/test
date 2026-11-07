@@ -3,6 +3,7 @@ import { createReadStream } from "fs"
 import { stat } from "fs/promises"
 import path from "path"
 import { Readable } from "stream"
+import { resolveUser } from "@/lib/auth-utils"
 
 export const dynamic = "force-dynamic"
 
@@ -27,6 +28,16 @@ export async function GET(req: Request, props: { params: Promise<{ path: string[
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
+  // certificates and ID documents are private: only the person who uploaded them and the administrators may open them
+  const isPrivate = params.path[0] === "certificates"
+  if (isPrivate) {
+    const owner = path.basename(full).split("-")[1]
+    const viewer = await resolveUser(req)
+    if (!viewer || (viewer.role !== "ADMIN" && viewer.id !== owner)) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
+  }
+
   let size: number
   try {
     size = (await stat(full)).size
@@ -37,7 +48,7 @@ export async function GET(req: Request, props: { params: Promise<{ path: string[
   const headers: Record<string, string> = {
     "Content-Type": type,
     "Accept-Ranges": "bytes",
-    "Cache-Control": "public, max-age=3600",
+    "Cache-Control": isPrivate ? "private, no-store" : "public, max-age=3600",
     "X-Content-Type-Options": "nosniff",
     // user-uploaded files must never run as pages
     "Content-Security-Policy": "default-src 'none'; sandbox",

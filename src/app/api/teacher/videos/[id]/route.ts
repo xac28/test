@@ -2,7 +2,8 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await resolveUser(req)
     if (!user || user.role !== "TEACHER") {

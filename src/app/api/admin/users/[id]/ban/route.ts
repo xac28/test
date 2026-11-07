@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { requireAdmin, cleanReason } from "@/lib/admin-api"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { applyFullBan, applyFullUnban } from "@/lib/ban-engine"
@@ -15,16 +15,18 @@ import { applyFullBan, applyFullUnban } from "@/lib/ban-engine"
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
 
-    const { reason } = await req.json().catch(() => ({ reason: "No reason provided" }))
+    const body = await req.json().catch(() => ({}))
+    const reason = cleanReason(body.reason)
+    if (reason.length < 3) {
+      return NextResponse.json({ error: "Yasaklama nedeni gerekli (en az 3 karakter)." }, { status: 400 })
+    }
     const { id } = await params
 
     // Admin kendini banlayamaz
-    if (id === session.user.id) {
+    if (id === g.admin.id) {
       return NextResponse.json({ error: "Cannot ban yourself" }, { status: 400 })
     }
 
@@ -46,7 +48,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // 🛡️ Full ban uygula (user ban + IP ban + session kill)
-    const result = await applyFullBan(id, reason, session.user.id)
+    const result = await applyFullBan(id, reason, g.admin.id)
 
     return NextResponse.json({ 
       success: true, 
@@ -71,10 +73,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
  */
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
 
     const { id } = await params
 
@@ -90,7 +90,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       return NextResponse.json({ error: "User is not banned" }, { status: 409 })
     }
 
-    const result = await applyFullUnban(id, session.user.id)
+    const result = await applyFullUnban(id, g.admin.id)
 
     return NextResponse.json({ 
       success: true, 

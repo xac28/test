@@ -1,7 +1,7 @@
 export const en = {
   // Language picker
   langPicker: {
-    title: 'Welcome to Namaste',
+    title: 'Welcome to AYA',
     subtitle: 'Choose your language to begin',
     continueBtn: 'Continue',
   },
@@ -12,6 +12,12 @@ export const en = {
     howItWorks: 'How it works',
     signIn: 'Sign in',
     signUp: 'Get started',
+    workshops: 'Workshops',
+    live: 'Live',
+    articles: 'Journal',
+    plans: 'Plans',
+    messages: 'Messages',
+    teachers: 'Teachers',
   },
   // Hero
   hero: {
@@ -117,6 +123,7 @@ export const en = {
     contact: 'Contact',
     terms: 'Terms',
     privacy: 'Privacy',
+    cookies: 'Cookies',
     rights: 'All rights reserved.',
   },
 };

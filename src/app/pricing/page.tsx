@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
-import { Check, Zap, Crown, Sparkles, ArrowRight } from "lucide-react"
+import { Check, ArrowRight } from "lucide-react"
 
 const plans = [
   {
@@ -85,100 +85,66 @@ export default function PricingPage() {
   return (
     <>
       <Navbar />
-      <section className="min-h-screen bg-gradient-to-b from-cream via-sage-50 to-cream py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          {/* Header */}
-          <div className="text-center mb-16 animate-fade-in">
-            <div className="inline-flex items-center gap-2 bg-sage-100 text-sage-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <Sparkles size={16} />
-              Pratiğinizi Yükseltin
-            </div>
-            <h1 className="text-4xl md:text-6xl font-display text-ink mb-4">
-              Size Uygun <span className="italic text-sage-600">Planı</span> Seçin
+      <main>
+        <section className="border-b border-rule">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-16 pb-12">
+            <p className="eyebrow mb-4">Paketler</p>
+            <h1 className="font-display font-light text-5xl md:text-7xl leading-[1.0] max-w-4xl">
+              Size uygun <em className="italic text-clay-500">planı seçin.</em>
             </h1>
-            <p className="text-ink/60 max-w-2xl mx-auto text-lg">
-              Her seviye için bir plan. Tek ders satın alın veya abonelik ile tasarruf edin.
+            <p className="mt-6 text-lg text-sage-600 max-w-2xl">
+              Tek ders satın alın ya da abonelikle tasarruf edin. Tüm planlar istediğiniz zaman iptal edilebilir.
             </p>
-
-            {/* Annual Toggle */}
-            <div className="flex items-center justify-center gap-3 mt-8">
-              <span className={`text-sm font-medium ${!annual ? "text-sage-800" : "text-sage-400"}`}>Aylık</span>
-              <button
-                onClick={() => setAnnual(!annual)}
-                className={`relative w-14 h-7 rounded-full transition-colors ${annual ? "bg-sage-600" : "bg-sage-300"}`}
-              >
-                <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform ${annual ? "translate-x-8" : "translate-x-1"}`} />
-              </button>
-              <span className={`text-sm font-medium ${annual ? "text-sage-800" : "text-sage-400"}`}>
-                Yıllık <span className="text-green-600 font-bold">(-20%)</span>
-              </span>
+            <div className="flex items-center gap-4 mt-8" role="group" aria-label="Faturalama dönemi">
+              {([[false, "Aylık"], [true, "Yıllık (−%20)"]] as const).map(([val, label]) => (
+                <button
+                  key={label}
+                  onClick={() => setAnnual(val)}
+                  aria-pressed={annual === val}
+                  className={`px-5 py-2 text-sm font-medium border rounded-md transition-colors ${annual === val ? "bg-ink text-cream border-ink" : "border-rule hover:border-ink"}`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
+        </section>
 
-          {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 stagger-children">
+        <section className="max-w-7xl mx-auto px-6 lg:px-12 py-16">
+          <div className="grid md:grid-cols-3 border border-ink divide-y md:divide-y-0 md:divide-x divide-ink bg-paper">
             {plans.map((plan) => {
               const displayPrice = plan.price === 0 ? 0 : annual ? Math.round(plan.price * 0.8 * 100) / 100 : plan.price
-
               return (
-                <div
-                  key={plan.id}
-                  className={`relative bg-white rounded-3xl p-8 border-2 transition-all duration-300 card-hover ${
-                    plan.popular
-                      ? "border-amber-300 shadow-xl shadow-amber-100/50 scale-[1.02]"
-                      : `${plan.borderColor} shadow-sm`
-                  }`}
-                >
-                  {/* Popular badge */}
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-1.5 rounded-full text-sm font-bold shadow-lg">
-                      ⭐ EN POPÜLER
-                    </div>
-                  )}
-
-                  {/* Icon */}
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${plan.color} flex items-center justify-center text-2xl mb-6 shadow-lg`}>
-                    {plan.icon}
+                <div key={plan.id} data-testid={`plan-${plan.id}`} className={`p-8 lg:p-10 flex flex-col ${plan.popular ? "bg-ink text-cream" : ""}`}>
+                  <div className="flex items-center justify-between mb-8">
+                    <p className={`eyebrow ${plan.popular ? "!text-cream/60" : ""}`}>{plan.nameEn}</p>
+                    {plan.popular && <span className="text-[11px] font-bold tracking-[0.16em] uppercase text-clay-300">En çok tercih edilen</span>}
                   </div>
-
-                  {/* Name & Price */}
-                  <h3 className="text-2xl font-display text-ink mb-1">{plan.name}</h3>
-                  <p className="text-sage-500 text-sm mb-6">{plan.nameEn}</p>
-
-                  <div className="flex items-baseline gap-1 mb-8">
+                  <h2 className="font-display text-4xl mb-4">{plan.name}</h2>
+                  <p className="mb-8">
                     {displayPrice === 0 ? (
-                      <span className="text-4xl font-bold text-sage-800">Ücretsiz</span>
+                      <span className="font-display text-5xl">Ücretsiz</span>
                     ) : (
                       <>
-                        <span className="text-4xl font-bold text-sage-800">${displayPrice}</span>
-                        <span className="text-sage-500 text-sm">{plan.period}</span>
+                        <span className="font-display text-5xl">${displayPrice}</span>
+                        <span className={`text-sm ml-1 ${plan.popular ? "text-cream/60" : "text-sage-500"}`}>{plan.period}</span>
                       </>
                     )}
-                  </div>
-
-                  {/* Features */}
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-3 text-sm">
-                        <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${plan.color} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                          <Check size={12} className="text-white" />
-                        </div>
-                        <span className="text-sage-700">{f}</span>
+                  </p>
+                  <ul className="space-y-3 mb-10 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-3 text-sm">
+                        <Check size={16} className={`mt-0.5 shrink-0 ${plan.popular ? "text-clay-300" : "text-clay-500"}`} />
+                        <span className={plan.popular ? "text-cream/85" : "text-sage-700"}>{f}</span>
                       </li>
                     ))}
                   </ul>
-
-                  {/* CTA */}
                   <button
                     onClick={() => handleSelectPlan(plan.id)}
                     disabled={plan.id === "FREE"}
-                    className={`w-full py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition btn-press ${
-                      plan.popular
-                        ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200/50 hover:shadow-xl"
-                        : plan.id === "UNLIMITED"
-                        ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-200/50 hover:shadow-xl"
-                        : "bg-sage-100 text-sage-600 hover:bg-sage-200"
-                    } disabled:opacity-60 disabled:cursor-default`}
+                    className={`w-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2 rounded-md transition-colors disabled:cursor-default ${
+                      plan.popular ? "bg-clay-500 hover:bg-clay-400 text-white" : plan.id === "FREE" ? "border border-rule text-sage-500" : "bg-ink text-cream hover:bg-sage-800"
+                    }`}
                   >
                     {plan.cta}
                     {plan.id !== "FREE" && <ArrowRight size={16} />}
@@ -188,13 +154,12 @@ export default function PricingPage() {
             })}
           </div>
 
-          {/* Bottom note */}
-          <div className="text-center mt-12 text-sage-500 text-sm">
-            <p>Tüm planlar iptal edilebilir. Abonelik olmadan ders başına ödeme ile de devam edebilirsiniz.</p>
-            <p className="mt-1">Ödeme güvenliğiniz Stripe ve Iyzico 3D Secure ile korunmaktadır. 🔒</p>
+          <div className="mt-10 text-sage-500 text-sm space-y-1">
+            <p>Abonelik olmadan ders başına ödeme ile de devam edebilirsiniz.</p>
+            <p>Ödemeler Stripe ve Iyzico 3D Secure ile korunur.</p>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
       <Footer />
     </>
   )

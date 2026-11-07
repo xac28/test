@@ -30,7 +30,7 @@ export function AiPostureAssist({ onClose }: { onClose: () => void }) {
   const [targetPose, setTargetPose] = useState(YOGA_POSES[3].id)
   
   const detectorRef = useRef<poseDetection.PoseDetector | null>(null)
-  const reqRef = useRef<number>()
+  const reqRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     let stream: MediaStream

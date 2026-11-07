@@ -53,6 +53,10 @@ model User {
   
   stripeCustomerId String?
   expoPushToken    String?
+
+  // Terms acceptance (sözleşme kabulü) — null until the user accepts the current terms
+  termsAcceptedAt  DateTime?
+  termsVersion     String?
   
   // Subscriptions
   subscriptionPlan String @default("FREE") // FREE, PREMIUM, UNLIMITED
@@ -67,6 +71,11 @@ model User {
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  passwordResets PasswordResetToken[]
+  streamerPairings StreamerPairing[]
+  streamerDevices  StreamerDevice[]
+  // set when the person deleted their own account (the row stays, anonymised, so bookings and payments keep their references)
+  deletedAt     DateTime?
 
   accounts      Account[]
   sessions      Session[]
@@ -87,6 +96,17 @@ model User {
   conversationsReceived Conversation[] @relation("UserTwo")
   messagesSent         Message[]
   comments             Comment[]
+  workshopEnrollments  WorkshopEnrollment[]
+  articles             Article[]
+  warnings             UserWarning[]        @relation("Warned")
+  notifications        Notification[]       @relation("Notified")
+  moderationEvents     ModerationEvent[]    @relation("Moderated")
+  supportTickets       SupportTicket[]      @relation("SupportUser")
+  // temporary exclusion from teaching (policy ladder: warning → 10 days → permanent ban)
+  suspendedUntil       DateTime?
+  suspensionReason     String?              @db.VarChar(300)
+  // automation mark: last "we miss you" nudge to an inactive student (at most one per 60 days)
+  winbackAt            DateTime?
 }
 
 model Conversation {
@@ -117,16 +137,35 @@ model Message {
   createdAt      DateTime     @default(now())
 }
 
+enum ContentStatus {
+  PENDING   // photo of a newcomer, waiting for an admin
+  VISIBLE
+  REMOVED   // taken down (by the author, the filter or an admin)
+}
+
 model Post {
   id        String    @id @default(cuid())
   title     String?   @db.VarChar(255)
   content   String    @db.Text
   image     String?   @db.Text
+  mediaType String?   @db.VarChar(16) // "image" | "video" — how `image` (the media URL) should be rendered
   authorId  String
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   likes     Like[]
   comments  Comment[]
+
+  status        ContentStatus @default(VISIBLE)
+  removedReason String?       @db.VarChar(300)
+  reviewedById  String?
+  reviewedAt    DateTime?
+  likeCount     Int           @default(0)
+  commentCount  Int           @default(0)
+
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  @@index([status, createdAt])
+  @@index([authorId, createdAt])
 }
 
 model Comment {
@@ -136,7 +175,15 @@ model Comment {
   authorId  String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  status        ContentStatus @default(VISIBLE)
+  removedReason String?       @db.VarChar(300)
+  removedById   String?
+
   createdAt DateTime @default(now())
+
+  @@index([postId, status, createdAt])
+  @@index([authorId, createdAt])
 }
 
 model Like {
@@ -148,6 +195,60 @@ model Like {
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
+  @@index([userId])
+}
+
+// In-app notifications (likes, comments, moderation outcomes, warnings, report updates)
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation("Notified", fields: [userId], references: [id], onDelete: Cascade)
+  type      String    @db.VarChar(32)  // POST_LIKE | POST_COMMENT | POST_APPROVED | POST_REMOVED | COMMENT_REMOVED | WARNING | REPORT_UPDATE | MUTED | SYSTEM
+  title     String    @db.VarChar(160)
+  body      String?   @db.VarChar(400)
+  href      String?   @db.VarChar(255)
+  actorId   String?   // who caused it (never shown for moderation events)
+  groupKey  String?   @db.VarChar(80) // likes on one post collapse into a single notification
+  count     Int       @default(1)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, groupKey])
+}
+
+// What the automatic moderation did (blocked insults, spam, …) — feeds the strike system and the admin overview
+model ModerationEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation("Moderated", fields: [userId], references: [id], onDelete: Cascade)
+  kind       String   @db.VarChar(32)  // PROFANITY | SPAM | CONTACT_INFO | LINK | FLOOD | DUPLICATE
+  surface    String   @db.VarChar(24)  // POST | COMMENT | MESSAGE | LIVE_CHAT
+  excerpt    String?  @db.VarChar(160) // masked: the offending word is starred
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// Extra blocked words added by the admins (on top of the built-in list)
+model BlockedWord {
+  id        String   @id @default(cuid())
+  word      String   @unique @db.VarChar(60)
+  addedById String
+  createdAt DateTime @default(now())
+}
+
+// A temporary "cool-down" after repeated violations: no posting or commenting until `until`
+model CommunityMute {
+  id        String   @id @default(cuid())
+  userId    String
+  until     DateTime
+  reason    String   @db.VarChar(200)
+  createdAt DateTime @default(now())
+
+  @@index([userId, until])
 }
 
 model Account {
@@ -197,11 +298,15 @@ model Teacher {
   stripeConnectId String?  @unique
   commissionRate  Float    @default(0.15)
   isTrialMode     Boolean  @default(true) // Trial phase before taking real students
+  trialNote       String?  @db.Text       // admin's last note (rejection reason / approval remark)
+  trialReviewedAt DateTime?
   
   availability    Availability[]
   bookings        Booking[]
   liveRooms       LiveRoom[]
   videos          TeacherVideo[]
+  payoutRequests  PayoutRequest[]
+  workshops       Workshop[]
 }
 
 model TeacherVideo {
@@ -245,6 +350,10 @@ model TeacherApplication {
   
   resumeUrl   String?
   experience  String?  @db.Text
+
+  // automation marks: the admins are alerted once when the application waits too long, the applicant is reassured once
+  slaAlertedAt     DateTime?
+  applicantNudgedAt DateTime?
 }
 
 model Booking {
@@ -267,6 +376,10 @@ model Booking {
   
   price         Float
   
+  // automation marks: each reminder / review request is sent once
+  reminder24At  DateTime?
+  reminder1hAt  DateTime?
+  reviewAskedAt DateTime?
   review        Review?
   chatMessages  ChatMessage[]
   createdAt     DateTime @default(now())
@@ -294,6 +407,14 @@ model Review {
   rating      Int
   comment     String?  @db.Text
   createdAt   DateTime @default(now())
+
+  // moderation: a removed review no longer counts or shows
+  status        ContentStatus @default(VISIBLE)
+  removedReason String?       @db.VarChar(300)
+  removedById   String?
+  removedAt     DateTime?
+
+  @@index([status])
 }
 
 model Availability {
@@ -315,32 +436,71 @@ model LiveRoom {
   roomName    String   @unique
   title       String   @default("Live Yoga Session")
   isActive    Boolean  @default(true)
+  // opened by a teacher who is still in the trial phase: officials may watch it live and step in (see src/lib/supervision.ts)
+  supervised  Boolean  @default(false)
+
+  // Set when the broadcast is a workshop session: only confirmed enrollees may watch
+  workshopId  String?
+  workshop    Workshop? @relation(fields: [workshopId], references: [id], onDelete: SetNull)
   
   createdAt   DateTime @default(now())
   endedAt     DateTime?
 }
 
-// Reports submitted by users against other users or bookings
+// Reports submitted by users (a teacher, a live stream, a workshop, a lesson, a chat message)
 model Report {
   id          String   @id @default(cuid())
   reporterId  String
   reporter    User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  
+
+  // The user held responsible — always resolved on the server from the target, never trusted from the client
   reportedId  String?
   reported    User?    @relation("Reported", fields: [reportedId], references: [id], onDelete: SetNull)
-  
-  bookingId   String?  // Optional relation to a specific booking/room
-  
-  reason      String   @db.Text
-  status      ReportStatus @default(PENDING) // PENDING, REVIEWED, RESOLVED
-  
+
+  bookingId   String?  // legacy: kept for old rows
+  category    String   @default("OTHER") @db.VarChar(40)
+  targetType  String   @default("USER") @db.VarChar(24) // TEACHER | LIVE_ROOM | WORKSHOP | BOOKING | CHAT_MESSAGE | USER
+  targetId    String?
+  priority    String   @default("NORMAL") @db.VarChar(12) // LOW | NORMAL | HIGH | URGENT
+
+  reason      String   @db.Text            // what the reporter wrote
+  evidence    String?  @db.Text            // JSON snapshot of the target at report time
+
+  status      ReportStatus @default(PENDING)
+  adminNote   String?  @db.Text            // internal, never shown to users
+  resolution  String?  @db.Text            // what was done (internal summary)
+  handledById String?
+  handledAt   DateTime?
+  reporterNotified Boolean @default(false)
+
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([status, priority, createdAt])
+  @@index([reportedId, createdAt])
+  @@index([reporterId, createdAt])
+  @@index([targetType, targetId])
 }
 
 enum ReportStatus {
   PENDING
   REVIEWED
   RESOLVED
+  DISMISSED
+}
+
+// An official warning from the admins, shown to the user until they acknowledge it
+model UserWarning {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation("Warned", fields: [userId], references: [id], onDelete: Cascade)
+  message        String   @db.Text
+  reportId       String?
+  issuedById     String
+  acknowledgedAt DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, acknowledgedAt])
 }
 
 // System logs (e.g. timeout events, bans)
@@ -414,3 +574,482 @@ model BanEvasionLog {
   @@index([createdAt])
 }
 
+
+
+// ── Lesson recordings ──────────────────────────────────────────────────────
+// Recorded in the teacher's browser, uploaded in chunks, downloadable only by
+// the teacher and the student of that lesson, deleted after `expiresAt` (30 days).
+
+enum RecordingStatus {
+  RECORDING
+  READY
+  FAILED
+  EXPIRED
+}
+
+model LessonRecording {
+  id            String          @id @default(cuid())
+
+  bookingId     String?         // scheduled lesson
+  liveRoomId    String?         // instant live room (teacher only — no single student)
+  roomName      String
+
+  teacherUserId String
+  studentUserId String?
+
+  status        RecordingStatus @default(RECORDING)
+  mimeType      String          @default("video/webm")
+  chunkCount    Int             @default(0)
+  sizeBytes     BigInt          @default(0)
+  durationSec   Int?
+  filePath      String?         // relative to the private storage root once merged
+
+  startedAt     DateTime        @default(now())
+  endedAt       DateTime?
+  expiresAt     DateTime        // startedAt + 30 days
+  deletedAt     DateTime?
+
+  @@index([teacherUserId, startedAt])
+  @@index([studentUserId, startedAt])
+  @@index([bookingId])
+  @@index([expiresAt])
+}
+
+// ── Teacher payout requests ────────────────────────────────────────────────
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model PayoutRequest {
+  id          String       @id @default(cuid())
+  teacherId   String
+  teacher     Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  amount      Float
+  currency    String       @default("USD")
+  method      String       @default("IBAN") // IBAN | STRIPE
+  iban        String?
+  accountName String?
+  note        String?      @db.Text
+
+  status      PayoutStatus @default(PENDING)
+  adminNote   String?      @db.Text
+  reviewerId  String?
+  reviewedAt  DateTime?
+  paidAt      DateTime?
+
+  createdAt   DateTime     @default(now())
+
+  @@index([status, createdAt])
+  @@index([teacherId])
+}
+
+
+// ── Workshops (Atölyeler): group live sessions or recorded courses ──────────
+
+enum WorkshopMode {
+  LIVE
+  RECORDED
+}
+
+enum WorkshopStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+// RESERVED = seat held, waiting for the payment to be confirmed by the teacher/admin
+enum EnrollmentStatus {
+  RESERVED
+  CONFIRMED
+  CANCELLED
+}
+
+model Workshop {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String         @db.VarChar(160)
+  subtitle    String?        @db.VarChar(240)
+  description String         @db.Text
+  category    String         @db.VarChar(60)
+  level       String         @default("Tüm seviyeler") @db.VarChar(40)
+  mode        WorkshopMode   @default(LIVE)
+  status      WorkshopStatus @default(PUBLISHED)
+
+  teacherId   String
+  teacher     Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  startsAt    DateTime?      // LIVE workshops
+  durationMin Int            @default(60)
+  priceUsd    Float          @default(0)
+  capacity    Int            @default(20)
+  coverUrl    String?        @db.Text
+  videoUrl    String?        @db.Text // RECORDED workshops: shown only to confirmed enrollees
+
+  enrollments WorkshopEnrollment[]
+  liveRooms   LiveRoom[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status, startsAt])
+  @@index([teacherId])
+}
+
+model WorkshopEnrollment {
+  id         String           @id @default(cuid())
+  workshopId String
+  workshop   Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     EnrollmentStatus @default(CONFIRMED)
+  createdAt  DateTime         @default(now())
+  // automation marks: each reminder is sent once
+  reminder24At DateTime?
+  reminder1hAt DateTime?
+
+  @@unique([workshopId, userId])
+  @@index([userId])
+}
+
+// ── Articles (İçerikler): editorial pieces on yoga, breath and meditation ───
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Article {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String        @db.VarChar(200)
+  excerpt     String        @db.VarChar(400)
+  body        String        @db.LongText
+  category    String        @db.VarChar(60)
+  coverUrl    String?       @db.Text
+  status      ArticleStatus @default(DRAFT)
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  publishedAt DateTime?
+  // set once the subscribers were told about this piece (news / announcements)
+  notifiedAt  DateTime?
+  // a draft with a date here is published by the cron job at that time (and announced when scheduledNotify is set)
+  scheduledAt     DateTime?
+  scheduledNotify Boolean   @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([status, scheduledAt])
+}
+
+
+// ── AYA Rehber: learning, feedback, live support ───────────────────────────
+
+// An answer an admin taught the guide. `keys` is a JSON array of ASCII-folded key phrases.
+model AiTaughtAnswer {
+  id          String   @id @default(cuid())
+  question    String   @db.VarChar(300)
+  keys        String   @db.Text
+  answer      String   @db.Text
+  linkLabel   String?  @db.VarChar(60)
+  linkHref    String?  @db.VarChar(200)
+  active      Boolean  @default(true)
+  hits        Int      @default(0)
+  helpful     Int      @default(0)
+  unhelpful   Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
+}
+
+// Every question the guide was asked (anonymised text), how it was answered and whether it helped.
+model AiInteraction {
+  id         String    @id @default(cuid())
+  userId     String?
+  message    String    @db.VarChar(500)
+  norm       String    @db.VarChar(500)
+  intent     String    @db.VarChar(40)
+  kind       String    @db.VarChar(20) // taught | knowledge | navigation | recommend | unknown | crisis | support
+  matchedId  String?
+  helpful    Boolean?
+  taught     Boolean   @default(false) // an admin has since added an answer for this question
+  dismissed  Boolean   @default(false) // an admin decided it needs no answer
+  createdAt  DateTime  @default(now())
+  feedbackAt DateTime?
+  // what the guide answered, which lookups it used and how sure it was (0–1)
+  reply      String?   @db.Text
+  tools      String?   @db.VarChar(200)
+  confidence Float?
+
+  @@index([kind, taught, dismissed])
+  @@index([helpful])
+  @@index([createdAt])
+  @@index([norm])
+}
+
+model SupportTicket {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation("SupportUser", fields: [userId], references: [id], onDelete: Cascade)
+  subject        String           @db.VarChar(200)
+  source         String           @db.VarChar(20) // USER | AI_UNHELPFUL | AI_REQUEST
+  status         String           @default("OPEN") @db.VarChar(10) // OPEN | CLOSED
+  assignedToId   String?
+  priority       String           @default("NORMAL") @db.VarChar(10)
+  awaitingStaff  Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  lastMessageAt  DateTime         @default(now())
+  lastStaffReplyAt DateTime?
+  firstReplyAt   DateTime?
+  userReadAt     DateTime?
+  staffReadAt    DateTime?
+  closedAt       DateTime?
+  closedById     String?
+  rating         Int?
+  ratingComment  String?          @db.VarChar(300)
+  messages       SupportMessage[]
+
+  @@index([status, awaitingStaff, lastMessageAt])
+  @@index([userId, status])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId  String?
+  role      String        @db.VarChar(8) // USER | STAFF | SYSTEM | NOTE (internal, staff only)
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+// Structured system activity (sign-ins, uploads, errors, …) for the admin log viewer.
+model EventLog {
+  id        String   @id @default(cuid())
+  type      String   @db.VarChar(40)
+  level     String   @default("info") @db.VarChar(8) // info | warn | error
+  message   String   @db.VarChar(400)
+  userId    String?
+  ip        String?  @db.VarChar(64)
+  meta      String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([level, createdAt])
+  @@index([userId])
+}
+
+
+// A blocked attempt to take students off the platform (social handles, phone, "my own course", …).
+// `counted` violations drive the ladder; repeated attempts inside 30 minutes are logged but not counted.
+model PolicyViolation {
+  id           String   @id @default(cuid())
+  userId       String
+  surface      String   @db.VarChar(24)
+  kinds        String   @db.VarChar(120)
+  excerpt      String   @db.VarChar(240)
+  counted      Boolean  @default(true)
+  forgiven     Boolean  @default(false)
+  forgivenById String?
+  strike       Int?
+  action       String   @default("NONE") @db.VarChar(12) // NONE | WARNED | SUSPENDED | BANNED
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// One-time links for "forgot my password". Only the SHA-256 of the token is stored.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  ip        String?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// "Connect the desktop streaming app": the teacher asks for a short code in the web panel and types it into the app.
+// Codes are single-use and live ten minutes; only the SHA-256 of a code is stored.
+model StreamerPairing {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// A paired desktop app. The long-lived token is only ever shown to the app once; the database keeps its hash.
+model StreamerDevice {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  name       String    @db.VarChar(80)
+  appVersion String?   @db.VarChar(20)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  lastIp     String?   @db.VarChar(64)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ── Newsletter (Gelişmeleri takip edin) ────────────────────────────────────
+
+model NewsletterSubscriber {
+  id               String    @id @default(cuid())
+  email            String    @unique @db.VarChar(190)
+  // secret in the unsubscribe link of every mail
+  unsubscribeToken String?   @unique
+  // where the address came from: "home", "shop:matlar", "podcast", "admin"…
+  source           String?   @db.VarChar(60)
+  unsubscribedAt   DateTime?
+  createdAt        DateTime  @default(now())
+}
+
+// One sent (or attempted) newsletter: a manual campaign or the automatic "new content" mail.
+model NewsletterCampaign {
+  id         String   @id @default(cuid())
+  subject    String   @db.VarChar(200)
+  body       String   @db.Text
+  // "manual" | "article" | "podcast" | "product"
+  kind       String   @db.VarChar(20)
+  refId      String?  @db.VarChar(40)
+  sentCount  Int      @default(0)
+  failedCount Int     @default(0)
+  skipped    Boolean  @default(false)
+  createdById String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ── Podcast (Konuşmalar) ───────────────────────────────────────────────────
+
+model PodcastEpisode {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String        @db.VarChar(200)
+  description String        @db.Text
+  audioUrl    String        @db.VarChar(500)
+  coverUrl    String?       @db.VarChar(500)
+  guest       String?       @db.VarChar(120)
+  durationSec Int?
+  episodeNo   Int?
+  status      ArticleStatus @default(DRAFT)
+  publishedAt DateTime?
+  plays       Int           @default(0)
+  // set once the subscribers were told about this episode
+  notifiedAt  DateTime?
+  scheduledAt     DateTime?
+  scheduledNotify Boolean   @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([status, scheduledAt])
+}
+
+// ── Shop ───────────────────────────────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String        @db.VarChar(160)
+  summary     String        @db.VarChar(300)
+  description String        @db.Text
+  // wellness | matlar | aromaterapi
+  category    String        @db.VarChar(40)
+  // price in kuruş (₺ × 100)
+  priceKurus  Int
+  stock       Int           @default(0)
+  // JSON array of image URLs; the first one is the cover
+  images      String        @db.Text
+  status      ArticleStatus @default(DRAFT)
+  featured    Boolean       @default(false)
+  notifiedAt  DateTime?
+  scheduledAt     DateTime?
+  scheduledNotify Boolean   @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  items       OrderItem[]
+
+  @@index([status, category])
+  @@index([status, scheduledAt])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  // short human code shown to the customer, e.g. AYA-7K3F9Q
+  code        String      @unique @db.VarChar(16)
+  userId      String?
+  email       String      @db.VarChar(190)
+  name        String      @db.VarChar(120)
+  phone       String      @db.VarChar(30)
+  address     String      @db.VarChar(400)
+  city        String      @db.VarChar(80)
+  note        String?     @db.VarChar(300)
+  // "havale" (bank transfer) | "kapida" (pay on delivery) | "kart" (card, through iyzico)
+  payMethod   String      @db.VarChar(12)
+  status      OrderStatus @default(PENDING_PAYMENT)
+  subtotalKurus Int
+  shippingKurus Int       @default(0)
+  totalKurus  Int
+  trackingNo  String?     @db.VarChar(60)
+  adminNote   String?     @db.VarChar(300)
+  stockRestored Boolean   @default(false)
+  // automation mark: the "your transfer is still awaited" reminder is sent once
+  payReminderAt DateTime?
+  // card payments: the payment provider's reference of the successful payment
+  paymentRef  String?     @db.VarChar(80)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  items       OrderItem[]
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  // snapshot, so a later price or name change never rewrites an old order
+  name       String  @db.VarChar(160)
+  unitKurus  Int
+  quantity   Int
+
+  @@index([orderId])
+}
+
+// Daily token ledger of the AI guide: the budget guard reads it, the admin sees it

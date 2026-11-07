@@ -1,32 +1,28 @@
 "use client"
 
 import { useState } from "react"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, Loader2 } from "lucide-react"
+import { useL } from "@/components/editorial"
 
 interface StripeConnectButtonProps {
   isConnected: boolean
 }
 
 export function StripeConnectButton({ isConnected }: StripeConnectButtonProps) {
+  const L = useL()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleConnect = async () => {
     setLoading(true)
+    setError(null)
     try {
-      const res = await fetch("/api/teachers/stripe-connect", {
-        method: "POST",
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.url) {
-          window.location.href = data.url
-        }
-      } else {
-        const data = await res.json()
-        alert(data.error || "Failed to initiate connection")
-      }
+      const res = await fetch("/api/teachers/stripe-connect", { method: "POST" })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.url) window.location.href = data.url
+      else setError(data.error || L("Stripe bağlantısı başlatılamadı.", "Could not start the Stripe connection."))
     } catch {
-      alert("Network error")
+      setError(L("Bağlantı hatası, lütfen tekrar deneyin.", "Connection error, please try again."))
     } finally {
       setLoading(false)
     }
@@ -34,30 +30,34 @@ export function StripeConnectButton({ isConnected }: StripeConnectButtonProps) {
 
   if (isConnected) {
     return (
-      <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-2xl">
-        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">✓</div>
+      <div className="flex items-center gap-3 p-4 border border-rule bg-paper rounded-xl" data-testid="stripe-connected">
+        <span className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700" aria-hidden>✓</span>
         <div>
-          <p className="font-medium text-green-900">Payouts Connected</p>
-          <p className="text-xs text-green-700">You are ready to receive direct payouts via Stripe.</p>
+          <p className="text-sm font-semibold text-ink">{L("Ödemeler bağlı", "Payouts connected")}</p>
+          <p className="text-xs text-sage-600">{L("Stripe üzerinden doğrudan ödeme alabilirsiniz.", "You can receive direct payouts through Stripe.")}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-blue-50 border border-blue-200 rounded-2xl">
-      <div>
-        <p className="font-medium text-blue-900">Setup Payouts</p>
-        <p className="text-sm text-blue-700">Connect your bank account to receive automatic payouts for your sessions.</p>
+    <div className="p-5 border border-rule bg-paper rounded-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <p className="text-[15px] font-semibold text-ink">{L("Ödeme hesabını bağla", "Set up payouts")}</p>
+          <p className="text-sm text-sage-600 mt-0.5">{L("Banka hesabını bağla; derslerinin kazancı otomatik olarak yatsın.", "Connect your bank account to receive automatic payouts for your sessions.")}</p>
+        </div>
+        <button
+          onClick={handleConnect}
+          disabled={loading}
+          className="shrink-0 inline-flex items-center justify-center gap-2 min-h-[42px] bg-ink hover:bg-sage-800 text-cream px-4 rounded-lg text-sm font-semibold transition disabled:opacity-50 cursor-pointer"
+        >
+          {loading ? <Loader2 size={15} className="animate-spin" /> : null}
+          {L("Stripe ile bağla", "Connect with Stripe")}
+          <ExternalLink size={15} />
+        </button>
       </div>
-      <button
-        onClick={handleConnect}
-        disabled={loading}
-        className="flex-shrink-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full font-medium transition disabled:opacity-50"
-      >
-        {loading ? "Loading..." : "Connect with Stripe"}
-        <ExternalLink size={16} />
-      </button>
+      {error && <p role="alert" className="text-sm text-clay-600 mt-3">{error}</p>}
     </div>
   )
 }

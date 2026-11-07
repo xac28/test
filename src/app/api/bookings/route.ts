@@ -1,5 +1,8 @@
 import { db } from "@/lib/db"
+import { emailGate } from "@/lib/email-verification"
+import { suspensionOf } from "@/lib/policy"
 import { NextResponse } from "next/server"
+import { termsGate } from "@/lib/terms"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
@@ -15,6 +18,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
+    const verifyBlock = await emailGate(user.id)
+    if (verifyBlock) return verifyBlock
+
     const { teacherSlug, slot, type, paymentProvider } = await req.json()
 
     if (!teacherSlug || !slot || !type) {
@@ -27,12 +35,22 @@ export async function POST(req: Request) {
     })
 
     const slugNormalized = teacherSlug.toLowerCase().replace(/-/g, " ")
-    const teacher = teachers.find(t => 
+    // database teachers are addressed by id, demo/legacy ones by a name slug
+    const teacher = teachers.find(t => t.id === teacherSlug) ?? teachers.find(t =>
       t.user.name?.toLowerCase().replace(/-/g, " ") === slugNormalized
     )
 
     if (!teacher) {
       return NextResponse.json({ error: "Teacher not found for the given slug" }, { status: 404 })
+    }
+
+    // Teachers who have not passed the admin trial broadcast cannot take students
+    if (teacher.isTrialMode) {
+      return NextResponse.json({ error: "Bu öğretmen henüz onaylanmadı.", code: "TEACHER_NOT_APPROVED" }, { status: 403 })
+    }
+
+    if (await suspensionOf(teacher.userId)) {
+      return NextResponse.json({ error: "Bu eğitmen şu an ders alamıyor.", code: "TEACHER_UNAVAILABLE" }, { status: 409 })
     }
 
     // ── FIX #2: Price sunucu tarafında hesaplanıyor, client'tan gelen price kabul edilmiyor ──
@@ -163,6 +181,9 @@ export async function GET(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     const bookings = await db.booking.findMany({
       where: { studentId: user.id },

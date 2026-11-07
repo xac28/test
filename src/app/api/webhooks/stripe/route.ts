@@ -10,7 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // ── FIX #7: Idempotency koruması — aynı event birden fazla işlenmez ──
 export async function POST(req: Request) {
   const body = await req.text()
-  const sig = headers().get("Stripe-Signature") as string
+  const sig = (await headers()).get("Stripe-Signature") as string
 
   let event: Stripe.Event
 

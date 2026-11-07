@@ -5,8 +5,8 @@ import { colors } from "../../constants"
 export default function MessagesScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Messages</Text>
-      <Text style={styles.text}>Direct messages are coming soon!</Text>
+      <Text style={styles.title}>Mesajlar</Text>
+      <Text style={styles.text}>Mesajlaşma çok yakında burada. Şimdilik mesajlarına web sitesinden ulaşabilirsin.</Text>
     </View>
   )
 }

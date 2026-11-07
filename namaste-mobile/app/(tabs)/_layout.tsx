@@ -11,11 +11,16 @@ export default function TabLayout() {
     return <Redirect href="/" />
   }
 
+  // Terms gate
+  if (user.termsAccepted === false) {
+    return <Redirect href="/accept-terms" />
+  }
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.sage[700],
+        tabBarActiveTintColor: colors.teal[700],
         tabBarInactiveTintColor: colors.sage[300],
         tabBarStyle: {
           backgroundColor: colors.white,
@@ -40,16 +45,25 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Practice",
+          title: "Pratik",
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size - 4, color }}>🧘</Text>
           ),
         }}
       />
       <Tabs.Screen
+        name="poses"
+        options={{
+          title: "Pozlar",
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size - 4, color }}>🪷</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="teachers"
         options={{
-          title: "Teachers",
+          title: "Eğitmenler",
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size - 4, color }}>🔍</Text>
           ),
@@ -58,7 +72,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: "Sangha",
+          title: "Topluluk",
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size - 4, color }}>✨</Text>
           ),
@@ -67,7 +81,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="messages"
         options={{
-          title: "Messages",
+          title: "Mesajlar",
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size - 4, color }}>💬</Text>
           ),
@@ -76,7 +90,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: "Profil",
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size - 4, color }}>👤</Text>
           ),

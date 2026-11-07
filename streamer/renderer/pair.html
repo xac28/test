@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AYA Yayın Stüdyosu</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <div class="brand">AYA</div>
+  <h1>Yayın Stüdyosu</h1>
+  <p>Bilgisayarını hesabına bağlamak için web sitesindeki <strong>Yayın uygulaması</strong> sayfasından aldığın kodu yaz.</p>
+  <form id="form" autocomplete="off">
+    <label for="code">Bağlantı kodu</label>
+    <input id="code" class="code" maxlength="9" placeholder="XXXX-XXXX" spellcheck="false" autofocus>
+    <details>
+      <summary>Gelişmiş: sunucu adresi</summary>
+      <label for="server">AYA sunucusu</label>
+      <input id="server" placeholder="https://aya.ornek.com" spellcheck="false">
+    </details>
+    <div id="error" class="error" role="alert" hidden></div>
+    <button id="go" type="submit">Bağla</button>
+  </form>
+  <p class="small">Şifreni bu uygulamaya yazman gerekmez. Kod 10 dakika geçerlidir ve yalnızca bir kez kullanılır.</p>
+</main>
+<script src="pair.js"></script>
+</body>
+</html>

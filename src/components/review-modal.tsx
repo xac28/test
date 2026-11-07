@@ -25,15 +25,15 @@ export function ReviewModal({ bookingId, teacherName, onClose }: ReviewModalProp
         body: JSON.stringify({ bookingId, rating, comment }),
       })
       if (res.ok) {
-        alert("Review submitted successfully!")
+        alert("Yorumun gönderildi, teşekkürler!")
         onClose()
         router.refresh()
       } else {
         const data = await res.json()
-        alert(data.error || "Failed to submit review")
+        alert(data.error || "Yorum gönderilemedi")
       }
     } catch {
-      alert("Network error")
+      alert("Bağlantı hatası, tekrar dene")
     } finally {
       setSubmitting(false)
     }
@@ -45,8 +45,8 @@ export function ReviewModal({ bookingId, teacherName, onClose }: ReviewModalProp
         <button onClick={onClose} className="absolute top-4 right-4 text-sage-400 hover:text-sage-700">
           ✕
         </button>
-        <h2 className="text-2xl font-display text-sage-900 mb-2">Leave a Review</h2>
-        <p className="text-sage-500 text-sm mb-6">How was your session with {teacherName}?</p>
+        <h2 className="text-2xl font-display text-sage-900 mb-2">Yorum bırak</h2>
+        <p className="text-sage-500 text-sm mb-6">{teacherName} ile dersin nasıldı?</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex justify-center gap-2">
@@ -66,7 +66,7 @@ export function ReviewModal({ bookingId, teacherName, onClose }: ReviewModalProp
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your thoughts about the class... (optional)"
+              placeholder="Ders hakkında düşüncelerini paylaş… (isteğe bağlı)"
               rows={4}
               className="w-full rounded-2xl border border-sage-200 p-4 text-sage-900 focus:outline-none focus:ring-2 focus:ring-sage-500 resize-none"
             />
@@ -77,7 +77,7 @@ export function ReviewModal({ bookingId, teacherName, onClose }: ReviewModalProp
             disabled={submitting}
             className="w-full bg-sage-600 text-white py-3.5 rounded-full font-medium hover:bg-sage-700 transition disabled:opacity-50 btn-press"
           >
-            {submitting ? "Submitting..." : "Submit Review"}
+            {submitting ? "Gönderiliyor…" : "Yorumu gönder"}
           </button>
         </form>
       </div>

@@ -58,7 +58,8 @@ describe("who may download the installer", () => {
       expect(res.headers.get("cache-control")).toContain("no-store")
       expect(res.headers.get("x-content-type-options")).toBe("nosniff")
       const buf = Buffer.from(await res.arrayBuffer())
-      expect(buf.length).toBe(Number(res.headers.get("content-length")))
+      // Next.js streams the file chunked and drops Content-Length, so compare with the file on disk instead
+      expect(buf.length).toBe(fs.statSync(path.join(DL_DIR, meta.file)).size)
       expect(crypto.createHash("sha256").update(buf).digest("hex")).toBe(meta.sha256)
       expect(buf.subarray(0, 2).toString()).toBe("MZ") // a Windows executable
     }

@@ -31,7 +31,9 @@ export async function GET(req: Request) {
       "Content-Type": "application/octet-stream",
       "Content-Length": String(r.size),
       "Content-Disposition": `attachment; filename="${r.file.replace(/[^A-Za-z0-9._-]/g, "_")}"`,
-      "Cache-Control": "private, no-store",
+      // no-transform: the server's gzip middleware must not re-encode an .exe (it would drop Content-Length, so the browser
+      // could not show download progress)
+      "Cache-Control": "private, no-store, no-transform",
       "X-Content-Type-Options": "nosniff",
     },
   })

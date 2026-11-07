@@ -12,5 +12,10 @@ const config = [
       "react-hooks/immutability": "warn",
     },
   },
+  {
+    // Playwright fixtures name their callback `use`, which the hooks rule mistakes for React's `use`
+    files: ["tests/e2e/**/*.ts"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
 ]
 export default config

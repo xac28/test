@@ -31,6 +31,12 @@
       "app-config.json",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
     "asar": true,
     "win": {
       "target": [

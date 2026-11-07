@@ -10,13 +10,14 @@ SERVER="${STREAMER_SERVER_URL:?set STREAMER_SERVER_URL, e.g. https://aya.ornek.c
 MIN_VERSION="${STREAMER_MIN_VERSION:-}"
 command -v makensis >/dev/null 2>&1 || { echo "makensis not found (apt install nsis)"; exit 1; }
 
+[ -f "$ROOT/streamer/build/icon.ico" ] || node "$ROOT/scripts/make-streamer-icon.mjs"   # AYA icon from the site logo
 cd "$ROOT/streamer"
 [ -d node_modules ] || npm install --no-audit --no-fund
 printf '{ "serverUrl": "%s" }\n' "$SERVER" > app-config.json
 VERSION="$(node -p "require('./package.json').version")"
 rm -rf dist
 npx electron-builder --win dir --x64
-FILE="AYA-Yayin-Studyosu-Kurulum-$VERSION.exe"
+FILE="AYA-Setup-$VERSION.exe"
 makensis -V2 -DVERSION="$VERSION" -DOUTFILE="dist/$FILE" installer.nsi
 
 mkdir -p "$OUT"

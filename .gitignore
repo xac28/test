@@ -76,6 +76,8 @@ tsconfig.tsbuildinfo
 
 # private runtime storage (lesson recordings etc.)
 /storage/
+# the desktop app's icon lives in a folder called build/ (ignored above): keep it
+!/streamer/build/
 /public/uploads/
 
 # test artifacts

@@ -102,7 +102,9 @@ sudo apt install nsis
 STREAMER_SERVER_URL=https://aya.ornek.com ./scripts/build-streamer.sh   # adres uygulamanın içine gömülür; https zorunlu
 STREAMER_MIN_VERSION=1.1.0 STREAMER_SERVER_URL=… ./scripts/build-streamer.sh   # eski sürümleri emekli etmek için
 ```
-- Çıktı `AYA-Yayin-Studyosu-Kurulum-<sürüm>.exe` ve `streamer.json` (sürüm + SHA-256). Sürümü artırmak için `streamer/package.json`.
+- Çıktı `AYA-Setup-<sürüm>.exe` ve `streamer.json` (sürüm + SHA-256). Sürümü artırmak için `streamer/package.json`. Kurulum dosyasının, masaüstü/başlat menüsü kısayollarının ve pencerenin ikonu AYA logosudur (`streamer/build/icon.ico`; site logosundan `node scripts/make-streamer-icon.mjs` ile yeniden üretilir, betik eksikse kendisi üretir).
+- Windows'ta da derlenebilir: `makensis` PATH'te olmalıdır (electron-builder'ın indirdiği `%LOCALAPPDATA%\electron-builder\Cache\nsis\nsis-3.0.4.1` klasörü işe yarar), betik Git Bash'ten `sh scripts/build-streamer.sh` ile çalışır.
+- Öğretmenler dosyayı sitedeki **Eğitmen paneli → Yayın uygulaması** (`/teach/uygulama`) sayfasından indirir; LiveKit sunucusu (`livekit-server.exe`) sunucu tarafıdır, öğretmenlere verilmez.
 - Kurulum dosyası **imzasızdır**: Windows SmartScreen "bilinmeyen yayımcı" uyarısı verir. Bir kod imzalama sertifikası (EV önerilir) alıp derlenen `.exe`'yi imzalayın, sonra `streamer.json` içindeki `sha256` değerini yeniden hesaplayın.
 - Dosya Linux'ta derlendi; yayına almadan önce gerçek bir Windows makinede kurup eşleştirme + yayın denemesi yapın.
 

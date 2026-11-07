@@ -84,7 +84,7 @@ export function StreamerPanel({ eligible, reason, release }: { eligible: boolean
                   <code className="break-all bg-sage-100 rounded-lg px-3 py-2 flex-1" data-testid="streamer-sha">{release.sha256}</code>
                   <button type="button" onClick={() => copy(release.sha256)} className="min-h-[44px] px-3 rounded-lg border border-rule hover:bg-sage-50" aria-label="Özeti kopyala"><Copy size={15} /></button>
                 </div>
-                <p className="mt-2">Windows’ta: <code className="bg-sage-100 rounded px-1.5 py-0.5">certutil -hashfile AYA-Yayin-Studyosu-Kurulum-{release.version}.exe SHA256</code></p>
+                <p className="mt-2">Windows’ta: <code className="bg-sage-100 rounded px-1.5 py-0.5">certutil -hashfile {release.file} SHA256</code></p>
                 {copied && <p className="text-teal-700 mt-1">Kopyalandı.</p>}
               </div>
             )}

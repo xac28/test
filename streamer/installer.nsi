@@ -5,7 +5,7 @@ Unicode true
   !define VERSION "1.0.0"
 !endif
 !ifndef OUTFILE
-  !define OUTFILE "dist\AYA-Yayin-Studyosu-Kurulum-${VERSION}.exe"
+  !define OUTFILE "dist\AYA-Setup-${VERSION}.exe"
 !endif
 !define APPNAME "AYA Yayın Stüdyosu"
 !define EXENAME "AYA-Yayin-Studyosu.exe"
@@ -43,15 +43,15 @@ Section "Install"
   File /r "dist\win-unpacked\*.*"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
-  CreateShortcut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\${EXENAME}" "" "$INSTDIR\${EXENAME}" 0
+  CreateShortcut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\${EXENAME}" "" "$INSTDIR\resources\icon.ico" 0
   CreateShortcut "$SMPROGRAMS\${APPNAME}\Kaldır.lnk" "$INSTDIR\Uninstall.exe"
-  CreateShortcut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${EXENAME}" "" "$INSTDIR\${EXENAME}" 0
+  CreateShortcut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${EXENAME}" "" "$INSTDIR\resources\icon.ico" 0
   WriteRegStr HKCU "Software\AYAYayinStudyosu" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "${UNKEY}" "DisplayName" "${APPNAME}"
   WriteRegStr HKCU "${UNKEY}" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "${UNKEY}" "Publisher" "AYA"
   WriteRegStr HKCU "${UNKEY}" "InstallLocation" "$INSTDIR"
-  WriteRegStr HKCU "${UNKEY}" "DisplayIcon" "$INSTDIR\${EXENAME}"
+  WriteRegStr HKCU "${UNKEY}" "DisplayIcon" "$INSTDIR\resources\icon.ico"
   WriteRegStr HKCU "${UNKEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegDWORD HKCU "${UNKEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNKEY}" "NoRepair" 1

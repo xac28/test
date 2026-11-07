@@ -56,9 +56,15 @@ async function call(pathname, { method = "GET", body, token, base } = {}) {
 // ── windows ────────────────────────────────────────────────────────────────────────────
 function show(file) { return win.loadFile(path.join(__dirname, "renderer", file)) }
 
+// the AYA icon: next to the app when installed (extraResources), in build/ when started from the source folder
+const ICON = (() => {
+  const p = app.isPackaged ? path.join(process.resourcesPath, "icon.ico") : path.join(__dirname, "build", "icon.ico")
+  return fs.existsSync(p) ? p : undefined
+})()
+
 function createWindow() {
   win = new BrowserWindow({
-    width: 1360, height: 860, minWidth: 900, minHeight: 600,
+    width: 1360, height: 860, minWidth: 900, minHeight: 600, icon: ICON,
     title: "AYA Yayın Stüdyosu", backgroundColor: "#12272b", autoHideMenuBar: false,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true, allowRunningInsecureContent: false, spellcheck: false },
   })

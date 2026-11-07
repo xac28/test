@@ -45,7 +45,8 @@ export async function GET() {
         id: t.id,
         slug: t.id,
         name: t.user.name || `${t.user.firstName || ""} ${t.user.lastName || ""}`.trim() || "Teacher",
-        avatar: t.user.image || `https://i.pravatar.cc/400?u=${t.id}`,
+        // no photo → empty: the site draws its own illustrated portrait (no stock face of a stranger, no third-party request)
+        avatar: t.user.image || "",
         country: t.user.country || "Unknown",
         bio: t.bio || "Certified yoga teacher on AYA.",
         specialties,

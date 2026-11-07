@@ -6,7 +6,7 @@ import { test, expect, makeAccount, db } from "./helpers"
 import { hashSecret, newPairCode } from "../../src/lib/streamer"
 
 // The real desktop app (Electron) driven against the running server. Skipped where Electron isn't installed.
-const ELECTRON = path.join(process.cwd(), "streamer", "node_modules", "electron", "dist", "electron")
+const ELECTRON = path.join(process.cwd(), "streamer", "node_modules", "electron", "dist", process.platform === "win32" ? "electron.exe" : "electron")
 const SERVER = process.env.AYA_TEST_URL || "http://localhost:3000"
 
 test.describe("desktop streaming app (Electron)", () => {

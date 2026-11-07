@@ -46,7 +46,13 @@ export default function TeachersScreen() {
   const renderTeacher = ({ item }: { item: Teacher }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Image source={{ uri: item.avatar }} style={styles.avatar} />
+        {item.avatar ? (
+          <Image source={{ uri: item.avatar }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, { alignItems: "center", justifyContent: "center" }]}>
+            <Text style={{ fontSize: 24, color: colors.sage[700] }}>{item.name?.[0] ?? "·"}</Text>
+          </View>
+        )}
         <View style={styles.infoContainer}>
           <Text style={styles.name}>{item.name}</Text>
           <View style={styles.metaRow}>

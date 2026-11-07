@@ -117,7 +117,7 @@ test.describe("registration, terms gate, role protection", () => {
     await page.goto("/accept-terms?next=https://evil.example/phish")
     await page.getByTestId("accept-terms-checkbox").check()
     await page.getByTestId("accept-terms-submit").click()
-    await expect(page).toHaveURL(/localhost:3000\/dashboard/, { timeout: 20_000 })
+    await expect(page).toHaveURL(/localhost:\d+\/dashboard/,{ timeout: 20_000 })
     await ctx.close()
   })
 
@@ -125,7 +125,7 @@ test.describe("registration, terms gate, role protection", () => {
     // anonymous
     for (const p of ["/dashboard", "/teach", "/admin", "/live", "/live/studio"]) {
       await page.goto(p)
-      await expect(page, p).toHaveURL(/localhost:3000\/(login.*)?$/)
+      await expect(page, p).toHaveURL(/localhost:\d+\/(login.*)?$/)
     }
     const student = await makeAccount("STUDENT")
     const teacher = await makeAccount("TEACHER")

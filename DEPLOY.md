@@ -117,6 +117,21 @@ STREAMER_MIN_VERSION=1.1.0 STREAMER_SERVER_URL=… ./scripts/build-streamer.sh  
 - [ ] `/robots.txt`, `/sitemap.xml` doğru alan adını gösteriyor
 - [ ] (yayın uygulaması kullanılacaksa) kurulum dosyası **canlı adresle** derlendi (`localhost` değil), imzalandı, Windows'ta denendi
 
+## 9. Alan adı (domain) geçişi — sırayla
+1. **DNS:** `aya.ornek.com` ve `live.aya.ornek.com` için A kaydı → sunucu IP'si.
+2. **`.env`:** `NEXT_PUBLIC_SITE_URL`, `NEXTAUTH_URL` (https), `LIVEKIT_PUBLIC_URL=wss://live.aya.ornek.com`, `CSP_MODE=enforce`, `ENABLE_HSTS=true`, `REQUIRE_EMAIL_VERIFICATION=true`. Açılışta `docker compose logs web` içinde yapılandırma uyarısı kalmamalı (`PUBLIC_BIND` yazmayın).
+3. **Caddy:** `deploy/Caddyfile` içindeki iki alan adını değiştirin. Site ve LiveKit yalnızca Caddy üzerinden açılır (3000 ve 7880 portları dışarıya kapalıdır); güvenlik duvarında yalnızca 80, 443, 7881/tcp ve 50000-50100/udp açık olsun.
+4. **Eski test adresini temizleyin:** `namaste-mobile/constants.ts` (`API_BASE` varsayılanı) ve `next.config.js` (`images.remotePatterns` içindeki eski IP) yeni alan adıyla değiştirilmeli; mobil uygulama ve yayın uygulaması yeni adresle yeniden derlenmeli.
+5. **Üçüncü taraf geri dönüş adresleri:** Google OAuth (yetkili yönlendirme URI: `https://aya.ornek.com/api/auth/callback/google`), Stripe webhook (`https://aya.ornek.com/api/webhooks/stripe`), iyzico callback adresleri.
+6. **Doğrulama:** `curl https://aya.ornek.com/api/health`, tarayıcıda kayıt → e-posta doğrulama → giriş, `https://aya.ornek.com/robots.txt` ve `/sitemap.xml`, bir canlı yayın (başka ağdan).
+
+### Güvenlik notları
+- Giriş denemeleri hesap başına 10, adres başına 25 başarısız denemeyle 15 dakika kilitlenir (bellekte tutulur: tek sunucu örneği içindir; birden fazla örnek çalıştıracaksanız Redis tabanlı sınırlayıcıya geçin).
+- İstemci IP'si `X-Forwarded-For` başlığından okunur: uygulamaya yalnızca Caddy/Nginx erişebilmeli (bu yüzden compose portları `127.0.0.1`'e bağlıdır) ve vekil bu başlığı kendisi yazmalıdır (Caddy varsayılanı budur; Nginx'te `proxy_set_header X-Forwarded-For $remote_addr;`).
+- Sertifika/kimlik belgeleri (`/uploads/certificates/`) yalnızca sahibine ve yöneticilere açıktır; diğer yüklemeler herkese açık adreslerdedir.
+- API'ler `Access-Control-Allow-Origin: *` yanıtlar (mobil uygulama taşıyıcı jetonla bağlanır); çerezli oturumlar bu sayede başka sitelerden kullanılamaz. Yalnızca kendi alan adınızdan erişilecekse `next.config.js` içindeki değeri alan adınızla değiştirin.
+- Geliştirme araçlarındaki (`vitest`, `esbuild`) `npm audit` uyarıları canlıya girmez; üretim bağımlılıklarında bilinen açık yoktur (`npm audit --omit=dev`).
+
 ## Docker'sız kurulum notu
 `npm ci && npx prisma generate && npx prisma db push && NEXT_PUBLIC_SITE_URL=https://aya.ornek.com ENABLE_HSTS=true npx next build && npx next start -p 3000`; süreci `systemd` ya da `pm2` ile yönetin, MariaDB ve LiveKit'i ayrıca kurun, ters vekil olarak Caddy/Nginx kullanın.
 

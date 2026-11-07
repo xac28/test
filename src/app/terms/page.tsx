@@ -25,7 +25,7 @@ export default function TermsPage() {
       <main className="min-h-screen bg-cream py-24">
         <div className="max-w-5xl mx-auto px-6">
           <h1 className="font-display text-3xl md:text-5xl text-sage-900 mb-4 tracking-tight">Kullanım, Pazaryeri ve Mesafeli Satış Sözleşmesi</h1>
-          <p className="text-sage-500 mb-10 font-medium">Yürürlük Tarihi: {new Date().toLocaleDateString()}</p>
+          <p className="text-sage-500 mb-10 font-medium">Yürürlük Tarihi: Ekim 2026</p>
           
           <div className="prose prose-sage max-w-none text-sage-800 space-y-8 bg-white p-8 md:p-14 rounded-[2rem] border border-sage-200 shadow-sm leading-relaxed text-sm md:text-base">
             

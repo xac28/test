@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         <div className="max-w-3xl mx-auto px-6">
           <h1 className="font-display text-4xl text-sage-900 mb-8">Privacy Policy</h1>
           <div className="prose prose-sage max-w-none text-sage-700 space-y-6">
-            <p>Last updated: {new Date().toLocaleDateString()}</p>
+            <p>Last updated: October 2026</p>
             <p>At AYA, we take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your personal information when you use our platform.</p>
             
             <h2 className="text-2xl font-display text-sage-800 mt-8 mb-4">1. Information We Collect</h2>

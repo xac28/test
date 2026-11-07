@@ -88,6 +88,8 @@ for (const d of DEVICES) {
         await btn.click()
         await expect(page.getByRole("button", { name: "Menüyü kapat" })).toBeVisible()
         const menu = page.getByTestId("mobile-menu")
+        // measure the drawer at rest, not while it slides in
+        await menu.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
         // the drawer must be reachable in full on this screen: it scrolls inside itself when it is taller than the screen
         const m = await menu.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight, bottom: el.getBoundingClientRect().bottom }))
         expect(m.bottom, "drawer stays inside the screen").toBeLessThanOrEqual(page.viewportSize()!.height + 1)

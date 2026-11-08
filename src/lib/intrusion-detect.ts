@@ -20,9 +20,25 @@ import { logEvent } from "@/lib/event-log"
 
 // ── Visitor logging ─────────────────────────────────────────────────────────
 
+// A page view fires this once per request — HTML, every API call it makes, every asset — so a single
+// visit can mean a dozen calls in under a second. Writing every one of them would load the DB for no
+// benefit (the admin panel only needs "last seen" accurate to a few seconds), so each IP is written at
+// most once per window; everything in between is a no-op, not even a query.
+const VISIT_WRITE_THROTTLE_MS = 5_000
+const lastWritten = new Map<string, number>()
+
+setInterval(() => {
+  const cutoff = Date.now() - VISIT_WRITE_THROTTLE_MS
+  for (const [ip, t] of lastWritten) if (t < cutoff) lastWritten.delete(ip)
+}, 30_000).unref?.()
+
 /** One row per IP (upsert), so this table stays small no matter how much traffic the site gets. */
 export async function recordVisit(ip: string, path: string, userAgent: string | null): Promise<void> {
   if (!ip || ip === "unknown") return
+  const now = Date.now()
+  const last = lastWritten.get(ip)
+  if (last && now - last < VISIT_WRITE_THROTTLE_MS) return
+  lastWritten.set(ip, now)
   const write = () =>
     db.visitorIpLog.upsert({
       where: { ipAddress: ip },

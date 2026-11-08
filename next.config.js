@@ -36,6 +36,12 @@ const nextConfig = {
   },
 
   serverExternalPackages: ['iyzipay'],
+  experimental: {
+    // Named imports from these pull in only the modules actually used instead of the whole package
+    // (lucide-react and date-fns are already optimized by Next itself; these two are not, and both are
+    // loaded on nearly every page — the live room via @livekit/components-react, animation via framer-motion).
+    optimizePackageImports: ['@livekit/components-react', 'framer-motion'],
+  },
   turbopack: {
     resolveAlias: {
       '@mediapipe/pose': './src/lib/stubs/mediapipe-pose.js',

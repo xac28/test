@@ -1,13 +1,17 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
+import dynamic from "next/dynamic"
 import { useRoomContext, useDataChannel } from "@livekit/components-react"
 import { Shield, MessageSquareOff, MessageSquare, UserX, AlertTriangle, Video, StopCircle, Activity, Circle } from "lucide-react"
 import { Clock } from "lucide-react"
-import { AiPostureAssist } from "./ai-posture-assist"
 import { ReportDialog } from "./report-dialog"
 import { RoomRecorder, RecorderState } from "@/lib/room-recorder"
 import { formatElapsed } from "@/lib/recording-client"
+
+// TensorFlow.js + the pose-detection model are large (well over a MB together) and only needed by the small
+// minority of sessions that open "Duruş Analizi". Loaded on demand instead of bundled into every live room.
+const AiPostureAssist = dynamic(() => import("./ai-posture-assist").then((m) => m.AiPostureAssist), { ssr: false })
 
 export function LiveRoomManager({ role, endTime, bookingId, liveRoomId }: { role: "teacher" | "student", endTime?: string, bookingId?: string, liveRoomId?: string }) {
   const room = useRoomContext()

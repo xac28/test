@@ -48,7 +48,9 @@ export async function GET(req: Request, props: { params: Promise<{ path: string[
   const headers: Record<string, string> = {
     "Content-Type": type,
     "Accept-Ranges": "bytes",
-    "Cache-Control": isPrivate ? "private, no-store" : "public, max-age=3600",
+    // Every upload gets a brand-new filename (userId + timestamp + random, see /api/upload) — this exact
+    // URL will never point at different content, so public files can be cached for a full year.
+    "Cache-Control": isPrivate ? "private, no-store" : "public, max-age=31536000, immutable",
     "X-Content-Type-Options": "nosniff",
     // user-uploaded files must never run as pages
     "Content-Security-Policy": "default-src 'none'; sandbox",

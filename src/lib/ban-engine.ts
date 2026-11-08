@@ -117,6 +117,40 @@ export async function isIpBanned(ip: string): Promise<BanCheckResult> {
   }
 }
 
+/**
+ * In-memory mirror of the active IP bans, for the hot path: proxy.ts checks this on every single
+ * request (every page, every asset, every API call) to block banned IPs site-wide. A query per
+ * request would add real latency and DB-pool pressure there, so instead this set is refreshed from
+ * the DB on a timer, and kept in sync immediately on every ban/unban this process makes.
+ */
+const bannedIpSet = new Set<string>()
+
+async function refreshBannedIpSet(): Promise<void> {
+  try {
+    const rows = await db.ipBan.findMany({
+      where: { isActive: true, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+      select: { ipAddress: true },
+    })
+    bannedIpSet.clear()
+    for (const row of rows) bannedIpSet.add(row.ipAddress)
+  } catch (error) {
+    console.error("[BAN_ENGINE] failed to refresh the banned-IP set:", error)
+  }
+}
+
+refreshBannedIpSet()
+setInterval(refreshBannedIpSet, 15_000).unref?.()
+
+/** Synchronous, no DB access — safe to call on every single request in proxy.ts. */
+export function isIpBannedSync(ip: string): boolean {
+  return bannedIpSet.has(ip)
+}
+
+/** Call after lifting a ban so the proxy stops blocking that IP right away instead of on the next refresh. */
+export function clearIpBanCache(ip: string): void {
+  bannedIpSet.delete(ip)
+}
+
 // ─── User Ban Check ─────────────────────────────────────────────────────────
 
 /**
@@ -355,6 +389,10 @@ export async function banIpAddress(
       }
     })
 
+    // Mark it banned in the proxy's in-memory set right away — otherwise it would only take
+    // effect on the next periodic refresh (up to 15s later).
+    bannedIpSet.add(ip)
+
     console.log(`[BAN_ENGINE] IP banned: ${ip} — ${reason}`)
   } catch (error) {
     console.error("[BAN_ENGINE] Failed to ban IP:", error)
@@ -465,6 +503,7 @@ export async function applyFullUnban(
   })
 
   // 2. Bu kullanıcıyla ilişkili IP banlarını kaldır
+  const liftedIps = await db.ipBan.findMany({ where: { bannedUserId: userId, isActive: true }, select: { ipAddress: true } })
   const result = await db.ipBan.updateMany({
     where: {
       bannedUserId: userId,
@@ -472,6 +511,7 @@ export async function applyFullUnban(
     },
     data: { isActive: false }
   })
+  for (const { ipAddress } of liftedIps) clearIpBanCache(ipAddress)
 
   // 3. Audit log
   await db.auditLog.create({

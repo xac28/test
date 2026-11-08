@@ -1,7 +1,7 @@
 import { requireAdmin, cleanReason } from "@/lib/admin-api"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
-import { banIpAddress, extractIp, isBannableIp } from "@/lib/ban-engine"
+import { banIpAddress, clearIpBanCache, extractIp, isBannableIp } from "@/lib/ban-engine"
 import { isIP } from "net"
 
 export const dynamic = "force-dynamic"
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic"
  * Admin paneli: IP banları, evasion logları ve kullanıcı IP geçmişlerini listele
  * 
  * Query params:
- * - type: "ip-bans" | "evasion-logs" | "user-ips" | "stats"
+ * - type: "ip-bans" | "evasion-logs" | "user-ips" | "visitors" | "attacks" | "stats"
  * - userId: (optional) belirli bir kullanıcının IP'lerini göster
  * - page: sayfa numarası (default: 1)
  */
@@ -64,21 +64,55 @@ export async function GET(req: Request) {
         return NextResponse.json({ ipLogs })
       }
 
+      // Every distinct IP that has requested the site (logged in or not), most recently active first.
+      case "visitors": {
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        const [visitors, total, bannedRows] = await Promise.all([
+          db.visitorIpLog.findMany({ orderBy: { lastSeenAt: "desc" }, skip, take: limit }),
+          db.visitorIpLog.count(),
+          db.ipBan.findMany({ where: { isActive: true }, select: { ipAddress: true } }),
+        ])
+        const banned = new Set(bannedRows.map((b) => b.ipAddress))
+        return NextResponse.json({
+          visitors: visitors.map((v) => ({ ...v, banned: banned.has(v.ipAddress) })),
+          total, page,
+          activeToday: await db.visitorIpLog.count({ where: { lastSeenAt: { gte: since24h } } }),
+        })
+      }
+
+      // Requests that matched a known attack/scanner signature — see lib/intrusion-detect.ts.
+      case "attacks": {
+        const [attacks, total] = await Promise.all([
+          db.attackLog.findMany({ orderBy: { createdAt: "desc" }, skip, take: limit }),
+          db.attackLog.count(),
+        ])
+        return NextResponse.json({ attacks, total, page })
+      }
+
       case "stats": {
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
         const [
           totalIpBans,
           activeIpBans,
           totalEvasionAttempts,
           recentEvasions,
           bannedUsers,
+          totalVisitors,
+          totalAttacks,
+          recentAttacks,
+          autoBannedCount,
         ] = await Promise.all([
           db.ipBan.count(),
           db.ipBan.count({ where: { isActive: true } }),
           db.banEvasionLog.count(),
           db.banEvasionLog.count({
-            where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
+            where: { createdAt: { gte: since24h } }
           }),
           db.user.count({ where: { banned: true } }),
+          db.visitorIpLog.count(),
+          db.attackLog.count(),
+          db.attackLog.count({ where: { createdAt: { gte: since24h } } }),
+          db.attackLog.count({ where: { autoBanned: true } }),
         ])
 
         return NextResponse.json({
@@ -87,6 +121,10 @@ export async function GET(req: Request) {
           totalEvasionAttempts,
           recentEvasions24h: recentEvasions,
           bannedUsers,
+          totalVisitors,
+          totalAttacks,
+          recentAttacks24h: recentAttacks,
+          autoBannedCount,
         })
       }
 
@@ -181,6 +219,7 @@ export async function DELETE(req: Request) {
       where: { id: banId },
       data: { isActive: false }
     })
+    clearIpBanCache(ban.ipAddress)
 
     await db.auditLog.create({
       data: {

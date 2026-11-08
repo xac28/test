@@ -1,15 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import { ShieldCheck } from "lucide-react"
+import { Radio, ShieldAlert, ShieldCheck } from "lucide-react"
 import { Button, Card, Empty, ErrorNote, Pager, Pill, SectionTitle, Segmented, Spinner, Stat, Table, api, fmtDateTime, useConfirm, useLoader, useToast } from "./ui"
 
-interface Stats { totalIpBans: number; activeIpBans: number; totalEvasionAttempts: number; recentEvasions24h: number; bannedUsers: number }
+interface Stats {
+  totalIpBans: number; activeIpBans: number; totalEvasionAttempts: number; recentEvasions24h: number; bannedUsers: number
+  totalVisitors: number; totalAttacks: number; recentAttacks24h: number; autoBannedCount: number
+}
 interface Bans { bans: { id: string; ipAddress: string; reason: string | null; isActive: boolean; expiresAt: string | null; createdAt: string; bannedUserId: string | null }[]; total: number; page: number }
 interface Logs { logs: { id: string; ipAddress: string; attemptedEmail: string | null; matchType: string; blocked: boolean; createdAt: string }[]; total: number; page: number }
+interface Visitors { visitors: { id: string; ipAddress: string; userAgent: string | null; lastPath: string | null; firstSeenAt: string; lastSeenAt: string; hitCount: number; banned: boolean }[]; total: number; page: number; activeToday: number }
+interface Attacks { attacks: { id: string; ipAddress: string; kind: string; path: string | null; userAgent: string | null; autoBanned: boolean; createdAt: string }[]; total: number; page: number }
 
 export function SecurityTab({ onOpenUser }: { onOpenUser: (id: string) => void }) {
-  const [view, setView] = useState<"bans" | "evasions">("bans")
+  const [view, setView] = useState<"bans" | "evasions" | "visitors" | "attacks">("bans")
   const [page, setPage] = useState(1)
   const [ip, setIp] = useState("")
   const [reason, setReason] = useState("")
@@ -22,6 +27,14 @@ export function SecurityTab({ onOpenUser }: { onOpenUser: (id: string) => void }
   const stats = useLoader<Stats>(() => api("/api/admin/bans?type=stats"), [])
   const bans = useLoader<Bans>(() => (view === "bans" ? api(`/api/admin/bans?type=ip-bans&page=${page}`) : Promise.resolve({ bans: [], total: 0, page: 1 })), [view, page])
   const logs = useLoader<Logs>(() => (view === "evasions" ? api(`/api/admin/bans?type=evasion-logs&page=${page}`) : Promise.resolve({ logs: [], total: 0, page: 1 })), [view, page])
+  const visitors = useLoader<Visitors>(() => (view === "visitors" ? api(`/api/admin/bans?type=visitors&page=${page}`) : Promise.resolve({ visitors: [], total: 0, page: 1, activeToday: 0 })), [view, page])
+  const attacks = useLoader<Attacks>(() => (view === "attacks" ? api(`/api/admin/bans?type=attacks&page=${page}`) : Promise.resolve({ attacks: [], total: 0, page: 1 })), [view, page])
+
+  const quickBan = (targetIp: string) => ask({
+    title: `${targetIp} adresini engelle`, description: "Bu IP sitenin tamamına erişemez (sayfalar ve API dahil).", confirmLabel: "Engelle", tone: "danger",
+    input: { label: "Gerekçe (denetim kaydına yazılır)", min: 3 },
+    onConfirm: async (r) => { await api("/api/admin/bans", { method: "POST", json: { ipAddress: targetIp, reason: r } }); show("IP engellendi"); visitors.reload(); attacks.reload(); stats.reload() },
+  })
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,8 +61,8 @@ export function SecurityTab({ onOpenUser }: { onOpenUser: (id: string) => void }
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Stat label="Yasaklı kullanıcı" value={s.bannedUsers} />
           <Stat label="Etkin IP engeli" value={s.activeIpBans} hint={`toplam ${s.totalIpBans}`} />
-          <Stat label="Yasak aşma denemesi" value={s.totalEvasionAttempts} />
-          <Stat label="Son 24 saat" value={s.recentEvasions24h} tone={s.recentEvasions24h > 0 ? "red" : undefined} />
+          <Stat label="Benzersiz ziyaretçi IP" value={s.totalVisitors} />
+          <Stat label="Saldırı tespiti (24 sa)" value={s.recentAttacks24h} hint={`toplam ${s.totalAttacks}, otomatik ban ${s.autoBannedCount}`} tone={s.recentAttacks24h > 0 ? "red" : undefined} />
         </div>
       )}
 
@@ -69,7 +82,12 @@ export function SecurityTab({ onOpenUser }: { onOpenUser: (id: string) => void }
         {formError && <p role="alert" data-testid="ban-form-error" className="text-sm text-red-600 mt-2">{formError}</p>}
       </Card>
 
-      <Segmented value={view} onChange={(v) => { setView(v); setPage(1) }} options={[{ id: "bans", label: "IP engelleri", count: s?.totalIpBans }, { id: "evasions", label: "Yasak aşma denemeleri", count: s?.totalEvasionAttempts }]} />
+      <Segmented value={view} onChange={(v) => { setView(v); setPage(1) }} options={[
+        { id: "bans", label: "IP engelleri", count: s?.totalIpBans },
+        { id: "evasions", label: "Yasak aşma denemeleri", count: s?.totalEvasionAttempts },
+        { id: "visitors", label: "Ziyaretçiler", count: s?.totalVisitors },
+        { id: "attacks", label: "Saldırı tespitleri", count: s?.totalAttacks },
+      ]} />
 
       {view === "bans" ? (
         bans.error ? <ErrorNote message={bans.error} onRetry={bans.reload} /> :
@@ -98,7 +116,8 @@ export function SecurityTab({ onOpenUser }: { onOpenUser: (id: string) => void }
             <Pager page={bans.data.page} pageSize={50} total={bans.data.total} onPage={setPage} />
           </>
         )
-      ) : logs.error ? <ErrorNote message={logs.error} onRetry={logs.reload} /> :
+      ) : view === "evasions" ? (
+        logs.error ? <ErrorNote message={logs.error} onRetry={logs.reload} /> :
         !logs.data ? <Spinner /> :
         logs.data.logs.length === 0 ? <Empty icon={<ShieldCheck size={32} />}>Yasak aşma denemesi kaydı yok.</Empty> : (
           <>
@@ -115,7 +134,54 @@ export function SecurityTab({ onOpenUser }: { onOpenUser: (id: string) => void }
             </Table>
             <Pager page={logs.data.page} pageSize={50} total={logs.data.total} onPage={setPage} />
           </>
-        )}
+        )
+      ) : view === "visitors" ? (
+        visitors.error ? <ErrorNote message={visitors.error} onRetry={visitors.reload} /> :
+        !visitors.data ? <Spinner /> :
+        visitors.data.visitors.length === 0 ? <Empty icon={<Radio size={32} />}>Henüz ziyaretçi kaydı yok.</Empty> : (
+          <>
+            <p className="text-sm text-sage-500">Son 24 saatte aktif: <strong>{visitors.data.activeToday}</strong> benzersiz IP</p>
+            <Table head={["IP", "Son sayfa", "İlk görülme", "Son görülme", "İstek sayısı", "Durum", ""]}>
+              {visitors.data.visitors.map((v) => (
+                <tr key={v.id} data-testid="visitor-row">
+                  <td className="px-4 py-3 font-mono">{v.ipAddress}</td>
+                  <td className="px-4 py-3 max-w-xs truncate text-xs text-sage-600" title={v.userAgent ?? undefined}>{v.lastPath ?? "—"}</td>
+                  <td className="px-4 py-3 text-xs whitespace-nowrap text-sage-500">{fmtDateTime(v.firstSeenAt)}</td>
+                  <td className="px-4 py-3 text-xs whitespace-nowrap text-sage-500">{fmtDateTime(v.lastSeenAt)}</td>
+                  <td className="px-4 py-3">{v.hitCount}</td>
+                  <td className="px-4 py-3">{v.banned ? <Pill tone="red">Engelli</Pill> : <Pill tone="green">Serbest</Pill>}</td>
+                  <td className="px-4 py-3 text-right">
+                    {!v.banned && <Button tone="danger" onClick={() => quickBan(v.ipAddress)}>Engelle</Button>}
+                  </td>
+                </tr>
+              ))}
+            </Table>
+            <Pager page={visitors.data.page} pageSize={50} total={visitors.data.total} onPage={setPage} />
+          </>
+        )
+      ) : (
+        attacks.error ? <ErrorNote message={attacks.error} onRetry={attacks.reload} /> :
+        !attacks.data ? <Spinner /> :
+        attacks.data.attacks.length === 0 ? <Empty icon={<ShieldAlert size={32} />}>Saldırı paterni tespit edilmedi.</Empty> : (
+          <>
+            <Table head={["Zaman", "IP", "Tür", "Yol", "Durum", ""]}>
+              {attacks.data.attacks.map((a) => (
+                <tr key={a.id} data-testid="attack-row">
+                  <td className="px-4 py-3 text-xs whitespace-nowrap text-sage-500">{fmtDateTime(a.createdAt)}</td>
+                  <td className="px-4 py-3 font-mono">{a.ipAddress}</td>
+                  <td className="px-4 py-3"><Pill tone="amber">{a.kind === "PATH_SCAN" ? "Tarama" : "Enjeksiyon"}</Pill></td>
+                  <td className="px-4 py-3 max-w-xs truncate text-xs text-sage-600" title={a.path ?? undefined}>{a.path ?? "—"}</td>
+                  <td className="px-4 py-3">{a.autoBanned ? <Pill tone="red">Otomatik banlandı</Pill> : <Pill>İzleniyor</Pill>}</td>
+                  <td className="px-4 py-3 text-right">
+                    {!a.autoBanned && <Button tone="danger" onClick={() => quickBan(a.ipAddress)}>Engelle</Button>}
+                  </td>
+                </tr>
+              ))}
+            </Table>
+            <Pager page={attacks.data.page} pageSize={50} total={attacks.data.total} onPage={setPage} />
+          </>
+        )
+      )}
       {dialog}{toast}
     </div>
   )

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import authConfig from './auth.config'
 import NextAuth from 'next-auth'
+import { extractIp, isIpBannedSync } from '@/lib/ban-engine'
+import { recordVisit, scanForAttack } from '@/lib/intrusion-detect'
 
 const { auth } = NextAuth(authConfig)
 
@@ -42,6 +44,18 @@ function handleCorsForApi(req: NextRequest): NextResponse | null {
 
 // ── Main Middleware ─────────────────────────────────────────────────────────
 export default auth((req) => {
+  // 🛡️ Site-wide visitor logging + intrusion detection (every request: pages, assets, API).
+  // Logging and attack-scanning are fire-and-forget (lib/intrusion-detect.ts), and the ban check
+  // reads an in-memory set (lib/ban-engine.ts) — none of this touches the DB inline, so it never
+  // adds latency or connection-pool pressure to a real visitor's request.
+  const ip = extractIp(req as unknown as Request)
+  const ua = req.headers.get('user-agent')
+  recordVisit(ip, req.nextUrl.pathname, ua).catch(() => {})
+  scanForAttack(ip, req.nextUrl.pathname, req.nextUrl.search, ua).catch(() => {})
+  if (isIpBannedSync(ip)) {
+    return NextResponse.json({ error: 'Bu IP adresinden erişim engellenmiştir.' }, { status: 403 })
+  }
+
   // 1. Handle CORS preflight for API routes (mobile app compatibility)
   const corsResponse = handleCorsForApi(req as unknown as NextRequest)
   if (corsResponse) return corsResponse

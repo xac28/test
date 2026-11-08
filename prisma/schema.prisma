@@ -556,20 +556,52 @@ model UserIpLog {
 // Log of ban evasion attempts — helps admin see patterns
 model BanEvasionLog {
   id            String   @id @default(cuid())
-  
+
   ipAddress     String
   attemptedEmail String?
   attemptedName  String?
   attemptedPhone String?
-  
+
   matchType     String   // "IP_BAN", "EMAIL_DOMAIN", "PHONE_MATCH", "FINGERPRINT"
   matchedUserId String?  // The original banned user this matched against
-  
+
   blocked       Boolean  @default(true) // Whether the attempt was actually blocked
   userAgent     String?  @db.Text
-  
+
   createdAt     DateTime @default(now())
-  
+
+  @@index([ipAddress])
+  @@index([createdAt])
+}
+
+// Every distinct IP that has ever requested the site (proxy.ts, every request, not just authenticated
+// actions). One row per IP (upserted), so this stays small regardless of traffic volume — the admin
+// panel lists who is visiting, logged in or not.
+model VisitorIpLog {
+  id          String   @id @default(cuid())
+  ipAddress   String   @unique
+  userAgent   String?  @db.Text
+  lastPath    String?  @db.VarChar(300)
+
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  hitCount    Int      @default(1)
+
+  @@index([lastSeenAt])
+}
+
+// Requests that matched a known attack/recon signature (exploit-scanner paths, SQLi/XSS payloads in the
+// URL). Past a threshold within a short window, the IP is auto-banned (see lib/intrusion-detect.ts).
+model AttackLog {
+  id         String   @id @default(cuid())
+  ipAddress  String
+  kind       String   @db.VarChar(24) // "PATH_SCAN" | "INJECTION" | "FLOOD"
+  path       String?  @db.VarChar(300)
+  userAgent  String?  @db.Text
+  autoBanned Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+
   @@index([ipAddress])
   @@index([createdAt])
 }

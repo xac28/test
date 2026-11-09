@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronUp,
   Circle,
+  DollarSign,
   Loader2,
   Maximize2,
   MessageSquare,
@@ -232,6 +233,9 @@ export function Studio({ trial = false }: { trial?: boolean }) {
   const [phase, setPhase] = useState<Phase>("setup")
   const [title, setTitle] = useState("Canlı Yoga Dersi")
   const [presetId, setPresetId] = useState(DEFAULT_PRESET_ID)
+  // Ignored for a workshop session (?workshop=… in the URL) — that already has its own, stricter
+  // enrollment gate, and the two shouldn't stack (see /api/room/instant).
+  const [studentsOnly, setStudentsOnly] = useState(false)
   const [devices, setDevices] = useState<Devices>({ cams: [], mics: [] })
   const [camId, setCamId] = useState("")
   const [micId, setMicId] = useState("")
@@ -473,7 +477,7 @@ export function Studio({ trial = false }: { trial?: boolean }) {
       const res = await fetch("/api/room/instant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, ...(workshopId ? { workshopId } : {}) }),
+        body: JSON.stringify({ title, studentsOnly, ...(workshopId ? { workshopId } : {}) }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 403 && data.code === "TERMS_REQUIRED") return router.replace("/accept-terms?next=/live/studio")
@@ -1067,6 +1071,21 @@ export function Studio({ trial = false }: { trial?: boolean }) {
                   </p>
                 )}
               </div>
+              {!workshopId && !resume && (
+                <button
+                  type="button"
+                  data-testid="students-only-toggle"
+                  onClick={() => setStudentsOnly((v) => !v)}
+                  title={studentsOnly ? "Yalnızca kendi öğrencilerin izleyebilir — kapatmak için tıkla" : "Herkese açık — yalnızca kendi öğrencilerine özel yapmak için tıkla"}
+                  className={`shrink-0 inline-flex items-center gap-2 pl-1 pr-2.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${studentsOnly ? "bg-amber-400/15 border-amber-400/40 text-amber-300" : "bg-white/5 border-white/10 text-white/45 hover:text-white/70"}`}
+                >
+                  <span aria-hidden className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${studentsOnly ? "bg-amber-400" : "bg-white/15"}`}>
+                    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform ${studentsOnly ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+                  </span>
+                  <DollarSign size={13} className={studentsOnly ? "text-amber-300" : "text-white/30"} />
+                  <span className="hidden sm:inline">{studentsOnly ? "Ücretli · yalnızca öğrencilerim" : "Herkese açık"}</span>
+                </button>
+              )}
               <button
                 data-testid="go-live"
                 onClick={goLive}

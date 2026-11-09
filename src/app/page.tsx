@@ -67,7 +67,9 @@ async function loadHome(): Promise<HomeData> {
       .filter((w) => w.state !== "ended")
       .slice(0, 3)
 
-    const live = rooms[0]
+    // The homepage teaser is shown to every visitor, signed in or not — never feature a students-only
+    // broadcast here, since there's no per-visitor filtering on this shared page the way /live has.
+    const live = rooms.find((r) => !r.studentsOnly)
     return {
       live: live ? { id: live.id, title: live.title, viewers: live.viewerCount, teacher: live.teacher.name, trial: live.teacher.trial } : null,
       workshops,

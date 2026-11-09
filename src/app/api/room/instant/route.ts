@@ -75,8 +75,12 @@ export async function POST(req: Request) {
     const previous = await db.liveRoom.findMany({ where: { teacherId: teacher.id, isActive: true }, select: { id: true } })
     for (const p of previous) await endLiveRoom(p.id).catch(() => {})
 
+    // Workshop sessions already have their own (stricter) enrollment gate — the toggle is for ordinary
+    // instant sessions only, so a workshopId silently overrides it rather than stacking two gates.
+    const studentsOnly = !workshop && body.studentsOnly === true
+
     const liveRoom = await db.liveRoom.create({
-      data: { teacherId: teacher.id, roomName, title, isActive: true, workshopId: workshop?.id ?? null, supervised },
+      data: { teacherId: teacher.id, roomName, title, isActive: true, workshopId: workshop?.id ?? null, supervised, studentsOnly },
     })
     await createLiveKitRoom(roomName, title, supervised ? supervisedRoomMetadata(title) : undefined)
     if (supervised) await announceSupervisedStart({ id: liveRoom.id, title }, { userId: user.id, user: { name: user.name ?? null } })

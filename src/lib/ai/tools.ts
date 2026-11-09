@@ -4,7 +4,7 @@ import { rankTeachers, detectStyles, StyleId } from "@/lib/ai-guide"
 import { getGuideTeachers } from "@/lib/ai-data"
 import { fold, matchTaught } from "@/lib/ai-knowledge"
 import { taughtToEntries } from "@/lib/ai-learning"
-import { listActiveBroadcasts } from "@/lib/live-rooms"
+import { filterVisibleBroadcasts, listActiveBroadcasts } from "@/lib/live-rooms"
 import { POSES } from "@/lib/yoga-poses"
 import { seatsLeft, workshopState, formatPriceTR } from "@/lib/workshops"
 import { SHOP_SLUGS, formatKurus, parseImages, ORDER_STATUS_LABEL, OrderStatusId, PAY_METHOD_LABEL } from "@/lib/shop"
@@ -168,8 +168,9 @@ async function searchProducts(i: Record<string, unknown>): Promise<ToolOutput> {
   }
 }
 
-async function liveNow(): Promise<ToolOutput> {
-  const rooms = await listActiveBroadcasts().catch(() => [])
+async function liveNow(ctx: ToolCtx): Promise<ToolOutput> {
+  const all = await listActiveBroadcasts().catch(() => [])
+  const rooms = await filterVisibleBroadcasts(all, ctx.user)
   return {
     result: { live: rooms.map((r) => ({ title: r.title, teacher: r.teacher.name, viewers: r.viewerCount, link: `/live/${r.id}` })), note: rooms.length ? undefined : "Şu anda canlı yayın yok." },
     cards: rooms.slice(0, 4).map((r) => ({ kind: "live" as const, title: r.title, subtitle: r.teacher.name ?? "Eğitmen", meta: `${r.viewerCount} izleyici`, href: `/live/${r.id}` })),
@@ -233,7 +234,7 @@ export async function runTool(name: string, input: unknown, ctx: ToolCtx): Promi
       case "search_content": return await searchContent(i)
       case "find_pose": return findPose(i)
       case "search_products": return await searchProducts(i)
-      case "live_now": return await liveNow()
+      case "live_now": return await liveNow(ctx)
       case "search_help": return await searchHelp(i)
       case "order_status": return await orderStatus(i)
       case "my_schedule": return await mySchedule(ctx)

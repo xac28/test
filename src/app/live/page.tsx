@@ -3,7 +3,7 @@
 import { TeacherBadge } from "@/components/teacher-badge"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Radio, Users, Video } from "lucide-react"
+import { DollarSign, Radio, Users, Video } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
@@ -16,6 +16,7 @@ interface Broadcast {
   teacher: { id: string; name: string | null; image: string | null; trial?: boolean }
   supervised?: boolean
   workshop: { slug: string; title: string } | null
+  studentsOnly: boolean
 }
 
 function since(iso: string, now: number) {
@@ -114,10 +115,18 @@ export default function LiveDirectoryPage() {
                       <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 bg-black/70 text-white text-xs px-2 py-1 rounded">
                         <Users size={12} /> {b.viewerCount} izleyici
                       </span>
+                      {b.studentsOnly && !b.workshop && (
+                        <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-amber-400 text-black text-[11px] font-bold px-2 py-1 rounded">
+                          <DollarSign size={11} /> Öğrencilerime özel
+                        </span>
+                      )}
                     </div>
                     <div className="mt-3">
                       {b.workshop && (
                         <p className="eyebrow !text-clay-600 mb-1">Atölye · yalnızca kayıtlı katılımcılar</p>
+                      )}
+                      {b.studentsOnly && !b.workshop && (
+                        <p className="eyebrow !text-amber-600 mb-1">Ücretli · yalnızca kendi öğrencilerine özel</p>
                       )}
                       <h2 className="font-display text-xl text-ink leading-snug group-hover:underline underline-offset-4 decoration-1">{b.title}</h2>
                       <p className="text-sm text-ink/70 flex flex-wrap items-center gap-x-2 gap-y-1">{b.teacher.name} <TeacherBadge trial={!!b.teacher.trial} size="sm" /></p>

@@ -4,6 +4,7 @@ import { resolveUser } from "@/lib/auth-utils"
 import { termsGate } from "@/lib/terms"
 import { createLiveKitToken } from "@/lib/livekit"
 import { canAccessContent } from "@/lib/workshops"
+import { isStudentOfTeacher } from "@/lib/live-rooms"
 
 // POST /api/live/:id/join — watch a broadcast: subscribe-only token (+ data for chat)
 export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,19 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     }
 
     const isHost = room.teacher.userId === user.id
+
+    // Students-only broadcast: the teacher's own students (a real booking or workshop seat with them,
+    // not just any signed-in account), the host, and admins. Workshop sessions have their own gate above
+    // and never set this at the same time (see /api/room/instant), so no need to check both here.
+    if (room.studentsOnly && !room.workshopId && !isHost && user.role !== "ADMIN") {
+      const ok = await isStudentOfTeacher(user.id, room.teacherId)
+      if (!ok) {
+        return NextResponse.json(
+          { error: "Bu yayın yalnızca bu eğitmenin öğrencilerine özel.", code: "STUDENTS_ONLY" },
+          { status: 403 }
+        )
+      }
+    }
 
     // Workshop sessions are for confirmed participants (and the host / admins) only
     if (room.workshopId && !isHost && user.role !== "ADMIN") {

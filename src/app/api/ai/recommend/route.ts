@@ -8,7 +8,7 @@ import { getGuideTeachers } from "@/lib/ai-data"
 import { isCrisis, matchTaught } from "@/lib/ai-knowledge"
 import { redactForLog, taughtToEntries } from "@/lib/ai-learning"
 import { logEvent } from "@/lib/event-log"
-import { listActiveBroadcasts } from "@/lib/live-rooms"
+import { filterVisibleBroadcasts, listActiveBroadcasts } from "@/lib/live-rooms"
 
 export const dynamic = "force-dynamic"
 
@@ -38,11 +38,12 @@ export async function POST(req: Request) {
       db.article.findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 6, select: { title: true, slug: true, category: true } }),
       listActiveBroadcasts().catch(() => []),
     ])
+    const visibleLive = await filterVisibleBroadcasts(live, user)
 
     const data: GuideData = {
       teachers,
       workshops: workshops.map((w) => ({ ...w, startsAt: w.startsAt ? w.startsAt.toISOString() : null })),
-      live: live.map((l) => ({ id: l.id, title: l.title, teacher: l.teacher.name || "Eğitmen" })),
+      live: visibleLive.map((l) => ({ id: l.id, title: l.title, teacher: l.teacher.name || "Eğitmen" })),
       articles,
       signedIn: !!user,
       role: user?.role ?? null,

@@ -442,7 +442,12 @@ model LiveRoom {
   // Set when the broadcast is a workshop session: only confirmed enrollees may watch
   workshopId  String?
   workshop    Workshop? @relation(fields: [workshopId], references: [id], onDelete: SetNull)
-  
+
+  // Toggled by the teacher when going live (ignored for workshop sessions, which already have the
+  // enrollment gate above): true restricts watching to this teacher's own students — see
+  // isStudentOfTeacher() in lib/live-rooms.ts and its use in the directory listing and the join route.
+  studentsOnly Boolean @default(false)
+
   createdAt   DateTime @default(now())
   endedAt     DateTime?
 }

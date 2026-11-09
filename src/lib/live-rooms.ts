@@ -42,6 +42,41 @@ export interface LiveSummary {
   /** opened by a trial-phase teacher: watched by officials */
   supervised: boolean
   workshop: { slug: string; title: string } | null
+  /** restricted to this teacher's own students (see isStudentOfTeacher) — ignored when workshop is set */
+  studentsOnly: boolean
+  /** the Teacher row's own id (teacher.id above is the *user* id) — what isStudentOfTeacher expects */
+  teacherId: string
+}
+
+/**
+ * True when the user has an actual paid relationship with this teacher: a booking that wasn't just
+ * requested (confirmed or already completed), or a confirmed seat in one of their workshops. This is
+ * what a "students only" broadcast checks — a signed-in account alone isn't enough, and it isn't
+ * specific to the teacher who's live (a student of teacher A has no standing to watch teacher B's).
+ */
+export async function isStudentOfTeacher(userId: string, teacherId: string): Promise<boolean> {
+  const [booking, enrollment] = await Promise.all([
+    db.booking.findFirst({ where: { studentId: userId, teacherId, status: { in: ["CONFIRMED", "COMPLETED"] } }, select: { id: true } }),
+    db.workshopEnrollment.findFirst({ where: { userId, status: "CONFIRMED", workshop: { teacherId } }, select: { id: true } }),
+  ])
+  return !!booking || !!enrollment
+}
+
+/**
+ * Drops students-only broadcasts the viewer has no standing to see from a list — not that teacher,
+ * not their student. Shared by the /live directory and the AI guide's "what's live now" tool, so
+ * someone outside a teacher's own students never even hears a title/viewer count for their stream.
+ */
+export async function filterVisibleBroadcasts<T extends { teacher: { id: string }; teacherId: string; studentsOnly: boolean }>(
+  all: T[],
+  viewer: { id: string; role: string } | null
+): Promise<T[]> {
+  if (!viewer) return all.filter((b) => !b.studentsOnly)
+  if (viewer.role === "ADMIN") return all
+  const checks = await Promise.all(
+    all.map((b) => (!b.studentsOnly || b.teacher.id === viewer.id ? true : isStudentOfTeacher(viewer.id, b.teacherId)))
+  )
+  return all.filter((_, i) => checks[i])
 }
 
 /**
@@ -91,6 +126,8 @@ export async function listActiveBroadcasts(): Promise<LiveSummary[]> {
       teacher: { id: r.teacher.user.id, name: r.teacher.user.name, image: r.teacher.user.image, trial: r.teacher.isTrialMode },
       supervised: r.supervised,
       workshop: r.workshop,
+      studentsOnly: r.studentsOnly,
+      teacherId: r.teacherId,
     })
   }
   return result

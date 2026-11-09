@@ -28,6 +28,7 @@ import {
   MicOff,
   Minimize2,
   MonitorUp,
+  Move,
   Radio,
   Settings2,
   ShieldBan,
@@ -53,6 +54,20 @@ import { StaffNoticeBanner } from "./staff-notice"
 import { LiveChatPanel } from "./live-chat-panel"
 
 type Phase = "setup" | "starting" | "live" | "ended"
+
+// Camera-over-screen-share bubble: a fixed corner + size (not free drag — no pointer-tracking/clamping
+// code to get wrong, and it already covers what streamers actually use this for).
+const PIP_CORNERS = ["bottom-right", "bottom-left", "top-right", "top-left"] as const
+type PipCorner = (typeof PIP_CORNERS)[number]
+const PIP_POSITION: Record<PipCorner, string> = {
+  "bottom-right": "bottom-14 right-3",
+  "bottom-left": "bottom-14 left-3",
+  "top-right": "top-3 right-3",
+  "top-left": "top-3 left-3",
+}
+type PipSize = "sm" | "md" | "lg"
+const PIP_WIDTH: Record<PipSize, string> = { sm: "w-32", md: "w-44", lg: "w-60" }
+const PIP_SIZE_LABEL: Record<PipSize, string> = { sm: "Küçük", md: "Orta", lg: "Büyük" }
 
 interface Devices {
   cams: MediaDeviceInfo[]
@@ -190,6 +205,24 @@ const publishOptsOf = (p: QualityPreset) => {
   }
 }
 
+/**
+ * The screen-share video had no bitrate cap or simulcast ladder at all — LiveKit sends a single stream at
+ * whatever bitrate the capture happens to need, so a viewer with a weaker connection just stutters instead
+ * of falling back to a lighter stream the way the camera already does. A low layer gives them that fallback;
+ * capping the top layer keeps a very busy capture (lots of on-screen motion/detail) from spiking bandwidth.
+ */
+const SCREEN_SHARE_PUBLISH_OPTS = {
+  source: Track.Source.ScreenShare,
+  name: "screen",
+  contentHint: "detail",
+  simulcast: true,
+  videoEncoding: { maxBitrate: 3_000_000, maxFramerate: 30 },
+  videoSimulcastLayers: [new VideoPreset(960, 540, 700_000, 15)],
+} as const
+/** Desktop/system audio — not a voice signal, so the mic's echo-cancel/noise-suppress/AGC chain would only degrade it. */
+const SCREEN_SHARE_AUDIO_CAPTURE_OPTS = { echoCancellation: false, noiseSuppression: false, autoGainControl: false } as const
+const SCREEN_SHARE_AUDIO_PUBLISH_OPTS = { source: Track.Source.ScreenShareAudio, name: "screen-audio", dtx: false } as const
+
 export function Studio({ trial = false }: { trial?: boolean }) {
   const router = useRouter()
   const workshopId = useSearchParams().get("workshop")
@@ -208,6 +241,9 @@ export function Studio({ trial = false }: { trial?: boolean }) {
   const [micOn, setMicOn] = useState(true)
   const [sharing, setSharing] = useState(false)
   const [screenTrack, setScreenTrack] = useState<LocalVideoTrack | null>(null)
+  const [screenAudioTrack, setScreenAudioTrack] = useState<LocalAudioTrack | null>(null)
+  const [pipCorner, setPipCorner] = useState<PipCorner>("bottom-right")
+  const [pipSize, setPipSize] = useState<PipSize>("md")
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
   const [liveRoomId, setLiveRoomId] = useState<string | null>(null)
@@ -423,9 +459,10 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     async (r: Room) => {
       if (videoTrack) await r.localParticipant.publishTrack(videoTrack, publishOptsOf(preset))
       if (audioTrack) await r.localParticipant.publishTrack(audioTrack, { source: Track.Source.Microphone, name: "mic", dtx: true })
-      if (screenTrack) await r.localParticipant.publishTrack(screenTrack, { source: Track.Source.ScreenShare, name: "screen", contentHint: "detail" } as any)
+      if (screenTrack) await r.localParticipant.publishTrack(screenTrack, SCREEN_SHARE_PUBLISH_OPTS as any)
+      if (screenAudioTrack) await r.localParticipant.publishTrack(screenAudioTrack, SCREEN_SHARE_AUDIO_PUBLISH_OPTS)
     },
-    [videoTrack, audioTrack, screenTrack, preset]
+    [videoTrack, audioTrack, screenTrack, screenAudioTrack, preset]
   )
 
   const goLive = async () => {
@@ -493,6 +530,7 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     }
     await live.disconnect().catch(() => {})
     if (screenTrack) { screenTrack.stop(); setScreenTrack(null) }
+    if (screenAudioTrack) { screenAudioTrack.stop(); setScreenAudioTrack(null) }
     setSharing(false)
     setPhase("ended")
   }
@@ -530,36 +568,41 @@ export function Studio({ trial = false }: { trial?: boolean }) {
     if (sharing) {
       // Stop sharing
       try {
-        if (isLive && room && screenTrack) {
-          await room.localParticipant.unpublishTrack(screenTrack, true)
-        }
+        if (isLive && room && screenTrack) await room.localParticipant.unpublishTrack(screenTrack, true)
+        if (isLive && room && screenAudioTrack) await room.localParticipant.unpublishTrack(screenAudioTrack, true)
       } catch {}
       screenTrack?.stop()
+      screenAudioTrack?.stop()
       setScreenTrack(null)
+      setScreenAudioTrack(null)
       setSharing(false)
       return
     }
 
     try {
-      const tracks = await createLocalScreenTracks({ audio: false })
-      const vt = tracks[0] as LocalVideoTrack
+      // audio: whatever's playing on the shared screen/app — the Electron main process offers Windows loopback
+      // capture for this (see streamer/main.js); without requesting it here that offer goes unused and the
+      // stream carries only the mic.
+      const tracks = await createLocalScreenTracks({ audio: SCREEN_SHARE_AUDIO_CAPTURE_OPTS, video: true, resolution: { width: 1920, height: 1080, frameRate: 30 } })
+      const vt = tracks.find((t) => t.kind === Track.Kind.Video) as LocalVideoTrack | undefined
+      const at = tracks.find((t) => t.kind === Track.Kind.Audio) as LocalAudioTrack | undefined
       if (!vt) return
 
       // When the OS "Stop sharing" overlay is clicked, clean up automatically
       vt.mediaStreamTrack.addEventListener("ended", () => {
+        at?.stop()
         setScreenTrack(null)
+        setScreenAudioTrack(null)
         setSharing(false)
       })
 
       if (isLive && room) {
-        await room.localParticipant.publishTrack(vt, {
-          source: Track.Source.ScreenShare,
-          name: "screen",
-          contentHint: "detail",
-        } as any)
+        await room.localParticipant.publishTrack(vt, SCREEN_SHARE_PUBLISH_OPTS as any)
+        if (at) await room.localParticipant.publishTrack(at, SCREEN_SHARE_AUDIO_PUBLISH_OPTS)
       }
 
       setScreenTrack(vt)
+      setScreenAudioTrack(at ?? null)
       setSharing(true)
     } catch {
       /* user cancelled picker */
@@ -780,9 +823,9 @@ export function Studio({ trial = false }: { trial?: boolean }) {
               </div>
             )}
 
-            {/* ── PiP camera when screen sharing ─────────────────────── */}
+            {/* ── PiP camera when screen sharing — corner + size adjustable, hover to reveal the controls ── */}
             {sharing && videoTrack && (
-              <div className="absolute bottom-14 right-3 w-44 aspect-video rounded-xl overflow-hidden border border-white/15 shadow-2xl bg-black ring-1 ring-black/50">
+              <div className={`group absolute ${PIP_POSITION[pipCorner]} ${PIP_WIDTH[pipSize]} aspect-video rounded-xl overflow-hidden border border-white/15 shadow-2xl bg-black ring-1 ring-black/50`}>
                 {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <video ref={pipRef} autoPlay muted playsInline className={`w-full h-full object-cover -scale-x-100 ${!camOn ? "opacity-0" : ""}`} />
                 {!camOn && (
@@ -791,6 +834,26 @@ export function Studio({ trial = false }: { trial?: boolean }) {
                   </div>
                 )}
                 <span className="absolute bottom-1.5 left-1.5 text-[9px] text-white/50 bg-black/60 px-1.5 py-0.5 rounded">Kamera</span>
+                <div className="absolute inset-x-0 top-0 flex items-center justify-end gap-1 p-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity bg-gradient-to-b from-black/70 to-transparent">
+                  <button
+                    type="button"
+                    data-testid="pip-corner"
+                    title="Kamera köşesini değiştir"
+                    onClick={() => setPipCorner((c) => PIP_CORNERS[(PIP_CORNERS.indexOf(c) + 1) % PIP_CORNERS.length])}
+                    className="p-1 rounded bg-black/50 hover:bg-black/70 text-white/80 hover:text-white transition-colors"
+                  >
+                    <Move size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="pip-size"
+                    title={`Kamera boyutu: ${PIP_SIZE_LABEL[pipSize]}`}
+                    onClick={() => setPipSize((s) => (s === "sm" ? "md" : s === "md" ? "lg" : "sm"))}
+                    className="p-1 rounded bg-black/50 hover:bg-black/70 text-white/80 hover:text-white transition-colors"
+                  >
+                    <Maximize2 size={12} />
+                  </button>
+                </div>
               </div>
             )}
 

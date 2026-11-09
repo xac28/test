@@ -69,7 +69,12 @@ export function useLiveRoom(opts: { hostIdentity?: string; isHost: boolean }) {
     const options: RoomOptions = {
       // adaptiveStream would override the viewer's manual quality choice whenever the player is resized
       adaptiveStream: false,
-      dynacast: isHost,
+      // Dynacast stops sending a simulcast layer no one is subscribed to, and resumes it once someone is —
+      // reasonable for bandwidth, but confirmed (LiveKit server logs) that after a stretch with no viewer, the
+      // host's publisher pauses every layer; a student opening the room then sees a few seconds of black video
+      // while the layer wakes back up, easily read as a broken stream. A class is a handful of viewers at most,
+      // so the bandwidth this would save isn't worth that gap — always-on layers, instant video for whoever joins.
+      dynacast: false,
     }
     const r = new Room(options)
     setRoom(r)

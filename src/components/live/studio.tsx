@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
@@ -72,6 +73,105 @@ const GRADE_STYLE: Record<NetworkGrade, { label: string; cls: string }> = {
   good: { label: "Bağlantı iyi", cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" },
   fair: { label: "Bağlantı orta", cls: "bg-amber-500/15 text-amber-300 border-amber-500/30" },
   poor: { label: "Bağlantı zayıf", cls: "bg-red-500/15 text-red-300 border-red-500/30" },
+}
+
+/**
+ * A dark-themed stand-in for <select>. Two things a native <select> can't do here: its own closed box
+ * paints fully opaque in Chromium regardless of an alpha background (see the device selectors below),
+ * and its open option list is always OS-native chrome (white, system font) — there is no cross-browser
+ * CSS that reaches it. Built from a button + an absolutely-positioned list instead, so both the closed
+ * and open states follow this panel's actual style.
+ */
+function DarkSelect({ value, onChange, options, placeholder, testId, disabled, align = "left", className = "", menuClassName = "" }: {
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+  placeholder: string
+  testId?: string
+  disabled?: boolean
+  /** Which edge of the trigger the menu hangs from — "right" for a narrow trigger near the panel's right edge. */
+  align?: "left" | "right"
+  className?: string
+  menuClassName?: string
+}) {
+  const [open, setOpen] = useState(false)
+  // Portalled to <body> and positioned in fixed coordinates: this panel sits inside a scrollable, overflow-clipped
+  // container, and an absolutely-positioned menu nested in it gets cut off at the container's edge instead of
+  // floating over the rest of the page.
+  const [pos, setPos] = useState<{ top: number; left?: number; right?: number; width: number } | null>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const place = useCallback(() => {
+    const r = btnRef.current?.getBoundingClientRect()
+    if (!r) return
+    setPos(align === "right"
+      ? { top: r.bottom + 4, right: window.innerWidth - r.right, width: r.width }
+      : { top: r.bottom + 4, left: r.left, width: r.width })
+  }, [align])
+
+  useEffect(() => {
+    if (!open) return
+    place()
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return
+      setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false) }
+    const onReflow = () => place()
+    document.addEventListener("mousedown", onDoc)
+    document.addEventListener("keydown", onKey)
+    window.addEventListener("resize", onReflow)
+    window.addEventListener("scroll", onReflow, true)
+    return () => {
+      document.removeEventListener("mousedown", onDoc)
+      document.removeEventListener("keydown", onKey)
+      window.removeEventListener("resize", onReflow)
+      window.removeEventListener("scroll", onReflow, true)
+    }
+  }, [open, place])
+
+  const current = options.find((o) => o.value === value)
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        data-testid={testId}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center justify-between gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      >
+        <span className="truncate">{current?.label ?? placeholder}</span>
+        <ChevronDown size={13} className={`shrink-0 text-white/35 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && pos && typeof document !== "undefined" && createPortal(
+        <div
+          ref={menuRef}
+          role="listbox"
+          style={{ position: "fixed", top: pos.top, left: pos.left, right: pos.right, minWidth: pos.width }}
+          className={`z-50 max-h-56 overflow-y-auto rounded-lg border border-white/10 bg-[#1c1c1e] shadow-xl shadow-black/40 ${menuClassName}`}
+        >
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              role="option"
+              aria-selected={o.value === value}
+              onClick={() => { onChange(o.value); setOpen(false) }}
+              className={`block w-full truncate text-left px-3 py-2 text-sm transition-colors ${o.value === value ? "bg-accent/20 text-white" : "text-white/70 hover:bg-white/8"}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  )
 }
 
 const captureOf = (p: QualityPreset, deviceId?: string) => ({
@@ -854,30 +954,32 @@ export function Studio({ trial = false }: { trial?: boolean }) {
                   <p className="text-[10px] text-white/30 mt-1.5">{preset.hint}</p>
                 </div>
 
-                {/* Device selectors. Chromium paints a <select>'s own background fully opaque even with
-                    appearance:none and an alpha color (unlike every other element here) — bg-white/6 was
-                    rendering as solid white, hiding the text. A plain hex color (the flattened equivalent
-                    of white/6% over this panel's #0e0e10) avoids it; appearance-none + the chevron below
-                    replace the native arrow it removes. */}
+                {/* Device selectors — DarkSelect, not <select> (see its own comment above). */}
                 <div className="grid sm:grid-cols-2 gap-3">
                   <label className="block">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">Kamera</span>
-                    <div className="relative mt-1.5">
-                      <select data-testid="camera-select" value={camId} onChange={(e) => changeCamera(e.target.value)} className="appearance-none w-full bg-[#1c1c1e] border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 pr-8 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors">
-                        <option value="">Varsayılan kamera</option>
-                        {devices.cams.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Kamera"}</option>)}
-                      </select>
-                      <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-white/35" />
+                    <div className="mt-1.5">
+                      <DarkSelect
+                        testId="camera-select"
+                        value={camId}
+                        onChange={changeCamera}
+                        placeholder="Varsayılan kamera"
+                        options={[{ value: "", label: "Varsayılan kamera" }, ...devices.cams.map((d) => ({ value: d.deviceId, label: d.label || "Kamera" }))]}
+                        className="w-full bg-[#1c1c1e] border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors"
+                      />
                     </div>
                   </label>
                   <label className="block">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">Mikrofon</span>
-                    <div className="relative mt-1.5">
-                      <select data-testid="mic-select" value={micId} onChange={(e) => changeMic(e.target.value)} className="appearance-none w-full bg-[#1c1c1e] border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 pr-8 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors">
-                        <option value="">Varsayılan mikrofon</option>
-                        {devices.mics.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Mikrofon"}</option>)}
-                      </select>
-                      <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-white/35" />
+                    <div className="mt-1.5">
+                      <DarkSelect
+                        testId="mic-select"
+                        value={micId}
+                        onChange={changeMic}
+                        placeholder="Varsayılan mikrofon"
+                        options={[{ value: "", label: "Varsayılan mikrofon" }, ...devices.mics.map((d) => ({ value: d.deviceId, label: d.label || "Mikrofon" }))]}
+                        className="w-full bg-[#1c1c1e] border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors"
+                      />
                     </div>
                   </label>
                 </div>
@@ -977,12 +1079,16 @@ export function Studio({ trial = false }: { trial?: boolean }) {
                 </label>
                 <label className="flex items-center justify-between py-1.5">
                   <span className="text-white/65 text-sm">Yavaş mod</span>
-                  <div className="relative">
-                    <select data-testid="slow-mode" value={live.settings.slowModeSec} disabled={!isLive} onChange={(e) => moderate({ action: "chat-settings", slowModeSec: Number(e.target.value) })} className="appearance-none bg-[#212123] border border-white/10 rounded-lg pl-2 pr-6 py-1 text-xs text-white/70 focus:outline-none">
-                      {SLOW_MODE_OPTIONS.map((s) => <option key={s} value={s} className="text-black">{s === 0 ? "Kapalı" : `${s} sn`}</option>)}
-                    </select>
-                    <ChevronDown size={11} className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-white/35" />
-                  </div>
+                  <DarkSelect
+                    testId="slow-mode"
+                    value={String(live.settings.slowModeSec)}
+                    onChange={(v) => moderate({ action: "chat-settings", slowModeSec: Number(v) })}
+                    disabled={!isLive}
+                    placeholder="Kapalı"
+                    options={SLOW_MODE_OPTIONS.map((s) => ({ value: String(s), label: s === 0 ? "Kapalı" : `${s} sn` }))}
+                    className="bg-[#212123] border border-white/10 rounded-lg pl-2 pr-1.5 py-1 text-xs text-white/70 focus:outline-none"
+                    align="right"
+                  />
                 </label>
                 {!isLive && <p className="text-xs text-white/30 mt-2">Yayın sırasında değiştirilebilir.</p>}
               </div>

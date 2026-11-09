@@ -81,7 +81,8 @@ test.describe("live broadcast (real LiveKit, fake camera)", () => {
 
     // slow mode set by the teacher reaches the viewer
     await tp.getByRole("button", { name: /Denetim/ }).click()
-    await tp.getByTestId("slow-mode").selectOption("30")
+    await tp.getByTestId("slow-mode").click()
+    await tp.getByRole("option", { name: "30 sn" }).click()
     await expect(sp.getByText("Yavaş mod · 30 sn")).toBeVisible({ timeout: 15_000 })
     await sp.getByTestId("chat-input").fill("ikinci mesaj")
     await sp.getByTestId("chat-send").click()

@@ -854,21 +854,31 @@ export function Studio({ trial = false }: { trial?: boolean }) {
                   <p className="text-[10px] text-white/30 mt-1.5">{preset.hint}</p>
                 </div>
 
-                {/* Device selectors */}
+                {/* Device selectors. Chromium paints a <select>'s own background fully opaque even with
+                    appearance:none and an alpha color (unlike every other element here) — bg-white/6 was
+                    rendering as solid white, hiding the text. A plain hex color (the flattened equivalent
+                    of white/6% over this panel's #0e0e10) avoids it; appearance-none + the chevron below
+                    replace the native arrow it removes. */}
                 <div className="grid sm:grid-cols-2 gap-3">
                   <label className="block">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">Kamera</span>
-                    <select data-testid="camera-select" value={camId} onChange={(e) => changeCamera(e.target.value)} className="mt-1.5 w-full bg-white/6 border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors">
-                      <option value="">Varsayılan kamera</option>
-                      {devices.cams.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Kamera"}</option>)}
-                    </select>
+                    <div className="relative mt-1.5">
+                      <select data-testid="camera-select" value={camId} onChange={(e) => changeCamera(e.target.value)} className="appearance-none w-full bg-[#1c1c1e] border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 pr-8 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors">
+                        <option value="">Varsayılan kamera</option>
+                        {devices.cams.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Kamera"}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-white/35" />
+                    </div>
                   </label>
                   <label className="block">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">Mikrofon</span>
-                    <select data-testid="mic-select" value={micId} onChange={(e) => changeMic(e.target.value)} className="mt-1.5 w-full bg-white/6 border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors">
-                      <option value="">Varsayılan mikrofon</option>
-                      {devices.mics.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Mikrofon"}</option>)}
-                    </select>
+                    <div className="relative mt-1.5">
+                      <select data-testid="mic-select" value={micId} onChange={(e) => changeMic(e.target.value)} className="appearance-none w-full bg-[#1c1c1e] border border-white/10 hover:border-white/20 rounded-lg px-3 py-2 pr-8 text-sm text-white/70 focus:outline-none focus:border-accent/50 transition-colors">
+                        <option value="">Varsayılan mikrofon</option>
+                        {devices.mics.map((d) => <option key={d.deviceId} value={d.deviceId} className="text-black">{d.label || "Mikrofon"}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-white/35" />
+                    </div>
                   </label>
                 </div>
               </div>
@@ -967,9 +977,12 @@ export function Studio({ trial = false }: { trial?: boolean }) {
                 </label>
                 <label className="flex items-center justify-between py-1.5">
                   <span className="text-white/65 text-sm">Yavaş mod</span>
-                  <select data-testid="slow-mode" value={live.settings.slowModeSec} disabled={!isLive} onChange={(e) => moderate({ action: "chat-settings", slowModeSec: Number(e.target.value) })} className="bg-white/8 border border-white/10 rounded-lg px-2 py-1 text-xs text-white/70 focus:outline-none">
-                    {SLOW_MODE_OPTIONS.map((s) => <option key={s} value={s} className="text-black">{s === 0 ? "Kapalı" : `${s} sn`}</option>)}
-                  </select>
+                  <div className="relative">
+                    <select data-testid="slow-mode" value={live.settings.slowModeSec} disabled={!isLive} onChange={(e) => moderate({ action: "chat-settings", slowModeSec: Number(e.target.value) })} className="appearance-none bg-[#212123] border border-white/10 rounded-lg pl-2 pr-6 py-1 text-xs text-white/70 focus:outline-none">
+                      {SLOW_MODE_OPTIONS.map((s) => <option key={s} value={s} className="text-black">{s === 0 ? "Kapalı" : `${s} sn`}</option>)}
+                    </select>
+                    <ChevronDown size={11} className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-white/35" />
+                  </div>
                 </label>
                 {!isLive && <p className="text-xs text-white/30 mt-2">Yayın sırasında değiştirilebilir.</p>}
               </div>

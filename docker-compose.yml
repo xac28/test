@@ -29,6 +29,8 @@ services:
       - "${PUBLIC_BIND:-127.0.0.1}:7880:7880"   # signalling: reachable only through the TLS proxy (wss://); set PUBLIC_BIND=0.0.0.0 only for tests without a proxy
       - "7881:7881"            # WebRTC over TCP
       - "50000-50100:50000-50100/udp"   # WebRTC media
+      - "3478:3478/udp"        # embedded TURN relay (deploy/livekit.yaml) — NAT traversal fallback
+      - "51000-51100:51000-51100/udp"   # that TURN relay's own media range
 
   web:
     build:

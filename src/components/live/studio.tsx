@@ -203,6 +203,10 @@ const publishOptsOf = (p: QualityPreset) => {
     simulcast: layers.length > 0,
     videoEncoding: { maxBitrate: p.maxBitrate, maxFramerate: p.fps },
     videoSimulcastLayers: layers.map((l) => new VideoPreset(l.width, l.height, l.maxBitrate, l.maxFramerate)),
+    // Under CPU or bandwidth pressure the encoder has to give something up — for a yoga class, motion
+    // judder (dropped frames) reads as much more "broken" than a slightly softer picture, so tell it to
+    // protect frame rate first.
+    degradationPreference: "maintain-framerate" as const,
   }
 }
 
@@ -219,6 +223,7 @@ const SCREEN_SHARE_PUBLISH_OPTS = {
   simulcast: true,
   videoEncoding: { maxBitrate: 3_000_000, maxFramerate: 30 },
   videoSimulcastLayers: [new VideoPreset(960, 540, 700_000, 15)],
+  degradationPreference: "maintain-framerate" as const,
 } as const
 /** Desktop/system audio — not a voice signal, so the mic's echo-cancel/noise-suppress/AGC chain would only degrade it. */
 const SCREEN_SHARE_AUDIO_CAPTURE_OPTS = { echoCancellation: false, noiseSuppression: false, autoGainControl: false } as const

@@ -7,7 +7,7 @@ Bu rehber tek bir sunucuda (VDS) Docker ile kurulumu anlatır. Docker kullanmada
 ## 1. Gerekenler
 - 2 vCPU / 4 GB RAM (canlı yayın yoğunsa daha fazla), Ubuntu 22.04+, Docker 24+ ve Docker Compose.
 - İki alan adı kaydı, bu makineye: `aya.ornek.com` (site) ve `live.aya.ornek.com` (LiveKit).
-- Açık portlar: 80, 443 (site), 7881/tcp ve 50000–50100/udp (canlı yayın medyası).
+- Açık portlar: 80, 443 (site), 7881/tcp, 50000–50100/udp (canlı yayın medyası), 3478/udp ve 51000–51100/udp (TURN aktarımı — NAT arkasındaki izleyiciler/öğretmenler için; olmadan bağlantı bazı ağlarda hiç kurulamaz ya da TCP'ye düşüp takılır).
 - E-posta gönderimi için bir SMTP hesabı (Gmail uygulama şifresi olabilir): şifre sıfırlama ve e-posta doğrulama buna bağlı.
 
 ## 2. Ayarlar
@@ -122,7 +122,7 @@ STREAMER_MIN_VERSION=1.1.0 STREAMER_SERVER_URL=… ./scripts/build-streamer.sh  
 ## 9. Alan adı (domain) geçişi — sırayla
 1. **DNS:** `aya.ornek.com` ve `live.aya.ornek.com` için A kaydı → sunucu IP'si.
 2. **`.env`:** `NEXT_PUBLIC_SITE_URL`, `NEXTAUTH_URL` (https), `LIVEKIT_PUBLIC_URL=wss://live.aya.ornek.com`, `CSP_MODE=enforce`, `ENABLE_HSTS=true`, `REQUIRE_EMAIL_VERIFICATION=true`. Açılışta `docker compose logs web` içinde yapılandırma uyarısı kalmamalı (`PUBLIC_BIND` yazmayın).
-3. **Caddy:** `deploy/Caddyfile` içindeki iki alan adını değiştirin. Site ve LiveKit yalnızca Caddy üzerinden açılır (3000 ve 7880 portları dışarıya kapalıdır); güvenlik duvarında yalnızca 80, 443, 7881/tcp ve 50000-50100/udp açık olsun.
+3. **Caddy:** `deploy/Caddyfile` içindeki iki alan adını değiştirin. Site ve LiveKit yalnızca Caddy üzerinden açılır (3000 ve 7880 portları dışarıya kapalıdır); güvenlik duvarında yalnızca 80, 443, 7881/tcp, 50000-50100/udp, 3478/udp ve 51000-51100/udp (TURN) açık olsun.
 4. **Eski test adresini temizleyin:** `namaste-mobile/constants.ts` (`API_BASE` varsayılanı) ve `next.config.js` (`images.remotePatterns` içindeki eski IP) yeni alan adıyla değiştirilmeli; mobil uygulama ve yayın uygulaması yeni adresle yeniden derlenmeli.
 5. **Üçüncü taraf geri dönüş adresleri:** Google OAuth (yetkili yönlendirme URI: `https://aya.ornek.com/api/auth/callback/google`), Stripe webhook (`https://aya.ornek.com/api/webhooks/stripe`), iyzico callback adresleri.
 6. **Doğrulama:** `curl https://aya.ornek.com/api/health`, tarayıcıda kayıt → e-posta doğrulama → giriş, `https://aya.ornek.com/robots.txt` ve `/sitemap.xml`, bir canlı yayın (başka ağdan).

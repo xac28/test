@@ -13,10 +13,10 @@ $("form").addEventListener("submit", async (e) => {
   e.preventDefault()
   err("")
   $("go").disabled = true
-  $("go").textContent = "Bağlanılıyor…"
+  $("go").innerHTML = '<span class="spinner"></span><span>Bağlanılıyor…</span>'
   const r = await window.ayaStreamer.pair($("code").value, $("server").value)
   if (r && r.ok) return // the main process now opens the studio
   err((r && r.error) || "Bağlanılamadı.")
   $("go").disabled = false
-  $("go").textContent = "Bağla"
+  $("go").innerHTML = '<span id="go-label">Bağla</span>'
 })

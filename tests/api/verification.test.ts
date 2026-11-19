@@ -26,12 +26,15 @@ describe("registration and the address behind it", () => {
     expect(row.token).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  it("registering with the address of a Google-only account does not give out a password for it", async () => {
-    const victim = await db.user.create({ data: { name: "Google Kullanıcı", email: `g-${Date.now()}@aya.test`, password: null, emailVerified: new Date() } })
-    const res = await json("/api/auth/register", null, "POST", { name: "Saldırgan", email: victim.email, password: "Passw0rd!", acceptTerms: true })
+  it.each(["/api/auth/register", "/api/mobile/auth/register"])("registering at %s with the address of a Google-only account does not give out a password for it", async (path) => {
+    const victim = await db.user.create({ data: { name: "Google Kullanıcı", email: `g-${Date.now()}-${Math.random().toString(16).slice(2, 6)}@aya.test`, password: null, emailVerified: new Date() } })
+    const res = await json(path, null, "POST", { name: "Saldırgan", email: victim.email, password: "Passw0rd!", acceptTerms: true })
     expect(res.status).toBe(409)
-    expect((await res.json()).code).toBe("USE_GOOGLE_OR_RESET")
+    const body = await res.json()
+    expect(body.code).toBe("USE_GOOGLE_OR_RESET")
+    expect(body.token).toBeUndefined()
     expect((await db.user.findUniqueOrThrow({ where: { id: victim.id } })).password).toBeNull()
+    expect(await db.session.count({ where: { userId: victim.id } })).toBe(0)
   })
 })
 

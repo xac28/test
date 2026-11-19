@@ -23,6 +23,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const studentLinks = [
     { name: "Pratiğim", href: "/dashboard", icon: Home },
     { name: "Profilim", href: "/dashboard/profile", icon: Settings },
+    { name: "Üyeliğim", href: "/dashboard/uyelik", icon: CreditCard },
     { name: "Eğitmen Bul", href: "/teachers", icon: Users },
     { name: "Bildirimler", href: "/dashboard/notifications", icon: Bell },
     { name: "Raporlarım", href: "/dashboard/reports", icon: Flag },

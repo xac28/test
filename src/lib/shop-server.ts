@@ -52,8 +52,29 @@ export interface CreateOrderData {
 }
 
 /** Reserves the stock and writes the order in one transaction; nothing is kept when any line is out of stock. */
+/**
+ * MariaDB ≥ 11.6 (snapshot isolation on by default) aborts a transaction whose row another buyer just
+ * changed (error 1020), and InnoDB can pick a deadlock victim (1213). Both are safe to run again.
+ */
+function isWriteConflict(e: any): boolean {
+  if (e?.code === "P2034") return true
+  const msg = String(e?.message ?? "")
+  return /code: (1020|1213)\b|Record has changed since last read|deadlock/i.test(msg)
+}
+
+async function withConflictRetry<T>(run: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await run()
+    } catch (e) {
+      if (!isWriteConflict(e) || attempt >= 6) throw e
+      await new Promise((r) => setTimeout(r, 15 + Math.random() * 40 * (attempt + 1)))
+    }
+  }
+}
+
 export async function createOrder(data: CreateOrderData, userId: string | null) {
-  const order = await db.$transaction(async (tx) => {
+  const order = await withConflictRetry(() => db.$transaction(async (tx) => {
     const ids = data.items.map((i) => i.productId)
     const products = await tx.product.findMany({ where: { id: { in: ids }, status: "PUBLISHED" } })
     if (products.length !== ids.length) throw new ShopError("Sepetteki bir ürün artık satışta değil. Sepeti güncelleyin.")
@@ -78,7 +99,7 @@ export async function createOrder(data: CreateOrderData, userId: string | null) 
         if (e?.code !== "P2002" || attempt >= 4) throw e // only a code clash is worth retrying
       }
     }
-  })
+  }))
 
   await mailCustomer(order, `AYA siparişiniz alındı (${order.code})`, "Siparişinizi aldık, teşekkürler.")
   await mailAdmin(`Yeni sipariş ${order.code}`, `<p><strong>${esc(order.name)}</strong> (${esc(order.email)}) yeni bir sipariş verdi.</p>${itemsTable(order)}<p>Ödeme: ${PAY_METHOD_LABEL[order.payMethod]}<br><a href="${SITE_URL}/admin?tab=orders">Siparişlere git</a></p>`)
@@ -106,7 +127,8 @@ export async function setOrderStatus(orderId: string, to: OrderStatusId, opts: {
   if (to === "SHIPPED" && !trackingNo && !order.trackingNo) throw new ShopError("Kargoya verirken takip numarası girin.")
 
   const backInStock: string[] = []
-  const updated = await db.$transaction(async (tx) => {
+  const updated = await withConflictRetry(() => db.$transaction(async (tx) => {
+    backInStock.length = 0 // a retried attempt starts over
     if (to === "CANCELLED" && !order.stockRestored) {
       for (const i of order.items) {
         if (!i.productId) continue
@@ -125,7 +147,7 @@ export async function setOrderStatus(orderId: string, to: OrderStatusId, opts: {
       },
       include: { items: true },
     })
-  })
+  }))
   if (opts.actorId) {
     await db.auditLog.create({ data: { actorId: opts.actorId, action: `ORDER_${to}`, targetId: order.id, reason: `${order.code}${opts.reason ? `: ${opts.reason}` : ""}`.slice(0, 300) } })
   }

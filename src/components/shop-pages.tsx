@@ -9,6 +9,7 @@ import Footer from '@/components/Footer';
 import { Cover, useDateFormat, useL } from '@/components/editorial';
 import { NewsletterForm } from '@/components/newsletter';
 import { SectionFrame } from '@/components/section-pages';
+import { PayForm } from '@/components/iyzico-pay-form';
 import { CartEntry, addToCart, readCart, writeCart, CART_EVENT } from '@/lib/cart';
 import { SHOP_CATEGORIES, ShopCategory, FREE_SHIPPING_KURUS, LOW_STOCK, MAX_LINE_QTY, ORDER_STATUS_LABEL, OrderStatusId, PAY_METHOD_LABEL, SHOP_BY_SLUG, calcTotals, formatKurus } from '@/lib/shop';
 
@@ -354,22 +355,6 @@ export function OrderStatusView({ o }: { o: OrderView }) {
 }
 
 
-/** Runs the scripts of a payment form that was inserted as HTML (they do not run on their own). */
-function PayForm({ html }: { html: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const box = ref.current;
-    if (!box) return;
-    box.innerHTML = html;
-    box.querySelectorAll('script').forEach((old) => {
-      const s = document.createElement('script');
-      for (const a of Array.from(old.attributes)) s.setAttribute(a.name, a.value);
-      s.text = old.text;
-      old.replaceWith(s);
-    });
-  }, [html]);
-  return <div ref={ref} id="iyzipay-checkout-form" data-testid="pay-form" className="responsive" />;
-}
 
 function CardPayPanel({ code }: { code: string }) {
   const L = useL();

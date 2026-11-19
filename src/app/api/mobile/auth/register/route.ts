@@ -25,9 +25,9 @@ import { termsAcceptanceData } from "@/lib/terms"
  * - Email alias tespiti
  * - Telefon numarası eşleşmesi
  * 
- * Instagram-style account linking:
+ * Account resolution:
  * - New email → creates user + session
- * - Google-only email (no password) → sets password + creates session (account sync)
+ * - Google-only email (no password) → 409 USE_GOOGLE_OR_RESET (sign in with Google or reset the password by email)
  * - Existing email with password → error (already registered)
  */
 export async function POST(req: Request) {
@@ -122,15 +122,12 @@ export async function POST(req: Request) {
         )
       }
 
-      // Google OAuth user without password — link account by setting password
-      user = await db.user.update({
-        where: { email },
-        data: {
-          password: hashedPassword,
-          name: existingUser.name || name.trim(),
-          ...termsAcceptanceData(),
-        },
-      })
+      // Google-only account: never hand a password for it to whoever typed the address (that would be an
+      // account takeover). Proving the mailbox is what "forgot password" does — same rule as the web form.
+      return NextResponse.json(
+        { error: "Bu e-posta adresi Google ile kayıtlı. Google ile giriş yapabilir ya da şifre belirlemek için \"Şifremi unuttum\" bağlantısını kullanabilirsin.", code: "USE_GOOGLE_OR_RESET" },
+        { status: 409 }
+      )
     } else {
       // Brand new user
       user = await db.user.create({

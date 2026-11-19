@@ -583,6 +583,11 @@ a.bg-ink:active, button.bg-ink:not(:disabled):active, a.bg-accent:active, button
 @keyframes hintPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(47,125,225,.35); } 50% { box-shadow: 0 0 0 10px rgba(47,125,225,0); } }
 .pulse-cta { animation: hintPulse 2.6s ease-in-out infinite; }
 
+/* used through Tailwind arbitrary animations (motion-safe:animate-[rise_…]) on the pricing page and dialogs */
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-40px, 30px, 0) scale(1.08); } }
+
 @media (prefers-reduced-motion: reduce) {
   .animate-kenburns, .aurora-blob, .marquee-track, .pulse-cta, .page-transition { animation: none !important; }
   a.bg-ink:hover, button.bg-ink:hover, a.bg-accent:hover, button.bg-accent:hover, .lift:hover { transform: none; }

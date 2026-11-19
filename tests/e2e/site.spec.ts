@@ -382,6 +382,8 @@ test.describe("workshops", () => {
     await db.workshop.updateMany({ where: { status: "PUBLISHED" }, data: { status: "DRAFT" } })
     const freeTitle = `Ücretsiz Atölye ${Date.now().toString(36)}`
     await fill(freeTitle, { price: "0", capacity: "1" })
+    // the form reloads the page after saving: for a moment the old and the new document can both hold the row, so wait for one
+    await expect(t.page.getByTestId("managed-workshop").filter({ hasText: freeTitle })).toHaveCount(1, { timeout: 20_000 })
     await expect(t.page.getByTestId("managed-workshop").filter({ hasText: freeTitle })).toBeVisible({ timeout: 20_000 })
     // the page reloads after creating; retry the click until hydration has happened and the form opens
     await expect(async () => {
@@ -390,6 +392,7 @@ test.describe("workshops", () => {
     }).toPass({ timeout: 20_000 })
     const paidTitle = `Ücretli Kayıtlı ${Date.now().toString(36)}`
     await fill(paidTitle, { price: "25", mode: "RECORDED" })
+    await expect(t.page.getByTestId("managed-workshop").filter({ hasText: paidTitle })).toHaveCount(1, { timeout: 20_000 })
     await expect(t.page.getByTestId("managed-workshop").filter({ hasText: paidTitle })).toBeVisible({ timeout: 20_000 })
 
     // ── student side: free workshop ──

@@ -78,6 +78,15 @@ Rehber nasıl gelişir: Yönetim → Yapay Zeka sekmesinde “Bilinmeyen sorular
 - Sipariş iptal edildikten sonra ödeme gelirse sipariş “iade gerekli” notuyla işaretlenir ve yöneticiye e-posta gider; tutarı iyzico panelinden iade edin.
 - Anahtarsız deneme: `IYZICO_MOCK=1` (yalnızca geliştirme; üretimde asla çalışmaz) yerel bir sahte ödeme sayfası açar.
 
+## 4d. Üyelik (Premium / Sınırsız) — iyzico abonelik
+Fiyatlar sayfasındaki planlar iyzico'nun **Abonelik** ürünüyle her ay/yıl kendiliğinden tahsil edilir.
+- **iyzico'dan açtırın:** Abonelik özelliği her üye işyerinde açık gelmez; iyzico destek ekibinden "Abonelik (Subscription) API" erişimini isteyin. Sandbox'ta deneyin, sonra canlı anahtarlara geçin.
+- **Fiyatlar (TL):** `.env` → `SUB_PRICE_PREMIUM_MONTHLY=499`, `SUB_PRICE_PREMIUM_YEARLY=4790`, `SUB_PRICE_UNLIMITED_MONTHLY=999`, `SUB_PRICE_UNLIMITED_YEARLY=9590` (boş bırakılırsa bu varsayılanlar kullanılır). İlk satın almada iyzico'da ürün ("AYA Üyelik") ve fiyat planı kendiliğinden oluşturulur; fiyatı değiştirirseniz yeni plan açılır, eski aboneler eski fiyattan devam eder. Panelde kendiniz plan açtıysanız referansını `IYZICO_PLAN_PREMIUM_MONTHLY=…` gibi yazabilirsiniz.
+- **Bildirim adresi:** iyzico panelinde (Ayarlar → Bildirimler / Webhook) `https://aya.ornek.com/api/subscriptions/webhook` adresini girin. Gelen bildirimdeki bilgiye güvenilmez; abonelik iyzico API'sinden yeniden okunur.
+- **Cron:** `0 * * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://aya.ornek.com/api/cron/subscriptions` (kaçan bildirimlere karşı yenileme zamanı gelen abonelikleri iyzico'dan yeniden okur).
+- **Haklar:** Premium: tüm eğitmenlerin öğrencilere özel ($) canlı yayınlarına ayda 8 katılım (aynı yayına tekrar girmek hak harcamaz) + birebir derslerde %20 indirim; Sınırsız: tüm özel yayınlara sınırsız + %20 indirim. Üye "Üyeliğim" sayfasından iptal eder; ödediği dönem sonuna kadar hakları sürer.
+- **Birebir ders ödemesi** dolar (USD) ile alınır (ders fiyatları $): iyzico hesabınızda döviz ile tahsilat açık olmalı. Ödeme yolu (iyzico ya da Stripe) yoksa ücretli ders **rezerve edilmez**. `ALLOW_UNPAID_BOOKINGS=1` yalnızca test sunucusu içindir, canlıda asla yazmayın.
+
 ## 5. Güvenlik başlıkları
 - **CSP**: ilk dağıtımda varsayılan `report-only`: hiçbir şey engellenmez, ihlaller yönetim paneli → Günlükler → Sistem olayları'nda "CSP:" ile görünür. Bir hafta temiz kalırsa `.env` içinde `CSP_MODE=enforce` yapıp `docker compose up -d --build` çalıştırın. Ödeme (Stripe/Iyzico) ve Google girişi akışlarını enforce'a geçince mutlaka deneyin.
 - **HSTS**: yalnızca HTTPS çalıştıktan sonra `ENABLE_HSTS=true`.

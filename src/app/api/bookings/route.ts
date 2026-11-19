@@ -6,6 +6,12 @@ import { termsGate } from "@/lib/terms"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
+import { iyzicoMode } from "@/lib/iyzico"
+import { memberLessonPrice } from "@/lib/subscriptions"
+import { currentPlan } from "@/lib/subscription-server"
+
+/** Confirming a paid lesson without a payment is only for development and test servers. */
+const allowUnpaidBookings = () => process.env.NODE_ENV !== "production" || process.env.ALLOW_UNPAID_BOOKINGS === "1"
 
 // POST /api/bookings — Create a new booking (after checkout)
 export async function POST(req: Request) {
@@ -66,6 +72,19 @@ export async function POST(req: Request) {
     if (serverPrice < 0) {
       return NextResponse.json({ error: "Invalid price calculated" }, { status: 400 })
     }
+    // Premium / Sınırsız members pay the discounted price
+    serverPrice = memberLessonPrice(serverPrice, await currentPlan(user.id))
+
+    // A paid lesson needs a way to pay. Without one, nothing is booked: confirming it anyway would give lessons away.
+    const stripeKey = process.env.STRIPE_SECRET_KEY ?? ""
+    const stripeReady = stripeKey.startsWith("sk_") && !/dummy|placeholder|change-?me|xxxx/i.test(stripeKey)
+    const iyzicoReady = iyzicoMode() === "live"
+    if (serverPrice > 0 && !stripeReady && !iyzicoReady && !allowUnpaidBookings()) {
+      return NextResponse.json({ error: "Online ödeme şu an kullanılamıyor; lütfen daha sonra tekrar deneyin.", code: "PAYMENTS_OFF" }, { status: 503 })
+    }
+    if (serverPrice > 0 && paymentProvider === "iyzico" && !iyzicoReady && !allowUnpaidBookings()) {
+      return NextResponse.json({ error: "Kartla ödeme (iyzico) şu an kullanılamıyor.", code: "PAYMENTS_OFF" }, { status: 503 })
+    }
 
     // Parse the slot time
     const startTime = new Date(slot)
@@ -90,7 +109,7 @@ export async function POST(req: Request) {
     })
 
     // 2. Route based on Payment Provider
-    if (paymentProvider === "iyzico") {
+    if (serverPrice > 0 && paymentProvider === "iyzico" && iyzicoReady) {
       console.log(`[PAYMENT] Initiating Iyzico flow for Booking: ${booking.id}`)
       
       return NextResponse.json({
@@ -103,7 +122,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Try to create Stripe Checkout Session
-    if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith("sk_")) {
+    if (serverPrice > 0 && stripeReady) {
       try {
         const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
         // Calculate commission
@@ -151,12 +170,20 @@ export async function POST(req: Request) {
           message: "Redirecting to Stripe"
         })
       } catch (stripeError) {
-        console.error("Stripe error, falling back to instant confirmation:", stripeError)
-        // If Stripe fails (e.g. invalid key), fallback to instant confirmation for demo purposes
+        console.error("[BOOKING_STRIPE_ERROR]", stripeError)
+        if (!allowUnpaidBookings()) {
+          // never confirm an unpaid lesson: drop the pending booking so the slot is free again
+          await db.booking.delete({ where: { id: booking.id } }).catch(() => {})
+          return NextResponse.json({ error: "Ödeme başlatılamadı, lütfen tekrar deneyin.", code: "PAYMENT_START_FAILED" }, { status: 502 })
+        }
       }
     }
 
-    // 3. Fallback (If no Stripe key configured): Auto-confirm booking for testing
+    // 3. Free lessons — and, only on a development / test server (ALLOW_UNPAID_BOOKINGS=1), paid ones without a payment
+    if (serverPrice > 0 && !allowUnpaidBookings()) {
+      await db.booking.delete({ where: { id: booking.id } }).catch(() => {})
+      return NextResponse.json({ error: "Online ödeme şu an kullanılamıyor; lütfen daha sonra tekrar deneyin.", code: "PAYMENTS_OFF" }, { status: 503 })
+    }
     await db.booking.update({
       where: { id: booking.id },
       data: { status: "CONFIRMED" }
@@ -166,7 +193,7 @@ export async function POST(req: Request) {
       success: true,
       bookingId: booking.id,
       price: serverPrice,
-      message: "Booking confirmed successfully (Test Mode)"
+      message: serverPrice > 0 ? "Booking confirmed (test server: no payment taken)" : "Booking confirmed"
     })
   } catch (error: any) {
     console.error("[BOOKING_CREATE_ERROR]", error)

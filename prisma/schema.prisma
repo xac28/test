@@ -1089,4 +1089,50 @@ model OrderItem {
   @@index([orderId])
 }
 
+// Paid membership (Premium / Sınırsız) billed by iyzico's subscription API. User.subscriptionPlan and
+// User.subscriptionEnds mirror the latest paid period so every page can read the plan without a join.
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String
+  plan          String    @db.VarChar(16)  // PREMIUM | UNLIMITED
+  interval      String    @db.VarChar(8)   // MONTHLY | YEARLY
+  // PENDING (checkout open) → ACTIVE → CANCELED (no more charges, paid period kept) | UNPAID | EXPIRED; FAILED = checkout never completed
+  status        String    @default("PENDING") @db.VarChar(12)
+  provider      String    @default("iyzico") @db.VarChar(10) // iyzico | mock
+  priceKurus    Int
+  // iyzico's references: the subscription, its customer, the pricing plan it was sold under, the checkout form token
+  referenceCode String?   @unique @db.VarChar(80)
+  customerRef   String?   @db.VarChar(80)
+  pricingPlanRef String?  @db.VarChar(80)
+  checkoutToken String?   @unique @db.VarChar(120)
+  currentPeriodEnd DateTime?
+  canceledAt    DateTime?
+  lastSyncedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([status, currentPeriodEnd])
+}
+
+// One row per students-only broadcast a Premium member entered with a monthly pass (re-entering the same broadcast is free)
+model SubscriptionPass {
+  id          String   @id @default(cuid())
+  userId      String
+  liveRoomId  String
+  // calendar month in Europe/Istanbul, e.g. "2026-11": Premium allows PREMIUM_MONTHLY_PASSES per month
+  month       String   @db.VarChar(7)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, liveRoomId])
+  @@index([userId, month])
+}
+
+// Small key/value store for server-side settings created at runtime (e.g. iyzico product / pricing plan references)
+model AppSetting {
+  key       String   @id @db.VarChar(120)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
 // Daily token ledger of the AI guide: the budget guard reads it, the admin sees it

@@ -34,6 +34,7 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
   const [copied, setCopied] = useState(false)
   const [reportMsg, setReportMsg] = useState<ReportChatMessage | null>(null)
   const [lockedWorkshop, setLockedWorkshop] = useState<{ slug: string; title: string } | null>(null)
+  const [membersOnly, setMembersOnly] = useState(false)
 
   const live = useLiveRoom({ hostIdentity: stream?.hostIdentity, isHost: false })
   const { room, connect } = live
@@ -57,6 +58,7 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
         return
       }
       if (!res.ok) {
+        setMembersOnly(data.code === "STUDENTS_ONLY" || data.code === "PASS_LIMIT")
         setPhase(data.code === "ENDED" ? "ended" : "error")
         setErrorMsg(data.error || "Yayına katılınamadı")
         return
@@ -131,7 +133,10 @@ export function ViewerPage({ liveRoomId }: { liveRoomId: string }) {
             ? "Eğitmen yayını bitirdi. Başka bir canlı yayına göz atabilir ya da kayıtlı derslerini izleyebilirsin."
             : errorMsg}
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
+          {phase === "error" && membersOnly && (
+            <Link href="/pricing" data-testid="join-membership" className="bg-amber-400 hover:bg-amber-300 text-black px-6 py-2.5 rounded-full text-sm font-semibold">Üyelik planlarını gör</Link>
+          )}
           <Link href="/live" className="bg-accent hover:bg-accent-dark px-6 py-2.5 rounded-full text-sm font-semibold">Canlı yayınlar</Link>
           {stream && (
             <Link href={`/teachers/${stream.teacher.id}`} className="border border-white/30 hover:bg-white/10 px-6 py-2.5 rounded-full text-sm font-semibold">

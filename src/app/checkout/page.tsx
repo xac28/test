@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LanguagePicker from '@/components/LanguagePicker';
+import { PayForm } from '@/components/iyzico-pay-form';
 import { useI18n } from '@/i18n';
 import { useTeacher } from '@/lib/use-teacher';
 import { formatLocalPrice, formatUSD, localCurrencyCode } from '@/lib/currency';
@@ -144,7 +145,7 @@ function CheckoutInner() {
         {iyzicoHtml ? (
           <div className="bg-white rounded-3xl p-8 border border-sage-200 shadow-xl animate-fade-in">
             <h2 className="text-xl font-display mb-6"><>{locale === 'tr' ? 'Güvenli ödeme' : 'Secure payment'}</></h2>
-            <div id="iyzipay-checkout-form" className="responsive" dangerouslySetInnerHTML={{ __html: iyzicoHtml }} />
+            <PayForm html={iyzicoHtml} />
             <button 
               onClick={() => setIyzicoHtml(null)}
               className="mt-8 text-sm text-sage-500 hover:text-sage-800 underline"

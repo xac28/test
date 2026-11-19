@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import { livekitRoomService } from "@/lib/livekit"
 import { serializeRoomSettings, DEFAULT_ROOM_SETTINGS } from "@/lib/live-chat"
+import { effectivePlan } from "@/lib/subscriptions"
 
 /** A room nobody published into for this long is considered a ghost (teacher closed the tab). */
 export const GHOST_AFTER_MS = 3 * 60 * 1000
@@ -73,6 +74,11 @@ export async function filterVisibleBroadcasts<T extends { teacher: { id: string 
 ): Promise<T[]> {
   if (!viewer) return all.filter((b) => !b.studentsOnly)
   if (viewer.role === "ADMIN") return all
+  // Premium / Sınırsız members see every students-only broadcast (entering one is checked at join)
+  if (all.some((b) => b.studentsOnly)) {
+    const u = await db.user.findUnique({ where: { id: viewer.id }, select: { subscriptionPlan: true, subscriptionEnds: true } })
+    if (effectivePlan(u) !== "FREE") return all
+  }
   const checks = await Promise.all(
     all.map((b) => (!b.studentsOnly || b.teacher.id === viewer.id ? true : isStudentOfTeacher(viewer.id, b.teacherId)))
   )

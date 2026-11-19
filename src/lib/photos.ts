@@ -2,6 +2,7 @@
  * Photography used across the site. Each entry is a list of sources tried in order, so you can drop your
  * own file into `public/photos/` (e.g. public/photos/hero.jpg) and it is used before the stock photo;
  * if no source loads the page falls back to an animated gradient and stays beautiful.
+ * Where every photo (and pose picture) comes from, and under which licence: PHOTO_CREDITS.md.
  */
 const u = (id: string, w = 2000) => `https://images.unsplash.com/${id}?q=80&w=${w}&auto=format&fit=crop`
 
@@ -10,5 +11,5 @@ export const PHOTOS = {
   meditation: ["/photos/meditation.jpg", u("photo-1506126613408-eca07ce68773")],
   studio: ["/photos/studio.jpg", u("photo-1545205597-3d9d02c29597")],
   join: ["/photos/join.jpg", u("photo-1599901860904-17e6ed7083a0")],
-  breath: ["/photos/breath.jpg", u("photo-1518611012118-696072aa579a")],
+  breath: ["/photos/breath.jpg", u("photo-1767611038549-7cdfeb77bdd8")],
 } as const

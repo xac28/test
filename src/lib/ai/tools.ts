@@ -162,11 +162,12 @@ async function searchProducts(i: Record<string, unknown>): Promise<ToolOutput> {
       status: "PUBLISHED", ...(cat ? { category: cat } : {}), ...anyWord(["name", "summary"], q),
       ...(num(i.max_tl) !== undefined ? { priceKurus: { lte: Math.round(num(i.max_tl)! * 100) } } : {}),
     },
+    include: { brand: { select: { name: true } } },
     orderBy: i.sort === "price" ? [{ priceKurus: "asc" }] : [{ featured: "desc" }, { createdAt: "desc" }], skip: Math.max(0, Math.round(num(i.offset) ?? 0)), take: lim(i.limit, 4, 6),
   })
   return {
-    result: { products: rows.map((p) => ({ name: p.name, category: p.category, summary: p.summary, price: formatKurus(p.priceKurus), price_kurus: p.priceKurus, in_stock: p.stock > 0, stock: p.stock <= 3 ? p.stock : undefined, link: `/shop/urun/${p.slug}` })), note: rows.length ? undefined : "Mağazada bu aramaya uyan ürün yok." },
-    cards: rows.map((p) => ({ kind: "product" as const, title: p.name, subtitle: p.stock > 0 ? p.summary : "Tükendi", meta: formatKurus(p.priceKurus), href: `/shop/urun/${p.slug}`, image: parseImages(p.images)[0] ?? null })),
+    result: { products: rows.map((p) => ({ name: p.name, brand: p.brand?.name ?? null, category: p.category, summary: p.summary, price: formatKurus(p.priceKurus), price_kurus: p.priceKurus, in_stock: p.stock > 0, stock: p.stock <= 3 ? p.stock : undefined, link: `/shop/urun/${p.slug}` })), note: rows.length ? undefined : "Mağazada bu aramaya uyan ürün yok." },
+    cards: rows.map((p) => ({ kind: "product" as const, title: p.brand ? `${p.name} (${p.brand.name})` : p.name, subtitle: p.stock > 0 ? p.summary : "Tükendi", meta: formatKurus(p.priceKurus), href: `/shop/urun/${p.slug}`, image: parseImages(p.images)[0] ?? null })),
   }
 }
 

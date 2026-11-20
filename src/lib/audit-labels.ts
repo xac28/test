@@ -10,6 +10,10 @@ const EXACT: Record<string, string> = {
   SUPPORT_REPLY: "Destek yanıtı", SUPPORT_NOTE: "Destek iç notu", SUPPORT_CLOSE: "Destek kapatıldı", SUPPORT_REOPEN: "Destek yeniden açıldı", SUPPORT_ASSIGN: "Destek üstlenildi", SUPPORT_UNASSIGN: "Destek devredildi", SUPPORT_PRIORITY: "Destek önceliği",
   POST_APPROVE: "Fotoğraf onaylandı", POST_REJECT: "Fotoğraf reddedildi", POST_REMOVE: "Fotoğraf kaldırıldı", POST_RESTORE: "Fotoğraf geri yüklendi",
   COMMENT_REMOVE: "Yorum kaldırıldı", COMMENT_RESTORE: "Yorum geri yüklendi", REVIEW_REMOVE: "Değerlendirme kaldırıldı", REVIEW_RESTORE: "Değerlendirme geri yüklendi",
+  BRAND_PAYOUT: "Marka ödemesi kaydedildi",
+  PERSONAL_DISCOUNT_GRANT: "Kişisel indirim verildi", PERSONAL_DISCOUNT_CANCEL: "Kişisel indirim iptal edildi",
+  CAMPAIGN_CREATE: "Kampanya oluşturuldu", CAMPAIGN_UPDATE: "Kampanya güncellendi", CAMPAIGN_DELETE: "Kampanya silindi",
+  NEWSLETTER_SEND: "Bülten gönderildi", NEWSLETTER_DELETE: "Bülten kaydı silindi",
 }
 const PREFIX: [string, string][] = [["REPORT_", "Rapor işlemi"], ["PAYOUT_", "Ödeme talebi"], ["TRIAL_", "Deneme odası"]]
 

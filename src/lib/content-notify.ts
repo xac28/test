@@ -28,10 +28,10 @@ export async function notifyNewContent(kind: Kind, id: string, createdById?: str
     body = `${e.title}${e.guest ? ` — konuk: ${e.guest}` : ""}\n\n${e.description.slice(0, 400)}${e.description.length > 400 ? "…" : ""}`
     href = `${SITE_URL}/podcast/${e.slug}`
   } else {
-    const p = await db.product.findUnique({ where: { id }, select: { name: true, summary: true, slug: true, priceKurus: true } })
+    const p = await db.product.findUnique({ where: { id }, select: { name: true, summary: true, slug: true, priceKurus: true, brand: { select: { name: true } } } })
     if (!p) return null
     subject = `AYA Shop’ta yeni: ${p.name}`
-    body = `${p.name} (${formatKurus(p.priceKurus)})\n\n${p.summary}`
+    body = `${p.name}${p.brand ? ` — ${p.brand.name}` : ""} (${formatKurus(p.priceKurus)})\n\n${p.summary}`
     href = `${SITE_URL}/shop/urun/${p.slug}`
   }
   const label = kind === "podcast" ? "Dinle" : kind === "product" ? "Ürüne bak" : "Oku"

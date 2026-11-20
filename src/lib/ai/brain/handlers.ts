@@ -315,7 +315,7 @@ export async function products(env: Env): Promise<Answer> {
     rows = r.result.products ?? []
   }
   if (!rows.length) return answer({ intent: "products", kind: "navigation", tools: ["search_products"], text: "Mağazada şu an listelenecek ürün yok; yeni ürünler eklenince burada görünür.", links: [{ label: "Mağaza", href: "/shop" }] })
-  const lines = rows.slice(0, 4).map((p) => `- **${p.name}** — ${p.price}${p.in_stock ? (p.stock ? ` · son ${p.stock} adet` : "") : " · **tükendi**"}`)
+  const lines = rows.slice(0, 4).map((p) => `- **${p.name}**${p.brand ? ` (${p.brand})` : ""} — ${p.price}${p.in_stock ? (p.stock ? ` · son ${p.stock} adet` : "") : " · **tükendi**"}`)
   const ship = `₺${FREE_SHIPPING_KURUS / 100} üzeri siparişlerde kargo ücretsiz; ödemeyi havale/EFT ya da kapıda yapabilirsin.`
   return answer({
     intent: "products", kind: "navigation", tools: ["search_products"], cards: r.cards ?? [], confidence: env.turn.cls.confidence,

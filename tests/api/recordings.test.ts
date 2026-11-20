@@ -34,10 +34,11 @@ describe("lesson recording flow", () => {
     const { id, expiresAt } = await start.json()
     expect(id).toBeTruthy()
 
-    // 30-day retention
+    // 30-day retention — a tiny upper-bound slack absorbs clock-resolution jitter between
+    // the server's expiresAt computation and this process's Date.now() call, not a real window
     const days = (new Date(expiresAt).getTime() - Date.now()) / 86_400_000
     expect(days).toBeGreaterThan(29.9)
-    expect(days).toBeLessThanOrEqual(30)
+    expect(days).toBeLessThanOrEqual(30.001)
 
     // Student cannot upload chunks
     expect((await put(id, 0, student, "x")).status).toBe(403)

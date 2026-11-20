@@ -79,7 +79,9 @@ async function searchWorkshops(i: Record<string, unknown>): Promise<ToolOutput> 
       ...(mode ? { mode } : {}),
       ...(category ? { category: { contains: category } } : {}),
       ...(max !== undefined ? { priceUsd: { lte: max } } : {}),
-      OR: [{ mode: "RECORDED" }, { startsAt: { gte: from ?? new Date(now.getTime() - 3_600_000), ...(to ? { lte: to } : {}) } }],
+      // A recording can be watched any time, so it always qualifies — unless a specific day was asked for
+      // (from set): then it must not crowd out that day's live sessions under the `take` cap below.
+      OR: [...(from ? [] : [{ mode: "RECORDED" as const }]), { startsAt: { gte: from ?? new Date(now.getTime() - 3_600_000), ...(to ? { lte: to } : {}) } }],
     },
     include: { teacher: { include: { user: { select: { name: true } } } }, enrollments: { select: { status: true } } },
     orderBy: [{ startsAt: "asc" }, { createdAt: "desc" }],

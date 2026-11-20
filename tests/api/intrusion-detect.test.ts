@@ -4,7 +4,10 @@ import { api, db } from "./helpers"
 // 203.0.113.0/24 is TEST-NET-3 (RFC 5737): reserved for documentation and examples, never a real routable
 // address, and — unlike the 10.x.x.x range the other tests use — NOT in isBannableIp's private-range
 // exemption, so the auto-ban system treats it exactly like an ordinary visitor's public IP.
-const testIp = () => `203.0.113.${1 + Math.floor(Math.random() * 253)}`
+// A counter, not Math.random(), so two calls in the same run never collide and re-ban
+// each other's test IP by accident (203.0.113.0/24 only has 253 usable addresses).
+let nextTestIp = 1
+const testIp = () => `203.0.113.${nextTestIp++}`
 const used: string[] = []
 const bannableIp = () => { const ip = testIp(); used.push(ip); return ip }
 

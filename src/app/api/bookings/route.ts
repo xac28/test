@@ -10,6 +10,7 @@ import { iyzicoMode } from "@/lib/iyzico"
 import { memberLessonPrice } from "@/lib/subscriptions"
 import { currentPlan } from "@/lib/subscription-server"
 import { applyDiscountPct, campaignDiscountPct, personalDiscountPct } from "@/lib/discounts"
+import { stripeReady as isStripeReady } from "@/lib/payments"
 
 /** Confirming a paid lesson without a payment is only for development and test servers. */
 const allowUnpaidBookings = () => process.env.NODE_ENV !== "production" || process.env.ALLOW_UNPAID_BOOKINGS === "1"
@@ -95,8 +96,7 @@ export async function POST(req: Request) {
     serverPrice = applyDiscountPct(serverPrice, promoPct)
 
     // A paid lesson needs a way to pay. Without one, nothing is booked: confirming it anyway would give lessons away.
-    const stripeKey = process.env.STRIPE_SECRET_KEY ?? ""
-    const stripeReady = stripeKey.startsWith("sk_") && !/dummy|placeholder|change-?me|xxxx/i.test(stripeKey)
+    const stripeReady = isStripeReady()
     const iyzicoReady = iyzicoMode() === "live"
     if (serverPrice > 0 && !stripeReady && !iyzicoReady && !allowUnpaidBookings()) {
       return NextResponse.json({ error: "Online ödeme şu an kullanılamıyor; lütfen daha sonra tekrar deneyin.", code: "PAYMENTS_OFF" }, { status: 503 })

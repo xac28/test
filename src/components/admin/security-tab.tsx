@@ -13,6 +13,10 @@ interface Logs { logs: { id: string; ipAddress: string; attemptedEmail: string |
 interface Visitors { visitors: { id: string; ipAddress: string; userAgent: string | null; lastPath: string | null; firstSeenAt: string; lastSeenAt: string; hitCount: number; banned: boolean }[]; total: number; page: number; activeToday: number }
 interface Attacks { attacks: { id: string; ipAddress: string; kind: string; path: string | null; userAgent: string | null; autoBanned: boolean; createdAt: string }[]; total: number; page: number }
 
+const ATTACK_KIND_LABEL: Record<string, string> = {
+  PATH_SCAN: "Tarama", INJECTION: "Enjeksiyon", SCANNER_UA: "Saldırı aracı", API_ENUM: "Uç nokta taraması",
+}
+
 export function SecurityTab({ onOpenUser }: { onOpenUser: (id: string) => void }) {
   const [view, setView] = useState<"bans" | "evasions" | "visitors" | "attacks">("bans")
   const [page, setPage] = useState(1)
@@ -169,7 +173,7 @@ export function SecurityTab({ onOpenUser }: { onOpenUser: (id: string) => void }
                 <tr key={a.id} data-testid="attack-row">
                   <td className="px-4 py-3 text-xs whitespace-nowrap text-sage-500">{fmtDateTime(a.createdAt)}</td>
                   <td className="px-4 py-3 font-mono">{a.ipAddress}</td>
-                  <td className="px-4 py-3"><Pill tone="amber">{a.kind === "PATH_SCAN" ? "Tarama" : "Enjeksiyon"}</Pill></td>
+                  <td className="px-4 py-3"><Pill tone="amber">{ATTACK_KIND_LABEL[a.kind] ?? a.kind}</Pill></td>
                   <td className="px-4 py-3 max-w-xs truncate text-xs text-sage-600" title={a.path ?? undefined}>{a.path ?? "—"}</td>
                   <td className="px-4 py-3">{a.autoBanned ? <Pill tone="red">Otomatik banlandı</Pill> : <Pill>İzleniyor</Pill>}</td>
                   <td className="px-4 py-3 text-right">

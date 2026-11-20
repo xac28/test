@@ -2,6 +2,8 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { resolveUser } from "@/lib/auth-utils"
 
+export const dynamic = "force-dynamic"
+
 // GET /api/mobile/me
 export async function GET(req: Request) {
   try {
@@ -18,6 +20,7 @@ export async function GET(req: Request) {
         email: user.email,
         image: user.image,
         role: user.role,
+        termsAccepted: user.termsAccepted,
       },
     })
   } catch (error: any) {

@@ -16,6 +16,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import crypto from "crypto"
 import { extractIp, logUserIp } from "@/lib/ban-engine"
+import { hasAcceptedCurrentTerms } from "@/lib/terms"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,8 @@ export interface AuthUser {
   email: string | null
   image: string | null
   role: string
+  /** True when the user has accepted the current terms (sözleşme). */
+  termsAccepted: boolean
 }
 
 export interface MobileSession {
@@ -55,9 +58,9 @@ export async function resolveUser(req: Request): Promise<AuthUser | null> {
     // 🛡️ Banned kontrolü
     const fullUser = await db.user.findUnique({
       where: { id: mobileUser.id },
-      select: { banned: true }
+      select: { banned: true, deletedAt: true }
     })
-    if (fullUser?.banned) return null
+    if (fullUser?.banned || fullUser?.deletedAt) return null
 
     // IP logla (arka planda, bloklamaz)
     const ip = extractIp(req)
@@ -72,9 +75,9 @@ export async function resolveUser(req: Request): Promise<AuthUser | null> {
     // 🛡️ Banned kontrolü
     const fullUser = await db.user.findUnique({
       where: { id: webUser.id },
-      select: { banned: true }
+      select: { banned: true, deletedAt: true }
     })
-    if (fullUser?.banned) return null
+    if (fullUser?.banned || fullUser?.deletedAt) return null
 
     // IP logla
     const ip = extractIp(req)
@@ -208,6 +211,7 @@ export function sanitizeUser(user: any): AuthUser {
     email: user.email,
     image: user.image,
     role: user.role,
+    termsAccepted: hasAcceptedCurrentTerms(user),
   }
 }
 

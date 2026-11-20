@@ -32,7 +32,7 @@ export default function TeachersScreen() {
         setTeachers(data)
       }
     } catch (e) {
-      console.error("Failed to fetch teachers", e)
+      console.error("Eğitmenler alınamadı", e)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -46,7 +46,13 @@ export default function TeachersScreen() {
   const renderTeacher = ({ item }: { item: Teacher }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Image source={{ uri: item.avatar }} style={styles.avatar} />
+        {item.avatar ? (
+          <Image source={{ uri: item.avatar }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, { alignItems: "center", justifyContent: "center" }]}>
+            <Text style={{ fontSize: 24, color: colors.sage[700] }}>{item.name?.[0] ?? "·"}</Text>
+          </View>
+        )}
         <View style={styles.infoContainer}>
           <Text style={styles.name}>{item.name}</Text>
           <View style={styles.metaRow}>
@@ -71,7 +77,7 @@ export default function TeachersScreen() {
 
       <View style={styles.footer}>
         <View>
-          <Text style={styles.priceLabel}>Hourly Rate</Text>
+          <Text style={styles.priceLabel}>Saatlik ücret</Text>
           <Text style={styles.priceValue}>${item.hourlyRate.toFixed(2)}</Text>
         </View>
         <TouchableOpacity 
@@ -79,7 +85,7 @@ export default function TeachersScreen() {
           activeOpacity={0.8}
           onPress={() => alert(`Booking functionality for ${item.name} will be available in the next update!`)}
         >
-          <Text style={styles.bookButtonText}>Book Session</Text>
+          <Text style={styles.bookButtonText}>Ders ayır</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -97,8 +103,8 @@ export default function TeachersScreen() {
     <View style={styles.container}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Find a Teacher</Text>
-        <Text style={styles.headerSubtitle}>Discover your perfect guide</Text>
+        <Text style={styles.headerTitle}>Eğitmen bul</Text>
+        <Text style={styles.headerSubtitle}>Sana uygun rehberi keşfet</Text>
       </View>
 
       <FlatList
@@ -112,8 +118,8 @@ export default function TeachersScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>🔍</Text>
-            <Text style={styles.emptyTitle}>No teachers found</Text>
-            <Text style={styles.emptyText}>There are no active teachers at the moment.</Text>
+            <Text style={styles.emptyTitle}>Eğitmen bulunamadı</Text>
+            <Text style={styles.emptyText}>Şu anda aktif eğitmen yok.</Text>
           </View>
         }
       />

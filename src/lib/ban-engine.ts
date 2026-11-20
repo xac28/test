@@ -1,5 +1,5 @@
 /**
- * 🛡️ Namaste Ban Engine — IP Ban & Evasion Detection System
+ * 🛡️ AYA Ban Engine — IP Ban & Evasion Detection System
  * 
  * Merkezi ban motoru. Tüm ban kontrolleri, IP loglama ve evasion tespiti
  * bu modül üzerinden yapılır. Auth, register ve admin endpoint'leri bu
@@ -14,6 +14,8 @@
  */
 
 import { db } from "@/lib/db"
+import { withConflictRetry } from "@/lib/db-retry"
+import { endLiveRoom } from "@/lib/live-rooms"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -52,6 +54,19 @@ export function extractIp(req: Request): string {
 
   // Fallback
   return "127.0.0.1"
+}
+
+/**
+ * Automatic IP bans must never hit loopback / private / unknown addresses: behind a proxy or a
+ * shared network those belong to everybody, and banning them would lock every user out.
+ */
+export function isBannableIp(ip: string): boolean {
+  if (!ip || ip === "unknown" || ip === "::1" || ip === "localhost") return false
+  if (/^127\./.test(ip) || /^10\./.test(ip) || /^192\.168\./.test(ip) || /^169\.254\./.test(ip)) return false
+  const m = /^172\.(\d+)\./.exec(ip)
+  if (m && Number(m[1]) >= 16 && Number(m[1]) <= 31) return false
+  if (/^f[cd][0-9a-f]{2}:/i.test(ip) || /^fe80:/i.test(ip)) return false
+  return true
 }
 
 // ─── IP Ban Check ───────────────────────────────────────────────────────────
@@ -103,6 +118,40 @@ export async function isIpBanned(ip: string): Promise<BanCheckResult> {
   }
 }
 
+/**
+ * In-memory mirror of the active IP bans, for the hot path: proxy.ts checks this on every single
+ * request (every page, every asset, every API call) to block banned IPs site-wide. A query per
+ * request would add real latency and DB-pool pressure there, so instead this set is refreshed from
+ * the DB on a timer, and kept in sync immediately on every ban/unban this process makes.
+ */
+const bannedIpSet = new Set<string>()
+
+async function refreshBannedIpSet(): Promise<void> {
+  try {
+    const rows = await db.ipBan.findMany({
+      where: { isActive: true, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+      select: { ipAddress: true },
+    })
+    bannedIpSet.clear()
+    for (const row of rows) bannedIpSet.add(row.ipAddress)
+  } catch (error) {
+    console.error("[BAN_ENGINE] failed to refresh the banned-IP set:", error)
+  }
+}
+
+refreshBannedIpSet()
+setInterval(refreshBannedIpSet, 15_000).unref?.()
+
+/** Synchronous, no DB access — safe to call on every single request in proxy.ts. */
+export function isIpBannedSync(ip: string): boolean {
+  return bannedIpSet.has(ip)
+}
+
+/** Call after lifting a ban so the proxy stops blocking that IP right away instead of on the next refresh. */
+export function clearIpBanCache(ip: string): void {
+  bannedIpSet.delete(ip)
+}
+
 // ─── User Ban Check ─────────────────────────────────────────────────────────
 
 /**
@@ -143,7 +192,8 @@ export async function logUserIp(
   userAgent?: string | null
 ): Promise<void> {
   try {
-    await db.userIpLog.upsert({
+    // the same person's parallel requests update the same row: retry the write conflicts (lib/db-retry)
+    await withConflictRetry(() => db.userIpLog.upsert({
       where: {
         userId_ipAddress: { userId, ipAddress: ip }
       },
@@ -157,7 +207,7 @@ export async function logUserIp(
         ipAddress: ip,
         userAgent: userAgent || null,
       }
-    })
+    }))
   } catch (error) {
     // IP log hatası kritik değil — uygulamayı durdurma
     console.error("[BAN_ENGINE] IP log error:", error)
@@ -341,6 +391,10 @@ export async function banIpAddress(
       }
     })
 
+    // Mark it banned in the proxy's in-memory set right away — otherwise it would only take
+    // effect on the next periodic refresh (up to 15s later).
+    bannedIpSet.add(ip)
+
     console.log(`[BAN_ENGINE] IP banned: ${ip} — ${reason}`)
   } catch (error) {
     console.error("[BAN_ENGINE] Failed to ban IP:", error)
@@ -375,6 +429,18 @@ export async function applyFullBan(
     data: { status: "CANCELLED" }
   })
 
+  // 2b. Eğitmense: öğrencileriyle olan dersleri iptal et, canlı yayınlarını kapat, atölyelerini yayından kaldır
+  const teacher = await db.teacher.findUnique({ where: { userId } })
+  if (teacher) {
+    await db.booking.updateMany({
+      where: { teacherId: teacher.id, status: { in: ["PENDING", "CONFIRMED"] } },
+      data: { status: "CANCELLED" },
+    })
+    const rooms = await db.liveRoom.findMany({ where: { teacherId: teacher.id, isActive: true }, select: { id: true } })
+    for (const r of rooms) await endLiveRoom(r.id).catch(() => {})
+    await db.workshop.updateMany({ where: { teacherId: teacher.id, status: "PUBLISHED" }, data: { status: "DRAFT" } })
+  }
+
   // 3. Tüm aktif session'ları sil (anlık oturumu düşür)
   const sessionsResult = await db.session.deleteMany({
     where: { userId }
@@ -387,6 +453,7 @@ export async function applyFullBan(
 
   let ipsBanned = 0
   for (const log of ipLogs) {
+    if (!isBannableIp(log.ipAddress)) continue
     const existing = await db.ipBan.findFirst({
       where: { ipAddress: log.ipAddress, isActive: true }
     })
@@ -438,6 +505,7 @@ export async function applyFullUnban(
   })
 
   // 2. Bu kullanıcıyla ilişkili IP banlarını kaldır
+  const liftedIps = await db.ipBan.findMany({ where: { bannedUserId: userId, isActive: true }, select: { ipAddress: true } })
   const result = await db.ipBan.updateMany({
     where: {
       bannedUserId: userId,
@@ -445,6 +513,7 @@ export async function applyFullUnban(
     },
     data: { isActive: false }
   })
+  for (const { ipAddress } of liftedIps) clearIpBanCache(ipAddress)
 
   // 3. Audit log
   await db.auditLog.create({

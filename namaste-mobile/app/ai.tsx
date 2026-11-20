@@ -4,6 +4,7 @@ import {
   Platform, SafeAreaView, StatusBar, Animated, Dimensions,
 } from "react-native"
 import { useRouter } from "expo-router"
+import { Linking } from "react-native"
 import { useAuth } from "../context/auth"
 import { API_BASE, colors } from "../constants"
 
@@ -14,6 +15,7 @@ interface Message {
   role: "user" | "ai"
   text: string
   teachers?: any[]
+  links?: { label: string; href: string }[]
   timestamp: Date
 }
 
@@ -33,7 +35,7 @@ export default function AIScreen() {
     {
       id: "welcome",
       role: "ai",
-      text: "🙏 Namaste! Ben yapay zeka yoga asistanınızım.\n\nSize en uygun öğretmeni bulabilir, yoga stilleri hakkında bilgi verebilir ve kişisel öneriler sunabilirim.",
+      text: "🙏 Merhaba! Ben AYA Rehber.\n\nSana uygun eğitmeni bulabilir, yoga stilleri ve pozlar hakkında bilgi verebilir, seni doğru sayfaya götürebilirim.",
       timestamp: new Date(),
     },
   ])
@@ -78,6 +80,7 @@ export default function AIScreen() {
         role: "ai",
         text: data.reply || "Şu an yardımcı olamıyorum, tekrar deneyin.",
         teachers: data.teachers,
+        links: data.links,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, aiMessage])
@@ -116,6 +119,17 @@ export default function AIScreen() {
             {item.text}
           </Text>
 
+          {/* pages the guide points to open on the website */}
+          {item.links && item.links.length > 0 && (
+            <View style={{ marginTop: 10, gap: 6 }}>
+              {item.links.map((l, j) => (
+                <TouchableOpacity key={j} onPress={() => Linking.openURL(`${API_BASE}${l.href}`)} style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: colors.teal[50], borderWidth: 1, borderColor: colors.teal[200], alignSelf: "flex-start" }}>
+                  <Text style={{ color: colors.teal[700], fontWeight: "600", fontSize: 13 }}>{l.label} ›</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           {/* Teacher recommendations */}
           {item.teachers && item.teachers.length > 0 && (
             <View style={styles.teacherCards}>
@@ -126,7 +140,7 @@ export default function AIScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.teacherName}>{t.name}</Text>
-                    <Text style={styles.teacherMeta}>⭐ {t.rating} · ${t.hourlyRate}/hr</Text>
+                    <Text style={styles.teacherMeta}>⭐ {t.rating} · ${t.hourlyRate}/saat</Text>
                   </View>
                   <Text style={styles.teacherArrow}>›</Text>
                 </TouchableOpacity>
@@ -153,12 +167,9 @@ export default function AIScreen() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <View style={styles.headerDot} />
-          <Text style={styles.headerTitle}>Namaste AI</Text>
-          <View style={styles.proBadge}>
-            <Text style={styles.proText}>PRO</Text>
-          </View>
+          <Text style={styles.headerTitle}>AYA Rehber</Text>
         </View>
-        <Text style={styles.headerSubtitle}>Powered by Gemini</Text>
+        <Text style={styles.headerSubtitle}>Sorularını yanıtlar, seni doğru yere götürür</Text>
       </Animated.View>
 
       {/* Messages */}

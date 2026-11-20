@@ -1,10 +1,15 @@
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { applyRateLimit } from "@/lib/api-protection"
+import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
+import { moderateText, strikeHint } from "@/lib/moderation"
 
 // POST /api/reviews — Leave a review for a booking
 // ── FIX #13: Aynı booking'e duplicate review engeli eklendi ──
 export async function POST(req: Request) {
+  const limited = applyRateLimit(req, RATE_LIMIT_WRITE)
+  if (limited) return limited
   try {
     const user = await resolveUser(req)
     if (!user) {
@@ -40,10 +45,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "You have already reviewed this booking" }, { status: 409 })
     }
 
-    // Comment sanitization
-    const sanitizedComment = comment 
-      ? comment.trim().slice(0, 1000) // Maks 1000 karakter
-      : null
+    // The written part goes through the same automatic moderation as every other public text
+    let sanitizedComment: string | null = null
+    if (typeof comment === "string" && comment.trim()) {
+      const checked = await moderateText(user, comment, "REVIEW", { max: 1000 })
+      if (!checked.ok) return NextResponse.json({ error: checked.error, code: checked.code, hint: strikeHint(checked) }, { status: checked.status })
+      sanitizedComment = checked.text
+    }
 
     // Create the review
     const review = await db.review.create({

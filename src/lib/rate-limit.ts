@@ -95,7 +95,7 @@ export const RATE_LIMIT_WRITE: RateLimitConfig = { maxRequests: 20, windowMs: 60
 export const RATE_LIMIT_ADMIN: RateLimitConfig = { maxRequests: 30, windowMs: 60_000 }
 
 /** AI endpoints (expensive): 5 per minute */
-export const RATE_LIMIT_AI: RateLimitConfig = { maxRequests: 5, windowMs: 60_000 }
+export const RATE_LIMIT_AI: RateLimitConfig = { maxRequests: 30, windowMs: 60_000 }
 
 /** Upload endpoints: 5 per minute */
 export const RATE_LIMIT_UPLOAD: RateLimitConfig = { maxRequests: 5, windowMs: 60_000 }

@@ -1,35 +1,51 @@
-// API base URL — your VDS
-// Change this to your domain once you have one
-export const API_BASE = "http://5.63.21.194.sslip.io:3000"
+// Public address of the AYA server. Set EXPO_PUBLIC_API_BASE (e.g. in .env or eas.json) for your own domain.
+export const API_BASE = process.env.EXPO_PUBLIC_API_BASE || "http://5.63.21.194.sslip.io:3000"
 
-// Colors — matches the web app's design system
+// Colours — the same tokens as the web design (tailwind.config.js): coral for actions, lagoon teal for brand surfaces,
+// saffron and lotus as soft accents, warm paper and ink for the rest.
 export const colors = {
-  cream: "#faf6f0",
-  ink: "#1a1f1a",
+  cream: "#fbf6ee",
+  paper: "#fffdf9",
+  rule: "#e4dccd",
+  ink: "#17313a",
   sage: {
-    50: "#f6f8f4",
-    100: "#e8eee2",
-    200: "#d2dec6",
-    300: "#aec39d",
-    400: "#88a574",
-    500: "#6a8a56",
-    600: "#516e42",
-    700: "#405736",
-    800: "#34462e",
-    900: "#2c3b27",
+    50: "#f6f6f1",
+    100: "#ecece4",
+    200: "#dbdbcf",
+    300: "#bfc0b2",
+    400: "#999b8d",
+    500: "#6a7068",
+    600: "#525a56",
+    700: "#2d4a4c",
+    800: "#1d3739",
+    900: "#12272b",
   },
   clay: {
-    50: "#faf6f2",
-    100: "#f4ebe1",
-    200: "#e7d3bf",
-    300: "#d6b394",
-    400: "#c39068",
-    500: "#b6764c",
-    600: "#a86340",
-    700: "#8b4f37",
+    50: "#fef3ee",
+    100: "#fce6dc",
+    200: "#f9cdbb",
+    300: "#f4a58a",
+    400: "#ee8466",
+    500: "#e2684a",
+    600: "#c94e32",
+    700: "#a53d27",
   },
-  red: "#ef4444",
-  green: "#22c55e",
+  teal: {
+    50: "#eef7f6",
+    100: "#d6ece9",
+    200: "#aedbd5",
+    300: "#7bc2ba",
+    400: "#47a39a",
+    500: "#2a857d",
+    600: "#1f6b66",
+    700: "#1a5652",
+    800: "#17433f",
+    900: "#12302e",
+  },
+  saffron: { 100: "#fdf0cf", 300: "#f7cf66", 400: "#f2bb3a", 600: "#c0820f" },
+  lotus: { 100: "#f9e3ea", 400: "#d96f93", 500: "#c24d77" },
+  red: "#d9382c",
+  green: "#2a857d",
   white: "#ffffff",
 }
 
@@ -37,3 +53,6 @@ export const fonts = {
   display: "serif",
   body: "System",
 }
+
+/** absolute address of a file the server hosts (/poses/…, /uploads/…) */
+export const assetUrl = (path: string | null | undefined) => (!path ? null : /^https?:/.test(path) ? path : `${API_BASE}${path}`)

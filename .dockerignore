@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.github
+test-results
+tour-output
+playwright-report
+storage
+public/uploads
+namaste-mobile
+tests
+*.exe
+.env
+.env.*
+!.env.example

@@ -6,8 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LanguagePicker from '@/components/LanguagePicker';
+import { PayForm } from '@/components/iyzico-pay-form';
 import { useI18n } from '@/i18n';
-import { getTeacher } from '@/lib/teachers';
+import { useTeacher } from '@/lib/use-teacher';
 import { formatLocalPrice, formatUSD, localCurrencyCode } from '@/lib/currency';
 import { formatLocalDate, formatLocalTime, userTimezone } from '@/lib/time';
 
@@ -21,28 +22,44 @@ function CheckoutInner() {
   const slot = params.get('slot') ?? '';
   const type = (params.get('type') as 'trial' | 'regular') ?? 'trial';
 
-  const teacher = getTeacher(teacherSlug);
+  const { teacher, loading } = useTeacher(teacherSlug);
   const [currency, setCurrency] = useState('USD');
   useEffect(() => setCurrency(localCurrencyCode()), []);
+  const [paying, setPaying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'iyzico'>('stripe');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [payError, setPayError] = useState('');
+  const [methods, setMethods] = useState<{ stripe: boolean; iyzico: boolean } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/payments/methods').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!alive || !d) return;
+      setMethods(d);
+      // switch away from a method that turns out not to be configured, onto one that is
+      setPaymentMethod((m) => (d[m] ? m : d.stripe ? 'stripe' : d.iyzico ? 'iyzico' : m));
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
+  if (!teacher && loading) {
+    return <div className="max-w-3xl mx-auto px-6 py-24 text-center text-sage-500">…</div>;
+  }
   if (!teacher) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-        <h1 className="font-display text-3xl text-ink mb-4">Booking not found</h1>
-        <Link href="/teachers" className="text-sage-700 underline">Back to teachers</Link>
+        <h1 className="font-display text-3xl text-ink mb-4">{locale === 'tr' ? 'Rezervasyon bulunamadı' : 'Booking not found'}</h1>
+        <Link href="/teachers" className="text-sage-700 underline">Eğitmenlere dön</Link>
       </div>
     );
   }
 
   const priceUSD = type === 'trial' ? teacher.trialPriceUSD : teacher.pricePerClassUSD;
-  const [paying, setPaying] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'iyzico'>('stripe');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPayError('');
     if (!agreedToTerms) {
-      alert("Sözleşmeyi kabul etmeniz gerekmektedir. / You must agree to the Terms of Service.");
+      setPayError(locale === 'tr' ? 'Devam etmek için sözleşmeyi kabul etmelisin.' : 'You need to accept the agreement to continue.');
       return;
     }
     setPaying(true);
@@ -60,7 +77,7 @@ function CheckoutInner() {
       });
       if (res.ok) {
         const data = await res.json();
-        
+
         if (data.requiresIyzico) {
           const iyzRes = await fetch("/api/iyzico/checkout", {
             method: "POST",
@@ -72,7 +89,7 @@ function CheckoutInner() {
             setIyzicoHtml(iyzData.htmlContent);
             return;
           } else {
-            alert(iyzData.error || "Iyzico initialization failed");
+            setPayError(iyzData.error || (locale === 'tr' ? 'Ödeme başlatılamadı.' : 'Could not start the payment.'));
           }
         } else if (data.stripeUrl) {
           window.location.href = data.stripeUrl;
@@ -81,11 +98,10 @@ function CheckoutInner() {
         }
       } else {
         const data = await res.json();
-        alert(data.error || "Payment failed");
+        setPayError(data.error || (locale === 'tr' ? 'Ödeme başarısız oldu.' : 'Payment failed.'));
       }
     } catch {
-      alert("Network error — please try again");
-      setPaying(false);
+      setPayError(locale === 'tr' ? 'Bağlantı hatası, lütfen tekrar dene.' : 'Connection error, please try again.');
     } finally {
       setPaying(false);
     }
@@ -100,7 +116,7 @@ function CheckoutInner() {
               <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h1 className="font-display text-4xl text-ink mb-3">Booking confirmed</h1>
+          <h1 className="font-display text-4xl text-ink mb-3">{locale === 'tr' ? 'Rezervasyon onaylandı' : 'Booking confirmed'}</h1>
           <p className="text-ink/70 mb-2">
             {teacher.name} · {formatLocalDate(slot, locale)}
           </p>
@@ -108,14 +124,14 @@ function CheckoutInner() {
             {formatLocalTime(slot, locale)} ({userTimezone()})
           </p>
           <p className="text-sm text-ink/50 mb-8 italic font-display">
-            Your session is confirmed and ready. Namaste. 🙏
+            {locale === 'tr' ? 'Dersin onaylandı. AYA\'da görüşürüz. 🙏' : 'Your session is confirmed and ready. See you on AYA. 🙏'}
           </p>
           <div className="flex flex-col gap-3">
             <Link
               href="/dashboard"
               className="inline-flex items-center justify-center gap-2 bg-sage-700 hover:bg-sage-800 text-cream px-6 py-3 rounded-full font-medium"
             >
-              Go to Dashboard →
+              {locale === 'tr' ? 'Panele git →' : 'Go to Dashboard →'}
             </Link>
             <Link
               href="/teachers"
@@ -140,13 +156,13 @@ function CheckoutInner() {
 
         {iyzicoHtml ? (
           <div className="bg-white rounded-3xl p-8 border border-sage-200 shadow-xl animate-fade-in">
-            <h2 className="text-xl font-display mb-6">Secure Payment / Güvenli Ödeme</h2>
-            <div id="iyzipay-checkout-form" className="responsive" dangerouslySetInnerHTML={{ __html: iyzicoHtml }} />
-            <button 
+            <h2 className="text-xl font-display mb-6"><>{locale === 'tr' ? 'Güvenli ödeme' : 'Secure payment'}</></h2>
+            <PayForm html={iyzicoHtml} />
+            <button
               onClick={() => setIyzicoHtml(null)}
               className="mt-8 text-sm text-sage-500 hover:text-sage-800 underline"
             >
-              Cancel and change payment method
+              {locale === 'tr' ? 'Vazgeç ve ödeme yöntemini değiştir' : 'Cancel and change payment method'}
             </button>
           </div>
         ) : (
@@ -156,84 +172,65 @@ function CheckoutInner() {
             <form onSubmit={handlePay} className="bg-cream rounded-3xl border border-sage-100 p-6 lg:p-8 space-y-6">
               
               <div className="space-y-3">
-                <label className="text-xs uppercase tracking-wide text-ink/50 block">Payment Method / Ödeme Yöntemi</label>
+                <label className="text-xs uppercase tracking-wide text-ink/50 block"><>{locale === 'tr' ? 'Ödeme yöntemi' : 'Payment method'}</></label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className={`cursor-pointer flex items-center gap-3 p-4 rounded-xl border ${paymentMethod === 'stripe' ? 'border-sage-600 bg-sage-50' : 'border-sage-200 bg-white hover:border-sage-300'}`}>
-                    <input 
-                      type="radio" 
-                      name="paymentMethod" 
-                      value="stripe"
-                      checked={paymentMethod === 'stripe'}
-                      onChange={() => setPaymentMethod('stripe')}
-                      className="accent-sage-600"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-ink">International Card</span>
-                      <span className="text-xs text-ink/60">Powered by Stripe</span>
-                    </div>
-                  </label>
-                  <label className={`cursor-pointer flex items-center gap-3 p-4 rounded-xl border ${paymentMethod === 'iyzico' ? 'border-sage-600 bg-sage-50' : 'border-sage-200 bg-white hover:border-sage-300'}`}>
-                    <input 
-                      type="radio" 
-                      name="paymentMethod" 
-                      value="iyzico"
-                      checked={paymentMethod === 'iyzico'}
-                      onChange={() => setPaymentMethod('iyzico')}
-                      className="accent-sage-600"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-ink">Türkiye İçi Kredi Kartı</span>
-                      <span className="text-xs text-ink/60">Iyzico / PayTR altyapısı</span>
-                    </div>
-                  </label>
+                  {(() => {
+                    const stripeOff = methods !== null && !methods.stripe;
+                    const iyzicoOff = methods !== null && !methods.iyzico;
+                    return (
+                      <>
+                        <label className={`flex items-center gap-3 p-4 rounded-xl border ${stripeOff ? 'cursor-not-allowed opacity-50 border-sage-200 bg-white' : 'cursor-pointer ' + (paymentMethod === 'stripe' ? 'border-sage-600 bg-sage-50' : 'border-sage-200 bg-white hover:border-sage-300')}`}>
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="stripe"
+                            checked={paymentMethod === 'stripe'}
+                            disabled={stripeOff}
+                            onChange={() => setPaymentMethod('stripe')}
+                            className="accent-sage-600"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-ink">{locale === 'tr' ? 'Uluslararası kart' : 'International card'}</span>
+                            <span className="text-xs text-ink/60">{stripeOff ? (locale === 'tr' ? 'Şu an kullanılamıyor' : 'Not available right now') : (locale === 'tr' ? 'Stripe altyapısıyla' : 'Powered by Stripe')}</span>
+                          </div>
+                        </label>
+                        <label className={`flex items-center gap-3 p-4 rounded-xl border ${iyzicoOff ? 'cursor-not-allowed opacity-50 border-sage-200 bg-white' : 'cursor-pointer ' + (paymentMethod === 'iyzico' ? 'border-sage-600 bg-sage-50' : 'border-sage-200 bg-white hover:border-sage-300')}`}>
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="iyzico"
+                            checked={paymentMethod === 'iyzico'}
+                            disabled={iyzicoOff}
+                            onChange={() => setPaymentMethod('iyzico')}
+                            className="accent-sage-600"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-ink">Türkiye İçi Kredi Kartı</span>
+                            <span className="text-xs text-ink/60">{iyzicoOff ? (locale === 'tr' ? 'Şu an kullanılamıyor' : 'Not available right now') : 'iyzico altyapısı'}</span>
+                          </div>
+                        </label>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">Email</label>
-                <input
-                  required
-                  type="email"
-                  placeholder="you@example.com"
-                  className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-white focus:outline-none focus:border-sage-500"
-                />
-              </div>
+              {methods !== null && !methods.stripe && !methods.iyzico && priceUSD > 0 && (
+                <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {locale === 'tr' ? 'Online ödeme şu an kullanılamıyor; lütfen daha sonra tekrar deneyin.' : 'Online payment is unavailable right now; please try again later.'}
+                </p>
+              )}
 
-              <div>
-                <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">Cardholder name</label>
-                <input
-                  required
-                  placeholder="Name on card"
-                  className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-white focus:outline-none focus:border-sage-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">Card number</label>
-                <input
-                  required
-                  placeholder="1234 5678 9012 3456"
-                  className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-cream focus:outline-none focus:border-sage-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">Expiry</label>
-                  <input
-                    required
-                    placeholder="MM / YY"
-                    className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-cream focus:outline-none focus:border-sage-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">CVC</label>
-                  <input
-                    required
-                    placeholder="123"
-                    className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-cream focus:outline-none focus:border-sage-500"
-                  />
-                </div>
+              <div className="rounded-xl border border-sage-200 bg-white p-4 flex items-start gap-3">
+                <svg className="w-5 h-5 mt-0.5 shrink-0 text-sage-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                <p className="text-sm text-ink/70">
+                  {paymentMethod === 'iyzico'
+                    ? (locale === 'tr' ? 'Kart bilgilerini az sonra iyzico’nun güvenli ödeme sayfasında, 3D Secure doğrulamasıyla gireceksin. Kart numaran AYA sunucularına hiç ulaşmaz.' : 'You’ll enter your card on iyzico’s secure page next, with 3D Secure verification. Your card number never reaches AYA’s servers.')
+                    : (locale === 'tr' ? 'Kart bilgilerini az sonra Stripe’ın güvenli ödeme sayfasında gireceksin. Kart numaran AYA sunucularına hiç ulaşmaz.' : 'You’ll enter your card on Stripe’s secure page next. Your card number never reaches AYA’s servers.')}
+                </p>
               </div>
 
               <div className="pt-2">
@@ -246,17 +243,20 @@ function CheckoutInner() {
                     className="mt-1 w-4 h-4 accent-sage-600 rounded"
                   />
                   <span className="text-sm text-ink/70">
-                    I have read and agree to the <Link href="/terms" target="_blank" className="text-sage-600 underline font-medium">Mesafeli Satış Sözleşmesi ve Kullanım Koşulları</Link>. I understand the 24-hour cancellation and refund policies.
+                    {locale === 'tr' ? 'Okudum, kabul ediyorum: ' : 'I have read and agree to the '}<Link href="/terms" target="_blank" className="text-sage-600 underline font-medium">Mesafeli Satış Sözleşmesi ve Kullanım Koşulları</Link>. {locale === 'tr' ? '24 saatlik iptal ve iade koşullarını anladım.' : 'I understand the 24-hour cancellation and refund policies.'}
                   </span>
                 </label>
               </div>
 
+              {payError && <p role="alert" className="text-sm text-red-700 text-center">{payError}</p>}
+
               <button
                 type="submit"
-                disabled={paying || !agreedToTerms}
-                className="w-full bg-sage-700 hover:bg-sage-800 text-cream py-4 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={paying || !agreedToTerms || (methods !== null && !methods[paymentMethod] && priceUSD > 0)}
+                className="w-full bg-sage-700 hover:bg-sage-800 text-cream py-4 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
               >
-                {paying ? "Processing..." : `${t.checkout.pay} · ${formatLocalPrice(priceUSD)}`}
+                {paying && <span className="h-4 w-4 animate-spin rounded-full border-2 border-cream/40 border-t-cream" />}
+                {paying ? (locale === 'tr' ? 'İşleniyor…' : 'Processing…') : `${t.checkout.pay} · ${formatLocalPrice(priceUSD)}`}
               </button>
 
               <p className="text-xs text-center text-ink/50 flex items-center justify-center gap-2">
@@ -264,7 +264,7 @@ function CheckoutInner() {
                   <rect x="3" y="11" width="18" height="11" rx="2" />
                   <path d="M7 11V7a5 5 0 0110 0v4" />
                 </svg>
-                {t.checkout.secure}
+                {locale === 'tr' ? `Güvenli ödeme: ${paymentMethod === 'iyzico' ? 'iyzico' : 'Stripe'}` : `Secure payment via ${paymentMethod === 'iyzico' ? 'iyzico' : 'Stripe'}`}
               </p>
             </form>
           </div>
@@ -272,7 +272,7 @@ function CheckoutInner() {
           {/* Right: order summary */}
           <div className="lg:col-span-2">
             <div className="bg-cream rounded-3xl border border-sage-100 p-6 lg:p-8 lg:sticky lg:top-24">
-              <h3 className="font-display text-xl text-ink mb-6">Summary</h3>
+              <h3 className="font-display text-xl text-ink mb-6">{locale === 'tr' ? 'Özet' : 'Summary'}</h3>
 
               <div className="space-y-4 mb-6 pb-6 border-b border-sage-100">
                 <Row label={t.checkout.teacher} value={teacher.name} />
@@ -302,10 +302,11 @@ function CheckoutInner() {
               {type === 'trial' && (
                 <div className="mt-6 p-4 rounded-2xl bg-sage-50 border border-sage-200">
                   <p className="text-xs text-sage-800 font-medium mb-1">🌱 {t.profile.fiftyOff}</p>
-                  <p className="text-xs text-ink/60">100% goes to your teacher.</p>
+                  <p className="text-xs text-ink/60">{locale === 'tr' ? 'Tamamı eğitmenine gider.' : '100% goes to your teacher.'}</p>
                 </div>
               )}
             </div>
+          </div>
           </div>
         )}
       </div>
@@ -327,7 +328,7 @@ export default function CheckoutPage() {
     <>
       <LanguagePicker />
       <Navbar />
-      <Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center">Loading...</div>}>
+      <Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center">Yükleniyor…</div>}>
         <CheckoutInner />
       </Suspense>
       <Footer />

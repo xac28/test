@@ -28,7 +28,7 @@ export async function sendEmail({
     }
 
     const info = await transporter.sendMail({
-      from: `"Namaste" <${process.env.SMTP_USER}>`,
+      from: `"AYA" <${process.env.SMTP_USER}>`,
       to,
       subject,
       text,
@@ -43,10 +43,10 @@ export async function sendEmail({
 }
 
 export async function sendBookingConfirmationEmail(to: string, studentName: string, teacherName: string, startTime: Date, roomUrl: string) {
-  const subject = `Namaste: Your Yoga Class with ${teacherName} is Confirmed!`
+  const subject = `AYA: Your Yoga Class with ${teacherName} is Confirmed!`
   const html = `
     <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-      <h2 style="color: #4A5D23;">Namaste</h2>
+      <h2 style="color: #4A5D23;">AYA</h2>
       <p>Hello ${studentName},</p>
       <p>Your session with <strong>${teacherName}</strong> has been successfully booked and confirmed.</p>
       <div style="background-color: #f4f6f0; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -54,7 +54,7 @@ export async function sendBookingConfirmationEmail(to: string, studentName: stri
         <p><strong>Live Class Link:</strong> <a href="${roomUrl}" style="color: #4A5D23;">Join your class here</a></p>
       </div>
       <p>Please make sure your camera and microphone are working before joining.</p>
-      <p>Namaste 🙏</p>
+      <p>AYA 🙏</p>
     </div>
   `
   return sendEmail({ to, subject, html })

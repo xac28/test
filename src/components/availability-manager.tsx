@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const DAYS = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"]
 const HOURS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`)
 
 interface Slot {
@@ -50,10 +50,10 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
         router.refresh()
       } else {
         const data = await res.json()
-        alert(data.error || "Failed to save")
+        alert(data.error || "Kaydedilemedi")
       }
     } catch {
-      alert("Network error")
+      alert("Bağlantı hatası, tekrar dene")
     } finally {
       setSaving(false)
     }
@@ -63,15 +63,15 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
     <div className="glass-card p-8 rounded-3xl border border-sage-100 space-y-6">
       {slots.length === 0 ? (
         <div className="text-center py-10">
-          <p className="text-sage-500 text-lg mb-4">No availability set yet</p>
-          <p className="text-sage-400 text-sm mb-6">Add your weekly schedule so students can book sessions with you</p>
+          <p className="text-sage-500 text-lg mb-4">Henüz müsaitlik eklemedin</p>
+          <p className="text-sage-500 text-sm mb-6">Haftalık programını ekle; öğrenciler sana ders ayırabilsin</p>
         </div>
       ) : (
         <div className="space-y-4">
           {slots.map((slot, i) => (
             <div key={i} className="flex flex-wrap items-center gap-4 p-4 bg-white/50 rounded-2xl border border-sage-100/50 group">
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-sage-500 uppercase tracking-wide font-medium">Day</label>
+                <label className="text-xs text-sage-500 font-medium">Gün</label>
                 <select
                   value={slot.dayOfWeek}
                   onChange={e => updateSlot(i, "dayOfWeek", parseInt(e.target.value))}
@@ -83,7 +83,7 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-sage-500 uppercase tracking-wide font-medium">Start</label>
+                <label className="text-xs text-sage-500 font-medium">Başlangıç</label>
                 <select
                   value={slot.startTime}
                   onChange={e => updateSlot(i, "startTime", e.target.value)}
@@ -93,7 +93,7 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-sage-500 uppercase tracking-wide font-medium">End</label>
+                <label className="text-xs text-sage-500 font-medium">Bitiş</label>
                 <select
                   value={slot.endTime}
                   onChange={e => updateSlot(i, "endTime", e.target.value)}
@@ -106,7 +106,7 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
                 onClick={() => removeSlot(i)}
                 className="self-end text-red-400 hover:text-red-600 text-sm font-medium py-2.5 px-3 rounded-xl hover:bg-red-50 transition"
               >
-                ✗ Remove
+                ✗ Kaldır
               </button>
             </div>
           ))}
@@ -118,17 +118,17 @@ export function AvailabilityManager({ teacherId, initialSlots }: { teacherId: st
           onClick={addSlot}
           className="bg-white text-sage-700 px-5 py-2.5 rounded-xl border border-sage-200 hover:border-sage-300 hover:bg-sage-50 text-sm font-medium transition btn-press"
         >
-          + Add Time Slot
+          + Saat aralığı ekle
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
           className="bg-sage-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-sage-700 transition disabled:opacity-50 btn-press"
         >
-          {saving ? "Saving..." : "Save Schedule"}
+          {saving ? "Kaydediliyor…" : "Programı kaydet"}
         </button>
         {saved && (
-          <span className="text-green-600 text-sm font-medium animate-fade-in">✓ Saved</span>
+          <span className="text-green-600 text-sm font-medium animate-fade-in">✓ Kaydedildi</span>
         )}
       </div>
     </div>

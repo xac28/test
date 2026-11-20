@@ -1,0 +1,136 @@
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import authConfig from './auth.config'
+import NextAuth from 'next-auth'
+import { extractIp, isIpBannedSync } from '@/lib/ban-engine'
+import { recordVisit, scanForAttack } from '@/lib/intrusion-detect'
+
+const { auth } = NextAuth(authConfig)
+
+/**
+ * Signed-in users who have not accepted the current terms may only open these pages;
+ * everything else redirects to /accept-terms (the "terms gate"). API routes are not
+ * redirected — they answer 403 TERMS_REQUIRED themselves (see termsGate in lib/terms.ts).
+ */
+const TERMS_GATE_EXEMPT = ['/accept-terms', '/terms', '/privacy', '/login', '/auth-error', '/api']
+
+/** Pages that need a signed-in user. */
+const PROTECTED_PREFIXES = ['/panel', '/dashboard', '/teach', '/admin', '/room', '/live', '/messages', '/accept-terms']
+
+const inArea = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(prefix + '/')
+
+// ── CORS Preflight Handler ──────────────────────────────────────────────────
+// Mobile apps (Expo/React Native) send OPTIONS preflight requests before
+// making cross-origin API calls. These must be handled before any auth logic.
+function handleCorsForApi(req: NextRequest): NextResponse | null {
+  // Only handle API routes
+  if (!req.nextUrl.pathname.startsWith('/api/')) return null
+
+  // Handle OPTIONS preflight
+  if (req.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+        'Access-Control-Max-Age': '86400',
+      },
+    })
+  }
+
+  return null
+}
+
+// ── Main Middleware ─────────────────────────────────────────────────────────
+export default auth((req) => {
+  // 🛡️ Site-wide visitor logging + intrusion detection (every request: pages, assets, API).
+  // Logging and attack-scanning are fire-and-forget (lib/intrusion-detect.ts), and the ban check
+  // reads an in-memory set (lib/ban-engine.ts) — none of this touches the DB inline, so it never
+  // adds latency or connection-pool pressure to a real visitor's request.
+  const ip = extractIp(req as unknown as Request)
+  const ua = req.headers.get('user-agent')
+  recordVisit(ip, req.nextUrl.pathname, ua).catch(() => {})
+  scanForAttack(ip, req.nextUrl.pathname, req.nextUrl.search, ua).catch(() => {})
+  if (isIpBannedSync(ip)) {
+    return NextResponse.json({ error: 'Bu IP adresinden erişim engellenmiştir.' }, { status: 403 })
+  }
+
+  // 1. Handle CORS preflight for API routes (mobile app compatibility)
+  const corsResponse = handleCorsForApi(req as unknown as NextRequest)
+  if (corsResponse) return corsResponse
+
+  const { pathname } = req.nextUrl
+
+  // Private documents: answered only by the route that checks who is asking, never by the static /public handler
+  // (which would serve any copy left there to anyone holding the link)
+  if (pathname.startsWith('/uploads/certificates/')) {
+    const url = req.nextUrl.clone()
+    url.pathname = '/api/private-uploads' + pathname.slice('/uploads'.length)
+    return NextResponse.rewrite(url)
+  }
+
+  // `req.auth` can be a truthy session shell with no `user.id` — the JWT callback (auth.ts) empties the
+  // token for a banned/soft-deleted account or an expired "remember me", but that alone forces nothing;
+  // the next request's session callback just has nothing to put an id into. Treat that as signed out
+  // here (not merely truthy `req.auth`), so a stale session is redirected before it ever reaches a page,
+  // rather than each page having to re-check this itself (several didn't — see dashboard/profile etc.).
+  const isLoggedIn = !!req.auth?.user?.id
+  const isApi = pathname.startsWith('/api/')
+
+  if (!isApi) {
+    // 2. Pages that need a signed-in user
+    if (PROTECTED_PREFIXES.some((p) => inArea(pathname, p)) && !isLoggedIn) {
+      // login pages for deep links, the home page for the dashboards (as before)
+      if (inArea(pathname, '/live') || inArea(pathname, '/room') || inArea(pathname, '/messages') || inArea(pathname, '/panel')) {
+        const url = new URL('/login', req.nextUrl)
+        url.searchParams.set('callbackUrl', pathname + req.nextUrl.search)
+        return NextResponse.redirect(url)
+      }
+      return NextResponse.redirect(new URL('/', req.nextUrl))
+    }
+
+    // 3. Terms gate: signed in, but the current terms were not accepted yet
+    // (`undefined` = a session issued before this check existed → API routes still enforce it)
+    if (isLoggedIn && req.auth?.user?.termsAccepted === false && !TERMS_GATE_EXEMPT.some((p) => inArea(pathname, p))) {
+      const url = new URL('/accept-terms', req.nextUrl)
+      url.searchParams.set('next', pathname + req.nextUrl.search)
+      return NextResponse.redirect(url)
+    }
+
+    // 4. Role areas ("/teach" must not match the public "/teachers")
+    const role = req.auth?.user?.role
+    if (inArea(pathname, '/teach') && role !== 'TEACHER' && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/panel', req.nextUrl))
+    }
+    if (inArea(pathname, '/admin') && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/panel', req.nextUrl))
+    }
+    if (pathname === '/live/studio' && role !== 'TEACHER' && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/live', req.nextUrl))
+    }
+  }
+
+  // 5. Apply security headers to web page responses
+  const response = NextResponse.next()
+
+  // X-Frame-Options — Prevents clickjacking
+  response.headers.set('X-Frame-Options', 'DENY')
+
+  // X-Content-Type-Options — Prevents MIME sniffing
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+
+  // Referrer-Policy — Controls referrer information
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+
+  // HSTS and the Content-Security-Policy are set in next.config.js (ENABLE_HSTS / CSP_MODE)
+
+  return response
+})
+
+export const config = {
+  // Apply middleware to all routes including API routes (for CORS preflight)
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico).*)",
+  ],
+}

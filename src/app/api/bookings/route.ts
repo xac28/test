@@ -1,8 +1,19 @@
 import { db } from "@/lib/db"
+import { emailGate } from "@/lib/email-verification"
+import { suspensionOf } from "@/lib/policy"
 import { NextResponse } from "next/server"
+import { termsGate } from "@/lib/terms"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_WRITE } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
+import { iyzicoMode } from "@/lib/iyzico"
+import { memberLessonPrice } from "@/lib/subscriptions"
+import { currentPlan } from "@/lib/subscription-server"
+import { applyDiscountPct, campaignDiscountPct, personalDiscountPct } from "@/lib/discounts"
+import { stripeReady as isStripeReady } from "@/lib/payments"
+
+/** Confirming a paid lesson without a payment is only for development and test servers. */
+const allowUnpaidBookings = () => process.env.NODE_ENV !== "production" || process.env.ALLOW_UNPAID_BOOKINGS === "1"
 
 // POST /api/bookings — Create a new booking (after checkout)
 export async function POST(req: Request) {
@@ -14,6 +25,11 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
+    const verifyBlock = await emailGate(user.id)
+    if (verifyBlock) return verifyBlock
 
     const { teacherSlug, slot, type, paymentProvider } = await req.json()
 
@@ -27,12 +43,22 @@ export async function POST(req: Request) {
     })
 
     const slugNormalized = teacherSlug.toLowerCase().replace(/-/g, " ")
-    const teacher = teachers.find(t => 
+    // database teachers are addressed by id, demo/legacy ones by a name slug
+    const teacher = teachers.find(t => t.id === teacherSlug) ?? teachers.find(t =>
       t.user.name?.toLowerCase().replace(/-/g, " ") === slugNormalized
     )
 
     if (!teacher) {
       return NextResponse.json({ error: "Teacher not found for the given slug" }, { status: 404 })
+    }
+
+    // Teachers who have not passed the admin trial broadcast cannot take students
+    if (teacher.isTrialMode) {
+      return NextResponse.json({ error: "Bu öğretmen henüz onaylanmadı.", code: "TEACHER_NOT_APPROVED" }, { status: 403 })
+    }
+
+    if (await suspensionOf(teacher.userId)) {
+      return NextResponse.json({ error: "Bu eğitmen şu an ders alamıyor.", code: "TEACHER_UNAVAILABLE" }, { status: 409 })
     }
 
     // ── FIX #2: Price sunucu tarafında hesaplanıyor, client'tan gelen price kabul edilmiyor ──
@@ -47,6 +73,36 @@ export async function POST(req: Request) {
 
     if (serverPrice < 0) {
       return NextResponse.json({ error: "Invalid price calculated" }, { status: 400 })
+    }
+    // Premium / Sınırsız members pay the discounted price
+    serverPrice = memberLessonPrice(serverPrice, await currentPlan(user.id))
+
+    // Admin-granted breaks: the student's own personal discount, the teacher's own (a "free demo
+    // lessons" hook to attract new teachers), or a currently-running student-facing campaign — the
+    // best of these applies, on top of the membership discount above, never stacked between themselves.
+    // (A TEACHERS-scoped campaign has no lesson-price effect: there is no teacher-side purchase here to
+    // discount — that scope exists for a future extension, e.g. a commission break.)
+    const now = new Date()
+    const [studentDiscount, teacherDiscount, campaigns] = await Promise.all([
+      db.personalDiscount.findUnique({ where: { userId: user.id } }),
+      db.personalDiscount.findUnique({ where: { userId: teacher.userId } }),
+      db.campaign.findMany({ where: { startsAt: { lte: now }, endsAt: { gte: now } } }),
+    ])
+    const promoPct = Math.max(
+      personalDiscountPct(studentDiscount, now),
+      personalDiscountPct(teacherDiscount, now),
+      campaignDiscountPct(campaigns, "STUDENT", now),
+    )
+    serverPrice = applyDiscountPct(serverPrice, promoPct)
+
+    // A paid lesson needs a way to pay. Without one, nothing is booked: confirming it anyway would give lessons away.
+    const stripeReady = isStripeReady()
+    const iyzicoReady = iyzicoMode() === "live"
+    if (serverPrice > 0 && !stripeReady && !iyzicoReady && !allowUnpaidBookings()) {
+      return NextResponse.json({ error: "Online ödeme şu an kullanılamıyor; lütfen daha sonra tekrar deneyin.", code: "PAYMENTS_OFF" }, { status: 503 })
+    }
+    if (serverPrice > 0 && paymentProvider === "iyzico" && !iyzicoReady && !allowUnpaidBookings()) {
+      return NextResponse.json({ error: "Kartla ödeme (iyzico) şu an kullanılamıyor.", code: "PAYMENTS_OFF" }, { status: 503 })
     }
 
     // Parse the slot time
@@ -72,7 +128,7 @@ export async function POST(req: Request) {
     })
 
     // 2. Route based on Payment Provider
-    if (paymentProvider === "iyzico") {
+    if (serverPrice > 0 && paymentProvider === "iyzico" && iyzicoReady) {
       console.log(`[PAYMENT] Initiating Iyzico flow for Booking: ${booking.id}`)
       
       return NextResponse.json({
@@ -85,7 +141,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Try to create Stripe Checkout Session
-    if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith("sk_")) {
+    if (serverPrice > 0 && stripeReady) {
       try {
         const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
         // Calculate commission
@@ -133,12 +189,20 @@ export async function POST(req: Request) {
           message: "Redirecting to Stripe"
         })
       } catch (stripeError) {
-        console.error("Stripe error, falling back to instant confirmation:", stripeError)
-        // If Stripe fails (e.g. invalid key), fallback to instant confirmation for demo purposes
+        console.error("[BOOKING_STRIPE_ERROR]", stripeError)
+        if (!allowUnpaidBookings()) {
+          // never confirm an unpaid lesson: drop the pending booking so the slot is free again
+          await db.booking.delete({ where: { id: booking.id } }).catch(() => {})
+          return NextResponse.json({ error: "Ödeme başlatılamadı, lütfen tekrar deneyin.", code: "PAYMENT_START_FAILED" }, { status: 502 })
+        }
       }
     }
 
-    // 3. Fallback (If no Stripe key configured): Auto-confirm booking for testing
+    // 3. Free lessons — and, only on a development / test server (ALLOW_UNPAID_BOOKINGS=1), paid ones without a payment
+    if (serverPrice > 0 && !allowUnpaidBookings()) {
+      await db.booking.delete({ where: { id: booking.id } }).catch(() => {})
+      return NextResponse.json({ error: "Online ödeme şu an kullanılamıyor; lütfen daha sonra tekrar deneyin.", code: "PAYMENTS_OFF" }, { status: 503 })
+    }
     await db.booking.update({
       where: { id: booking.id },
       data: { status: "CONFIRMED" }
@@ -148,7 +212,7 @@ export async function POST(req: Request) {
       success: true,
       bookingId: booking.id,
       price: serverPrice,
-      message: "Booking confirmed successfully (Test Mode)"
+      message: serverPrice > 0 ? "Booking confirmed (test server: no payment taken)" : "Booking confirmed"
     })
   } catch (error: any) {
     console.error("[BOOKING_CREATE_ERROR]", error)
@@ -163,6 +227,9 @@ export async function GET(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const termsBlock = termsGate(user)
+    if (termsBlock) return termsBlock
 
     const bookings = await db.booking.findMany({
       where: { studentId: user.id },

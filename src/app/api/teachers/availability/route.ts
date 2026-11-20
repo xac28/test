@@ -10,7 +10,16 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { teacherId, slots } = await req.json()
+    const body = await req.json().catch(() => null)
+    const teacherId = typeof body?.teacherId === "string" ? body.teacherId : ""
+    const slots: unknown = body?.slots
+    const timeOk = (v: unknown) => typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
+    if (!teacherId || (slots !== undefined && !Array.isArray(slots))) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 })
+    }
+    if (Array.isArray(slots) && (slots.length > 100 || slots.some((s: any) => !Number.isInteger(s?.dayOfWeek) || s.dayOfWeek < 0 || s.dayOfWeek > 6 || !timeOk(s?.startTime) || !timeOk(s?.endTime) || s.startTime >= s.endTime))) {
+      return NextResponse.json({ error: "Invalid time slot" }, { status: 400 })
+    }
 
     // Verify ownership
     const teacher = await db.teacher.findUnique({ where: { id: teacherId } })
@@ -21,7 +30,7 @@ export async function PUT(req: Request) {
     // Delete all existing slots and recreate
     await db.availability.deleteMany({ where: { teacherId } })
 
-    if (slots?.length > 0) {
+    if (Array.isArray(slots) && slots.length > 0) {
       await db.availability.createMany({
         data: slots.map((s: any) => ({
           teacherId,

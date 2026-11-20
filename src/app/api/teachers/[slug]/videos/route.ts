@@ -2,7 +2,8 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 
-export async function GET(req: Request, { params }: { params: { slug: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   try {
     const { slug } = params
     const session = await auth()

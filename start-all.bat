@@ -1,11 +1,11 @@
 @echo off
-title Namaste Enterprise - Kontrol Paneli
+title AYA Enterprise - Kontrol Paneli
 color 0A
 
 :menu
 cls
 echo =======================================================
-echo          NAMASTE YOGA PLATFORMU - BASLATICI
+echo          AYA YOGA PLATFORMU - BASLATICI
 echo =======================================================
 echo.
 echo 1. Web'i Gelistirme Modunda Baslat (npm run dev)
@@ -78,10 +78,10 @@ echo 2. LiveKit Baslatiliyor...
 start cmd /k "title LiveKit Server && if exist livekit-server.exe (livekit-server.exe --dev) else (docker run -p 7880:7880 -p 7881:7881 -p 7882:7882/udp livekit/livekit-server --dev)"
 
 echo 3. Web Sunucusu (Production) Baslatiliyor...
-start cmd /k "title Namaste Web Server && npm run build && npm run start"
+start cmd /k "title AYA Web Server && npm run build && npm run start"
 
 echo 4. Mobil Sunucu (Expo) Baslatiliyor...
-start cmd /k "title Namaste Mobile (Expo) && cd namaste-mobile && npx expo start -c"
+start cmd /k "title AYA Mobile (Expo) && cd namaste-mobile && npx expo start -c"
 
 echo.
 echo Tum sistemler ayri pencerelerde baslatildi!

@@ -19,7 +19,8 @@ type I18nContextType = {
 const I18nContext = createContext<I18nContextType | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('en');
+  // Turkish is the primary language of the platform; English stays available through the switcher
+  const [locale, setLocaleState] = useState<Locale>('tr');
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {

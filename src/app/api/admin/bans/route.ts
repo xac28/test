@@ -1,7 +1,10 @@
-import { auth } from "@/auth"
+import { requireAdmin, cleanReason } from "@/lib/admin-api"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
-import { banIpAddress } from "@/lib/ban-engine"
+import { banIpAddress, clearIpBanCache, extractIp, isBannableIp } from "@/lib/ban-engine"
+import { isIP } from "net"
+
+export const dynamic = "force-dynamic"
 
 /**
  * GET /api/admin/bans
@@ -9,16 +12,14 @@ import { banIpAddress } from "@/lib/ban-engine"
  * Admin paneli: IP banları, evasion logları ve kullanıcı IP geçmişlerini listele
  * 
  * Query params:
- * - type: "ip-bans" | "evasion-logs" | "user-ips" | "stats"
+ * - type: "ip-bans" | "evasion-logs" | "user-ips" | "visitors" | "attacks" | "stats"
  * - userId: (optional) belirli bir kullanıcının IP'lerini göster
  * - page: sayfa numarası (default: 1)
  */
 export async function GET(req: Request) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
 
     const url = new URL(req.url)
     const type = url.searchParams.get("type") || "stats"
@@ -63,21 +64,55 @@ export async function GET(req: Request) {
         return NextResponse.json({ ipLogs })
       }
 
+      // Every distinct IP that has requested the site (logged in or not), most recently active first.
+      case "visitors": {
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        const [visitors, total, bannedRows] = await Promise.all([
+          db.visitorIpLog.findMany({ orderBy: { lastSeenAt: "desc" }, skip, take: limit }),
+          db.visitorIpLog.count(),
+          db.ipBan.findMany({ where: { isActive: true }, select: { ipAddress: true } }),
+        ])
+        const banned = new Set(bannedRows.map((b) => b.ipAddress))
+        return NextResponse.json({
+          visitors: visitors.map((v) => ({ ...v, banned: banned.has(v.ipAddress) })),
+          total, page,
+          activeToday: await db.visitorIpLog.count({ where: { lastSeenAt: { gte: since24h } } }),
+        })
+      }
+
+      // Requests that matched a known attack/scanner signature — see lib/intrusion-detect.ts.
+      case "attacks": {
+        const [attacks, total] = await Promise.all([
+          db.attackLog.findMany({ orderBy: { createdAt: "desc" }, skip, take: limit }),
+          db.attackLog.count(),
+        ])
+        return NextResponse.json({ attacks, total, page })
+      }
+
       case "stats": {
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
         const [
           totalIpBans,
           activeIpBans,
           totalEvasionAttempts,
           recentEvasions,
           bannedUsers,
+          totalVisitors,
+          totalAttacks,
+          recentAttacks,
+          autoBannedCount,
         ] = await Promise.all([
           db.ipBan.count(),
           db.ipBan.count({ where: { isActive: true } }),
           db.banEvasionLog.count(),
           db.banEvasionLog.count({
-            where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
+            where: { createdAt: { gte: since24h } }
           }),
           db.user.count({ where: { banned: true } }),
+          db.visitorIpLog.count(),
+          db.attackLog.count(),
+          db.attackLog.count({ where: { createdAt: { gte: since24h } } }),
+          db.attackLog.count({ where: { autoBanned: true } }),
         ])
 
         return NextResponse.json({
@@ -86,6 +121,10 @@ export async function GET(req: Request) {
           totalEvasionAttempts,
           recentEvasions24h: recentEvasions,
           bannedUsers,
+          totalVisitors,
+          totalAttacks,
+          recentAttacks24h: recentAttacks,
+          autoBannedCount,
         })
       }
 
@@ -106,34 +145,41 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
+
+    const body = await req.json().catch(() => ({}))
+    const ipAddress = typeof body.ipAddress === "string" ? body.ipAddress.trim() : ""
+    const reason = cleanReason(body.reason)
+    const expiresAt = body.expiresAt
+
+    if (!ipAddress || reason.length < 3) {
+      return NextResponse.json({ error: "IP adresi ve neden gerekli." }, { status: 400 })
     }
-
-    const { ipAddress, reason, expiresAt } = await req.json()
-
-    if (!ipAddress || !reason) {
-      return NextResponse.json({ error: "ipAddress and reason are required" }, { status: 400 })
+    if (!isIP(ipAddress)) {
+      return NextResponse.json({ error: "Geçersiz IP adresi." }, { status: 400 })
     }
-
-    // IP format validasyonu (basit)
-    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
-    if (!ipRegex.test(ipAddress)) {
-      return NextResponse.json({ error: "Invalid IP address format" }, { status: 400 })
+    if (!isBannableIp(ipAddress)) {
+      return NextResponse.json({ error: "Yerel/özel ağ adresleri engellenemez (herkesi etkilerdi)." }, { status: 400 })
+    }
+    if (ipAddress === extractIp(req)) {
+      return NextResponse.json({ error: "Kendi IP adresinizi engelleyemezsiniz." }, { status: 400 })
+    }
+    if (expiresAt && (isNaN(new Date(expiresAt).getTime()) || new Date(expiresAt).getTime() < Date.now())) {
+      return NextResponse.json({ error: "Bitiş tarihi gelecekte olmalı." }, { status: 400 })
     }
 
     await banIpAddress(
       ipAddress,
       reason,
       undefined,
-      session.user.id,
+      g.admin.id,
       expiresAt ? new Date(expiresAt) : undefined
     )
 
     await db.auditLog.create({
       data: {
-        actorId: session.user.id,
+        actorId: g.admin.id,
         action: "MANUAL_IP_BAN",
         targetId: ipAddress,
         reason,
@@ -155,10 +201,8 @@ export async function POST(req: Request) {
  */
 export async function DELETE(req: Request) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const g = await requireAdmin(req)
+    if ("response" in g) return g.response
 
     const { banId } = await req.json()
 
@@ -175,10 +219,11 @@ export async function DELETE(req: Request) {
       where: { id: banId },
       data: { isActive: false }
     })
+    clearIpBanCache(ban.ipAddress)
 
     await db.auditLog.create({
       data: {
-        actorId: session.user.id,
+        actorId: g.admin.id,
         action: "REMOVE_IP_BAN",
         targetId: ban.ipAddress,
         reason: `IP ban lifted for ${ban.ipAddress}`,

@@ -1,0 +1,20 @@
+# LiveKit server settings used by docker-compose.yml (API keys come from the LIVEKIT_KEYS environment variable)
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: true
+
+# Embedded TURN relay. Without this, a viewer or teacher behind a NAT that pure STUN can't traverse
+# (symmetric NAT, common on mobile carriers and some corporate networks) either fails to connect at
+# all or falls back to the TCP port above — which, unlike the UDP media path, stalls the whole stream
+# on any packet loss instead of just dropping a frame. That's the "works perfectly on some networks,
+# stutters on others" pattern. Plain UDP relay (below) already fixes most of that with no extra setup
+# beyond the port mapping in docker-compose.yml. For networks so locked down that only TLS on 443 gets
+# through, add a domain + TLS cert for the TURN hostname and also set tls_port/domain/external_tls.
+turn:
+  enabled: true
+  udp_port: 3478
+  relay_range_start: 51000
+  relay_range_end: 51100

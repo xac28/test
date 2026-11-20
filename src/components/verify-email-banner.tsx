@@ -22,6 +22,8 @@ export function VerifyEmailBanner() {
       const res = await fetch("/api/auth/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resend: true }) })
       const d = await res.json().catch(() => ({}))
       if (res.ok) { setMsg("Doğrulama bağlantısı e-postana gönderildi."); if (d.alreadyVerified) setShow(false) }
+      // a stale/expired session reaches here as a plain 401 with no Turkish text of its own
+      else if (res.status === 401) setMsg("Oturumun sona ermiş görünüyor. Sayfayı yenileyip tekrar giriş yap.")
       else setMsg(d.error || "Gönderilemedi, sonra tekrar dene.")
     } catch {
       setMsg("Bağlantı kurulamadı.")

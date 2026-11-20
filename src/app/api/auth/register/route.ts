@@ -3,7 +3,8 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_AUTH } from "@/lib/rate-limit"
-import { normalizeEmail, isValidEmail, validatePassword } from "@/lib/auth-utils"
+import { normalizeEmail, validatePassword } from "@/lib/auth-utils"
+import { rejectFakeEmail } from "@/lib/disposable-email"
 import { checkBanEvasion, extractIp, logUserIp } from "@/lib/ban-engine"
 import { termsAcceptanceData } from "@/lib/terms"
 import { logEvent } from "@/lib/event-log"
@@ -60,11 +61,9 @@ export async function POST(req: Request) {
       )
     }
 
-    if (!isValidEmail(email)) {
-      return NextResponse.json(
-        { error: "Geçerli bir e-posta adresi giriniz." },
-        { status: 400 }
-      )
+    const emailProblem = rejectFakeEmail(email)
+    if (emailProblem) {
+      return NextResponse.json({ error: emailProblem, code: "EMAIL_REJECTED" }, { status: 400 })
     }
 
     const passwordCheck = validatePassword(password)

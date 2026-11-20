@@ -30,6 +30,14 @@ describe("newsletter sign-up", () => {
     }
   })
 
+  it("refuses known disposable/throwaway mailbox providers, including a wildcard-subdomain one", async () => {
+    for (const email of ["x@mailinator.com", "x@10minutemail.com", "x@yopmail.com", "anything-at-all@sub.mailinator.com"]) {
+      const r = await json("/api/newsletter", null, "POST", { email })
+      expect(r.status, email).toBe(400)
+    }
+    expect(await db.newsletterSubscriber.count({ where: { email: { contains: "mailinator" } } })).toBe(0)
+  })
+
   it("unsubscribes through the secret link, and signing up again re-activates", async () => {
     const email = addr()
     await json("/api/newsletter", null, "POST", { email })

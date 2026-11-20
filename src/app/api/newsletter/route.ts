@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { rateLimit } from "@/lib/rate-limit"
 import { extractIp } from "@/lib/ban-engine"
-import { EMAIL_RE, normalizeEmail, subscribe } from "@/lib/newsletter"
+import { normalizeEmail, subscribe } from "@/lib/newsletter"
+import { rejectFakeEmail } from "@/lib/disposable-email"
 
 export const dynamic = "force-dynamic"
 
@@ -12,9 +13,9 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null)
   const email = normalizeEmail(body?.email)
-  if (email.length > 190 || !EMAIL_RE.test(email)) {
-    return NextResponse.json({ error: "Geçerli bir e-posta adresi girin." }, { status: 400 })
-  }
+  if (email.length > 190) return NextResponse.json({ error: "Geçerli bir e-posta adresi girin." }, { status: 400 })
+  const emailProblem = rejectFakeEmail(email)
+  if (emailProblem) return NextResponse.json({ error: emailProblem }, { status: 400 })
   const source = typeof body?.source === "string" && /^[a-z0-9:_-]{1,60}$/i.test(body.source) ? body.source : "site"
   try {
     await subscribe(email, source)

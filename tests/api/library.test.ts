@@ -5,7 +5,7 @@ describe("pose and style library API (mobile app)", () => {
   it("lists, searches and filters poses", async () => {
     const all = await (await api("/api/poses")).json()
     expect(all.total).toBeGreaterThanOrEqual(15)
-    expect(all.poses[0]).toMatchObject({ slug: expect.any(String), name: expect.any(String), image: expect.stringMatching(/^\/poses\/.+\.webp$/) })
+    expect(all.poses[0]).toMatchObject({ slug: expect.any(String), name: expect.any(String), image: expect.stringMatching(/^\/poses\/.+\.webp(\?v=\d+)?$/) })
     const q = await (await api("/api/poses?q=tadasana")).json()
     expect(q.poses.map((p: any) => p.slug)).toEqual(["dag-durusu"])
     const bal = await (await api(`/api/poses?category=${encodeURIComponent("Denge")}`)).json()

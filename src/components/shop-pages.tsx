@@ -10,6 +10,7 @@ import { Cover, useDateFormat, useL } from '@/components/editorial';
 import { NewsletterForm } from '@/components/newsletter';
 import { SectionFrame } from '@/components/section-pages';
 import { PayForm } from '@/components/iyzico-pay-form';
+import { squareVariant } from '@/lib/image-urls';
 import { CartEntry, addToCart, readCart, writeCart, CART_EVENT } from '@/lib/cart';
 import { SHOP_CATEGORIES, ShopCategory, FREE_SHIPPING_KURUS, LOW_STOCK, MAX_LINE_QTY, ORDER_STATUS_LABEL, OrderStatusId, PAY_METHOD_LABEL, SHOP_BY_SLUG, calcTotals, formatKurus } from '@/lib/shop';
 
@@ -20,7 +21,7 @@ export function ProductCard({ p }: { p: ProductData }) {
   return (
     <Link href={`/shop/urun/${p.slug}`} data-testid="product-card" className="group block rounded-3xl overflow-hidden border border-rule bg-white card-lift">
       <div className="relative">
-        <Cover src={p.images[0]} tone="clay" label={p.name[0]} className="aspect-square" />
+        <Cover src={squareVariant(p.images[0]) ?? p.images[0]} fallback={p.images[0]} tone="clay" label={p.name[0]} className="aspect-square" />
         {p.stock <= 0 && <span className="absolute top-3 left-3 text-[11px] font-bold uppercase tracking-wider bg-ink text-white px-2.5 py-1 rounded-full">{L('Tükendi', 'Sold out')}</span>}
         {p.stock > 0 && p.stock <= LOW_STOCK && <span className="absolute top-3 left-3 text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full">{L(`Son ${p.stock} adet`, `Only ${p.stock} left`)}</span>}
       </div>
@@ -199,7 +200,7 @@ export function CartView() {
           <ul className="lg:col-span-8 space-y-4">
             {lines.map(({ entry, p }) => (
               <li key={p.id} data-testid="cart-line" className="flex gap-4 rounded-2xl border border-rule bg-white p-4">
-                <Cover src={p.image} tone="clay" label={p.name[0]} className="w-24 h-24 rounded-xl shrink-0" />
+                <Cover src={squareVariant(p.image) ?? p.image} fallback={p.image} tone="clay" label={p.name[0]} className="w-24 h-24 rounded-xl shrink-0" />
                 <div className="flex-1 min-w-0">
                   <Link href={`/shop/urun/${p.slug}`} className="font-display text-xl hover:underline underline-offset-4 decoration-1">{p.name}</Link>
                   <p className="text-sm text-sage-500">{formatKurus(p.priceKurus)}</p>

@@ -6,10 +6,52 @@
  */
 const u = (id: string, w = 2000) => `https://images.unsplash.com/${id}?q=80&w=${w}&auto=format&fit=crop`
 
+/**
+ * Bump when a file under public/photos or public/poses is replaced: the new URL makes every browser fetch the
+ * new picture instead of showing the one it kept from before.
+ */
+export const PHOTO_VERSION = "2"
+const local = (path: string) => `${path}?v=${PHOTO_VERSION}`
+
 export const PHOTOS = {
-  hero: ["/photos/hero.jpg", u("photo-1544367567-0f2fcb009e0b")],
-  meditation: ["/photos/meditation.jpg", u("photo-1506126613408-eca07ce68773")],
-  studio: ["/photos/studio.jpg", u("photo-1545205597-3d9d02c29597")],
-  join: ["/photos/join.jpg", u("photo-1599901860904-17e6ed7083a0")],
-  breath: ["/photos/breath.jpg", u("photo-1767611038549-7cdfeb77bdd8")],
+  hero: [local("/photos/hero.jpg"), u("photo-1544367567-0f2fcb009e0b")],
+  meditation: [local("/photos/meditation.jpg"), u("photo-1506126613408-eca07ce68773")],
+  studio: [local("/photos/studio.jpg"), u("photo-1545205597-3d9d02c29597")],
+  join: [local("/photos/join.jpg"), u("photo-1599901860904-17e6ed7083a0")],
+  breath: [local("/photos/breath.jpg"), u("photo-1767611038549-7cdfeb77bdd8")],
 } as const
+
+/** Landscape studio shots (3:2) for cards whose workshop / article / episode has no picture of its own. */
+const COVER = {
+  akis: local("/photos/covers/akis.jpg"),
+  cocuk: local("/photos/covers/cocuk.jpg"),
+  dag: local("/photos/covers/dag.jpg"),
+  kayik: local("/photos/covers/kayik.jpg"),
+  kopru: local("/photos/covers/kopru.jpg"),
+  savasana: local("/photos/covers/savasana.jpg"),
+  savasci: local("/photos/covers/savasci.jpg"),
+  studio: PHOTOS.studio[0],
+  join: PHOTOS.join[0],
+  hero: PHOTOS.hero[0],
+  breath: PHOTOS.breath[0],
+  meditation: PHOTOS.meditation[0],
+}
+
+// topics never share a picture, so two cards of different topics side by side never look the same
+const POOLS: { match: RegExp; photos: string[] }[] = [
+  { match: /nefes|pranayama|breath/i, photos: [COVER.breath, COVER.dag] },
+  { match: /meditasyon|nidra|uyku|mindful|farkındalık|meditation|podcast/i, photos: [COVER.meditation, COVER.hero] },
+  { match: /yin|restoratif|restorative|gevşe|esneklik|bakım|hamile|prenatal/i, photos: [COVER.cocuk, COVER.kopru, COVER.savasana] },
+  { match: /sağlık|felsefe|kişisel gelişim|beslenme/i, photos: [COVER.join, COVER.kayik] },
+]
+const GENERAL = [COVER.studio, COVER.akis, COVER.savasci]
+
+/**
+ * A real photo for something that has no picture of its own, chosen by its topic (category) and spread by
+ * its title so neighbouring cards differ. Always the same photo for the same item.
+ */
+export function topicPhoto(title: string, topic?: string | null): string {
+  const pool = POOLS.find((p) => p.match.test(`${topic ?? ""} ${title}`))?.photos ?? GENERAL
+  const n = Array.from(title || "·").reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7)
+  return pool[n % pool.length]
+}

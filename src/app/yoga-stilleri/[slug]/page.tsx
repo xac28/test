@@ -15,7 +15,7 @@ export function generateStaticParams() {
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
   const s = STYLE_BY_SLUG[params.slug]
-  return s ? { title: `${s.name} yoga`, description: s.tagline, alternates: { canonical: `/yoga-stilleri/${s.slug}` }, openGraph: { title: `${s.name} yoga · AYA`, description: s.tagline, images: [{ url: `/poses/${s.cover}.webp`, width: 900, height: 1125 }] } } : {}
+  return s ? { title: `${s.name} yoga`, description: s.tagline, alternates: { canonical: `/yoga-stilleri/${s.slug}` }, openGraph: { title: `${s.name} yoga · AYA`, description: s.tagline, images: [{ url: poseImage(s.cover), width: 900, height: 1125 }] } } : {}
 }
 
 export default async function StylePage(props: { params: Promise<{ slug: string }> }) {

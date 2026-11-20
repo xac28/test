@@ -8,7 +8,7 @@ import Footer from "@/components/Footer"
 import { CtaBand } from "@/components/marketing"
 import { Pose3D } from "@/components/poses/pose-3d"
 import { PoseCard } from "@/components/poses/pose-library"
-import { POSES, POSE_BY_SLUG } from "@/lib/yoga-poses"
+import { POSES, POSE_BY_SLUG, poseImage } from "@/lib/yoga-poses"
 import { STYLE_BY_SLUG } from "@/lib/yoga-styles"
 
 export function generateStaticParams() {
@@ -22,7 +22,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
         title: `${p.name} (${p.sanskrit})`,
         description: p.summary,
         alternates: { canonical: `/pozlar/${p.slug}` },
-        openGraph: { title: `${p.name} (${p.sanskrit}) · AYA`, description: p.summary, images: [{ url: `/poses/${p.slug}.webp`, width: 900, height: 1125, alt: `${p.name} duruşu` }] },
+        openGraph: { title: `${p.name} (${p.sanskrit}) · AYA`, description: p.summary, images: [{ url: poseImage(p.slug), width: 900, height: 1125, alt: `${p.name} duruşu` }] },
       }
     : {}
 }
@@ -39,7 +39,7 @@ export default async function PosePage(props: { params: Promise<{ slug: string }
   return (
     <>
       <JsonLd data={{
-        "@context": "https://schema.org", "@type": "HowTo", name: `${p.name} (${p.sanskrit}) nasıl yapılır?`, description: p.summary, image: `${SITE_URL}/poses/${p.slug}.webp`,
+        "@context": "https://schema.org", "@type": "HowTo", name: `${p.name} (${p.sanskrit}) nasıl yapılır?`, description: p.summary, image: `${SITE_URL}${poseImage(p.slug)}`,
         step: p.steps.map((text, i) => ({ "@type": "HowToStep", position: i + 1, text })),
       }} />
       <Navbar />

@@ -1,77 +1,14 @@
-import { NextResponse } from "next/server"
-import { createReadStream } from "fs"
-import { stat } from "fs/promises"
-import path from "path"
-import { Readable } from "stream"
-import { resolveUser } from "@/lib/auth-utils"
+import { serveUpload } from "@/lib/serve-upload"
 
 export const dynamic = "force-dynamic"
 
-const TYPES: Record<string, string> = {
-  ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
-  ".pdf": "application/pdf",
-  ".mp4": "video/mp4", ".webm": "video/webm", ".ogg": "video/ogg", ".mov": "video/quicktime",
-  ".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".wav": "audio/wav", ".weba": "audio/webm",
-}
-
 /**
  * `next start` only serves files that existed in /public when the server booted, so
- * files uploaded at runtime (avatars, teacher videos, certificates, podcast audio, product pictures) would 404 in
+ * files uploaded at runtime (avatars, teacher videos, podcast audio, product pictures) would 404 in
  * production. This route serves them (with Range support for video seeking).
+ * Private documents (/uploads/certificates/…) never reach this route: the proxy sends them to
+ * /api/private-uploads, which checks who is asking (see lib/serve-upload).
  */
 export async function GET(req: Request, props: { params: Promise<{ path: string[] }> }) {
-  const params = await props.params;
-  const root = path.resolve(process.cwd(), "public", "uploads")
-  const full = path.resolve(root, ...params.path)
-  const type = TYPES[path.extname(full).toLowerCase()]
-  if (!full.startsWith(root + path.sep) || !type) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 })
-  }
-
-  // certificates and ID documents are private: only the person who uploaded them and the administrators may open them
-  const isPrivate = params.path[0] === "certificates"
-  if (isPrivate) {
-    const owner = path.basename(full).split("-")[1]
-    const viewer = await resolveUser(req)
-    if (!viewer || (viewer.role !== "ADMIN" && viewer.id !== owner)) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 })
-    }
-  }
-
-  let size: number
-  try {
-    size = (await stat(full)).size
-  } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 })
-  }
-
-  const headers: Record<string, string> = {
-    "Content-Type": type,
-    "Accept-Ranges": "bytes",
-    // Every upload gets a brand-new filename (userId + timestamp + random, see /api/upload) — this exact
-    // URL will never point at different content, so public files can be cached for a full year.
-    "Cache-Control": isPrivate ? "private, no-store" : "public, max-age=31536000, immutable",
-    "X-Content-Type-Options": "nosniff",
-    // user-uploaded files must never run as pages
-    "Content-Security-Policy": "default-src 'none'; sandbox",
-  }
-
-  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.get("range") || "")
-  if (range && (range[1] || range[2])) {
-    let start = range[1] ? parseInt(range[1], 10) : size - parseInt(range[2], 10)
-    let end = range[1] && range[2] ? parseInt(range[2], 10) : size - 1
-    start = Math.max(0, start)
-    end = Math.min(size - 1, end)
-    if (start > end || start >= size) {
-      return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${size}` } })
-    }
-    return new Response(Readable.toWeb(createReadStream(full, { start, end })) as ReadableStream, {
-      status: 206,
-      headers: { ...headers, "Content-Range": `bytes ${start}-${end}/${size}`, "Content-Length": String(end - start + 1) },
-    })
-  }
-
-  return new Response(Readable.toWeb(createReadStream(full)) as ReadableStream, {
-    headers: { ...headers, "Content-Length": String(size) },
-  })
+  return serveUpload(req, (await props.params).path)
 }

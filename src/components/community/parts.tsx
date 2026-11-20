@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react"
-import { Flag, Heart, Loader2, MessageCircle, Trash2 } from "lucide-react"
+import { Flag, Heart, ImageOff, Loader2, MessageCircle, Trash2 } from "lucide-react"
 import { ReportDialog } from "@/components/report-dialog"
 import { CONTACT_LABEL_TR, KIND_LABEL_TR, findContact, findSpamShape, scanText } from "@/lib/profanity"
 import { timeAgo } from "@/components/notification-bell"
@@ -33,18 +33,23 @@ export function liveWarning(text: string): string | null {
   return null
 }
 
-/** A photo that degrades to a calm placeholder when the file is missing (deleted upload, broken link). */
-export function SafePhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
-  const [failed, setFailed] = useState(false)
-  if (failed) {
+/**
+ * A photo that tries its sources in order (e.g. the square cut made at upload, then the original) and, when the
+ * file is gone (deleted upload, broken link), shows a calm designed card instead of a broken picture.
+ */
+export function SafePhoto({ src, sources, alt, className, caption }: { src: string; sources?: (string | null | undefined)[]; alt: string; className?: string; caption?: string }) {
+  const list = [...(sources ?? []), src].filter((x, i, a): x is string => !!x && a.indexOf(x) === i)
+  const [i, setI] = useState(0)
+  if (i >= list.length) {
     return (
-      <div role="img" aria-label="Görsel yüklenemedi" data-testid="photo-missing" className={`flex items-center justify-center bg-sage-100 text-sage-500 text-xs min-h-[10rem] ${className ?? ""}`}>
-        Görsel yüklenemedi
+      <div role="img" aria-label={alt || "Görsel"} data-testid="photo-missing" className={`relative flex flex-col items-center justify-center gap-2 overflow-hidden bg-gradient-to-br from-sage-100 via-cream to-clay-100 text-sage-500 min-h-[10rem] px-4 text-center ${className ?? ""}`}>
+        <ImageOff size={22} strokeWidth={1.5} className="opacity-60" aria-hidden />
+        {caption ? <span className="font-display text-sm text-ink/70 line-clamp-3">{caption}</span> : null}
       </div>
     )
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} className={className} />
+  return <img key={list[i]} src={list[i]} alt={alt} loading="lazy" decoding="async" onError={() => setI((n) => n + 1)} className={className} />
 }
 
 export function Avatar({ author, size = 36 }: { author: CommunityAuthor; size?: number }) {

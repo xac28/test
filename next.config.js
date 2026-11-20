@@ -35,7 +35,7 @@ const nextConfig = {
     minimumCacheTTL: 60,
   },
 
-  serverExternalPackages: ['iyzipay'],
+  serverExternalPackages: ['iyzipay', 'sharp'],
   experimental: {
     // Named imports from these pull in only the modules actually used instead of the whole package
     // (lucide-react and date-fns are already optimized by Next itself; these two are not, and both are

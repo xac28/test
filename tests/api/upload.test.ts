@@ -1,10 +1,10 @@
 import { describe, it, expect, afterAll } from "vitest"
-import { api, makeUser, makeTeacher, json, db, BASE } from "./helpers"
+import { api, makeUser, makeTeacher, json, db, BASE, TINY_JPEG } from "./helpers"
 
 afterAll(() => db.$disconnect())
 
 const ascii = (s: string) => Array.from(s).map((c) => c.charCodeAt(0))
-const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, ...ascii("JFIF"), 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xd9])
+const JPEG = TINY_JPEG
 const MP4 = new Uint8Array([0, 0, 0, 0x18, ...ascii("ftypmp42"), 0, 0, 0, 0, ...ascii("mp42isom"), 0, 0, 0, 8, ...ascii("free")])
 const MOV = new Uint8Array([0, 0, 0, 0x14, ...ascii("ftypqt  "), 0, 0, 0, 0, ...ascii("qt  ")])
 
@@ -26,14 +26,16 @@ describe("mobile-style uploads (Bearer token, phone MIME quirks)", () => {
     const res = await up(user, form(JPEG, "IMG_0001", "image/jpg", "avatar"))
     expect(res.status).toBe(200)
     const { url } = await res.json()
-    expect(url).toMatch(/^\/uploads\/avatars\/avatar-.*\.jpg$/)
+    expect(url).toMatch(/^\/uploads\/avatars\/avatar-.*\.webp$/)
     expect((await db.user.findUnique({ where: { id: user.id } }))?.image).toBe(url)
 
     // served back (also covers the runtime-uploads route used by `next start`)
     const file = await fetch(`${BASE}${url}`)
     expect(file.status).toBe(200)
-    expect(file.headers.get("content-type")).toBe("image/jpeg")
-    expect(new Uint8Array(await file.arrayBuffer())).toEqual(JPEG)
+    // the photo was re-encoded on upload (upright, no metadata, square, WebP)
+    expect(file.headers.get("content-type")).toBe("image/webp")
+    const body = new Uint8Array(await file.arrayBuffer())
+    expect(String.fromCharCode(...body.slice(8, 12))).toBe("WEBP")
   })
 
   it("avatar: rejects a file whose bytes are not an image", async () => {

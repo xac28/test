@@ -6,7 +6,7 @@
  */
 import { CRISIS_REPLY, KNOWLEDGE, matchKnowledge } from "@/lib/ai-knowledge"
 import { DEFAULT_SUGGESTIONS, GuideData, GuideLink, STYLE_LABEL_TR, StyleId, composeNavigation } from "@/lib/ai-guide"
-import { POSE_BY_SLUG, YogaPose } from "@/lib/yoga-poses"
+import { POSE_BY_SLUG, YogaPose, poseImage } from "@/lib/yoga-poses"
 import { STYLE_BY_SLUG, STYLES } from "@/lib/yoga-styles"
 import { FREE_SHIPPING_KURUS } from "@/lib/shop"
 import { AiCard } from "@/lib/ai/tools"
@@ -51,7 +51,7 @@ function aboutPhrase(s: Slots): string {
 
 const conditionNotes = (s: Slots, max = 2) => s.conditions.slice(0, max).map((c) => CONDITION_ADVICE[c])
 
-const poseCard = (p: YogaPose): AiCard => ({ kind: "pose", title: p.name, subtitle: `${p.sanskrit} · ${p.level}`, meta: p.category, href: `/pozlar/${p.slug}`, image: `/poses/${p.slug}.webp` })
+const poseCard = (p: YogaPose): AiCard => ({ kind: "pose", title: p.name, subtitle: `${p.sanskrit} · ${p.level}`, meta: p.category, href: `/pozlar/${p.slug}`, image: poseImage(p.slug) })
 
 /** Sat 00:00 of the coming weekend, in Istanbul. */
 function weekendStart(now: Date): Date {

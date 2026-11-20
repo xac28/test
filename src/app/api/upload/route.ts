@@ -8,6 +8,8 @@ import { applyRateLimit } from "@/lib/api-protection"
 import { RATE_LIMIT_UPLOAD } from "@/lib/rate-limit"
 import { resolveUser } from "@/lib/auth-utils"
 import { normalizeMime, validateMagicBytes } from "@/lib/upload-validation"
+import { ImageDecodeError, ImageKind, processImage } from "@/lib/image-processing"
+import { uploadDirFor } from "@/lib/serve-upload"
 
 // POST /api/upload — Upload a file (certificates, etc.)
 export async function POST(req: Request) {
@@ -77,7 +79,8 @@ export async function POST(req: Request) {
 
     // Determine directory
     const folder = type === "avatar" ? "avatars" : type === "post" ? "posts" : type === "video" ? "videos" : type === "audio" ? "audio" : type === "product" ? "products" : "certificates"
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", folder)
+    // certificates / ID documents go outside /public (lib/serve-upload): only their owner and admins can open them
+    const uploadsDir = uploadDirFor(folder)
     await mkdir(uploadsDir, { recursive: true })
 
     // Generate unique filename (orijinal dosya adı kullanılmıyor, güvenli prefix + timestamp)
@@ -86,8 +89,10 @@ export async function POST(req: Request) {
       "video/mp4": ".mp4", "video/webm": ".webm", "video/ogg": ".ogg", "video/quicktime": ".mov",
       "audio/mpeg": ".mp3", "audio/mp4": ".m4a", "audio/ogg": ".ogg", "audio/wav": ".wav", "audio/webm": ".weba",
     }
+    // Photos are re-encoded below (upright, metadata removed, resized, WebP): the stored file is always .webp
+    const isImage = mime.startsWith("image/")
     // Phone libraries often hand over names without (or with the wrong) extension: trust the validated type
-    const ext = mimeExt[mime] || path.extname(safeOrigName)
+    const ext = isImage ? ".webp" : mimeExt[mime] || path.extname(safeOrigName)
     
     // Extension whitelist kontrolü
     const safeExtensions = type === "avatar" || type === "post" || type === "product"
@@ -106,8 +111,21 @@ export async function POST(req: Request) {
     const filename = `${prefix}-${user.id}-${Date.now()}-${randomBytes(12).toString("hex")}${ext.toLowerCase()}`
     const filepath = path.join(uploadsDir, filename)
 
-    // Write file
-    await writeFile(filepath, Buffer.from(bytes))
+    // Write file — photos go through the automatic treatment first (lib/image-processing)
+    if (isImage) {
+      const kind: ImageKind = type === "avatar" || type === "post" || type === "product" ? type : "certificate"
+      let img
+      try {
+        img = await processImage(bytes, kind)
+      } catch (e) {
+        if (e instanceof ImageDecodeError) return NextResponse.json({ error: e.message }, { status: 400 })
+        throw e
+      }
+      await writeFile(filepath, img.main)
+      if (img.square) await writeFile(filepath.replace(/\.webp$/, ".sq.webp"), img.square)
+    } else {
+      await writeFile(filepath, Buffer.from(bytes))
+    }
 
     // Return the public URL path
     const publicUrl = `/uploads/${folder}/${filename}`

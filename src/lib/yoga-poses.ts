@@ -1,7 +1,9 @@
 /**
- * AYA pose library: original descriptions written for this site (Turkish), illustrated with our own 3D character
- * (see scripts/render-poses and src/lib/pose-rigs.ts). General wellness information, not medical advice.
+ * AYA pose library: original descriptions written for this site (Turkish), illustrated with real studio photos
+ * (PHOTO_CREDITS.md); the 3D character (src/lib/pose-rigs.ts) animates the pose on request. General wellness
+ * information, not medical advice.
  */
+import { PHOTO_VERSION } from "@/lib/photos"
 export type PoseLevel = "Başlangıç" | "Orta" | "İleri"
 export type PoseCategory = "Ayakta" | "Oturarak" | "Öne eğilme" | "Geriye eğilme" | "Denge" | "Dinlenme" | "Ters ve güç"
 
@@ -191,4 +193,4 @@ export const POSES: YogaPose[] = [
 ]
 
 export const POSE_BY_SLUG: Record<string, YogaPose> = Object.fromEntries(POSES.map((p) => [p.slug, p]))
-export const poseImage = (slug: string) => `/poses/${slug}.webp`
+export const poseImage = (slug: string) => `/poses/${slug}.webp?v=${PHOTO_VERSION}`

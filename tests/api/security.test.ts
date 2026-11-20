@@ -1,10 +1,12 @@
 import { describe, it, expect, afterAll } from "vitest"
-import { api, makeUser, makeTeacher, json, db, BASE } from "./helpers"
+import { api, makeUser, makeTeacher, json, db, BASE, TINY_PNG } from "./helpers"
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs"
+import path from "path"
 
 afterAll(() => db.$disconnect())
 
 const ascii = (s: string) => Array.from(s).map((c) => c.charCodeAt(0))
-const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, ...ascii("IHDR"), 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 0x1f, 0x15, 0xc4, 0x89])
+const PNG = TINY_PNG
 
 const login = (email: string, password: string, ip?: string) =>
   api("/api/mobile/auth/login", null, { method: "POST", headers: { "content-type": "application/json", ...(ip ? { "x-forwarded-for": ip } : {}) }, body: JSON.stringify({ email, password }) })
@@ -83,7 +85,7 @@ describe("uploaded files cannot be guessed", () => {
     const a = await (await api("/api/upload", u, { method: "POST", body: fd() })).json()
     const b = await (await api("/api/upload", u, { method: "POST", body: fd() })).json()
     expect(a.url).not.toBe(b.url)
-    expect(a.url).toMatch(/^\/uploads\/posts\/post-[a-z0-9]+-\d+-[0-9a-f]{24}\.png$/)
+    expect(a.url).toMatch(/^\/uploads\/posts\/post-[a-z0-9]+-\d+-[0-9a-f]{24}\.webp$/)
   })
 
   it("certificates are private: owner and admins only", async () => {
@@ -99,6 +101,19 @@ describe("uploaded files cannot be guessed", () => {
     expect((await api(url, other)).status).toBe(404)
     expect((await api(url, owner)).status).toBe(200)
     expect((await api(url, admin)).status).toBe(200)
+    // stored outside /public: the static file handler can never hand it out
+    expect(existsSync(path.join(process.cwd(), "public", url))).toBe(false)
+    // a copy left under /public by an older version is not served to strangers either
+    const legacy = `/uploads/certificates/cert-${owner.id}-1-legacy${Date.now()}.png`
+    mkdirSync(path.join(process.cwd(), "public", "uploads", "certificates"), { recursive: true })
+    writeFileSync(path.join(process.cwd(), "public", legacy), Buffer.from(PNG))
+    try {
+      expect((await api(legacy, null)).status).toBe(404)
+      expect((await api(legacy, other)).status).toBe(404)
+      expect((await api(legacy, owner)).status).toBe(200)
+    } finally {
+      rmSync(path.join(process.cwd(), "public", legacy), { force: true })
+    }
     // public pictures stay public
     const g = new FormData()
     g.append("file", new Blob([PNG as unknown as BlobPart], { type: "image/png" }), "p.png")

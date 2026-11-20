@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Bell, Headphones, Megaphone, Mic, ShoppingBag } 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ArticleCardData, Cover, useDateFormat, useL } from '@/components/editorial';
+import { topicPhoto } from '@/lib/photos';
 import { NewsletterForm } from '@/components/newsletter';
 import { Aurora, Reveal, SplitText, Stagger, StaggerItem } from '@/components/motion';
 import { PodcastPlayer } from '@/components/podcast-player';
@@ -85,7 +86,7 @@ export function PodcastView({ items }: { items: EpisodeData[] }) {
           {items.map((e) => (
             <li key={e.id} data-testid="episode-card" className="grid md:grid-cols-12 gap-6 rounded-3xl border border-rule bg-white p-5 md:p-6">
               <Link href={`/podcast/${e.slug}`} className="md:col-span-3 block">
-                <Cover src={e.coverUrl} tone="clay" label={e.title[0]} className="aspect-square rounded-2xl" />
+                <Cover src={e.coverUrl} fallback={topicPhoto(e.title, "podcast")} tone="clay" label={e.title[0]} className="aspect-square rounded-2xl" />
               </Link>
               <div className="md:col-span-9 min-w-0">
                 <p className="eyebrow mb-1">
@@ -113,7 +114,7 @@ export function PodcastEpisodeView({ e }: { e: EpisodeData }) {
     <SectionFrame icon={Headphones} eyebrow={`Podcast${e.episodeNo ? ` · ${L('Bölüm', 'Episode')} ${e.episodeNo}` : ''}`} title={e.title} intro={e.guest ? `${L('Konuk', 'Guest')}: ${e.guest}` : L('Konuşmalar', 'Conversations')}>
       <Link href="/podcast" className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700 mb-6"><ArrowLeft size={15} /> {L('Tüm bölümler', 'All episodes')}</Link>
       <article className="grid md:grid-cols-12 gap-8">
-        <div className="md:col-span-4"><Cover src={e.coverUrl} tone="clay" label={e.title[0]} className="aspect-square rounded-3xl" /></div>
+        <div className="md:col-span-4"><Cover src={e.coverUrl} fallback={topicPhoto(e.title, "podcast")} tone="clay" label={e.title[0]} className="aspect-square rounded-3xl" /></div>
         <div className="md:col-span-8">
           <p className="text-sm text-sage-500 mb-4">{e.publishedAt ? f.date(e.publishedAt) : ''}{e.durationSec ? ` · ${formatDuration(e.durationSec)}` : ''} · {e.plays} {L('dinlenme', 'listens')}</p>
           <PodcastPlayer id={e.id} src={e.audioUrl} />

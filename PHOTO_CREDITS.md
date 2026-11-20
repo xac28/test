@@ -46,4 +46,8 @@ Pexels (bu dört poz Unsplash serisinde yoktu):
 | join | photo-1599901860904-17e6ed7083a0 |
 | breath | photo-1767611038549-7cdfeb77bdd8 (Margaret Young) |
 
-Bir fotoğrafı değiştirmek için aynı adla (ve aynı en/boy oranıyla) dosyanın üzerine yazmak yeterlidir.
+## Kapak yedekleri (`public/photos/covers/*.jpg`, 1200×800)
+
+Kendi görseli olmayan atölye, yazı ve podcast kartlarında konuya göre (nefes, meditasyon, yin…) gösterilir (`topicPhoto`, `src/lib/photos.ts`). Hepsi Margaret Young serisinin yatay kareleri: akis (aşağı bakan köpek), cocuk, dag, kayik, kopru, savasana, savasci — dosya kimlikleri yukarıdaki poz tablosundakilerle aynıdır.
+
+Bir fotoğrafı değiştirmek için aynı adla (ve aynı en/boy oranıyla) dosyanın üzerine yazın ve `src/lib/photos.ts` içindeki `PHOTO_VERSION` değerini bir artırın: tarayıcılar eski kopyayı göstermek yerine yenisini indirir.

@@ -8,6 +8,7 @@ import { TeacherBadge } from '@/components/teacher-badge';
 import { PersonAvatar } from '@/components/person-avatar';
 import { DrawLine, SplitText } from '@/components/motion';
 import { formatPriceTR, WorkshopState } from '@/lib/workshops';
+import { topicPhoto } from '@/lib/photos';
 
 /** Pick a string by language: L('Merhaba', 'Hello'). */
 export function useL() {
@@ -35,8 +36,11 @@ export function Cover({
   tone = 'sage',
   label,
   person,
+  fallback,
 }: {
   src?: string | null;
+  /** a stand-in photo for when there is no src (or it fails): e.g. topicPhoto(title, category) */
+  fallback?: string | null;
   alt?: string;
   className?: string;
   tone?: 'sage' | 'clay' | 'ink';
@@ -44,8 +48,11 @@ export function Cover({
   /** a person's name: without a photo an illustrated portrait is shown instead of the initial */
   person?: string | null;
 }) {
-  const [failed, setFailed] = useState(false);
+  const sources = [src, fallback].filter((x): x is string => !!x);
+  const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const shown = sources[attempt] ?? null;
+  const failed = !shown;
   // a missing photo should still look designed: a soft tonal field with quiet concentric rings (and the initial)
   const palette =
     tone === 'clay'
@@ -62,21 +69,24 @@ export function Cover({
           <circle key={r} cx="50" cy="54" r={r} fill="none" stroke="currentColor" strokeWidth="0.35" />
         ))}
       </svg>
-      {person && (!src || failed) && (
+      {person && failed && (
         <PersonAvatar name={person} size="full" rounded={false} className="absolute inset-0" />
       )}
-      {label && !person && (
+      {label && !person && failed && (
         <span className="absolute inset-0 flex items-center justify-center font-display text-7xl select-none opacity-80" aria-hidden>
           {label}
         </span>
       )}
-      {src && !failed && (
+      {shown && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
+          key={shown}
+          // a picture that finished loading before React attached onLoad (cache, fast network) would stay invisible
+          ref={(el) => { if (el && el.complete && el.naturalWidth > 0 && !loaded) setLoaded(true); }}
+          src={shown}
           alt={alt}
           loading="lazy"
-          onError={() => setFailed(true)}
+          onError={() => { setLoaded(false); setAttempt((n) => n + 1); }}
           onLoad={() => setLoaded(true)}
           className={`absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-[900ms] ease-out ${loaded ? 'opacity-100 scale-100 group-hover:scale-[1.05]' : 'opacity-0 scale-[1.08]'}`}
         />
@@ -138,7 +148,7 @@ export function WorkshopCard({ w }: { w: WorkshopCardData }) {
   const live = w.state === 'ongoing' || w.state === 'starting-soon';
   return (
     <Link href={`/atolyeler/${w.slug}`} data-testid="workshop-card" className="group block">
-      <Cover src={w.coverUrl} tone={w.mode === 'RECORDED' ? 'clay' : 'sage'} label={w.title[0]} className="aspect-[4/3] mb-4" />
+      <Cover src={w.coverUrl} fallback={topicPhoto(w.title, w.category)} tone={w.mode === 'RECORDED' ? 'clay' : 'sage'} label={w.title[0]} className="aspect-[4/3] mb-4" />
       <div className="flex items-center gap-3 mb-2 eyebrow">
         <span>{w.category}</span>
         <span className="text-rule">·</span>
@@ -182,7 +192,7 @@ export function ArticleCard({ a, large = false }: { a: ArticleCardData; large?: 
   const f = useDateFormat();
   return (
     <Link href={`/icerikler/${a.slug}`} data-testid="article-card" className={`group block ${large ? 'md:col-span-2' : ''}`}>
-      <Cover src={a.coverUrl} tone="clay" label={a.title[0]} className={`${large ? 'aspect-[16/9]' : 'aspect-[3/2]'} mb-4`} />
+      <Cover src={a.coverUrl} fallback={topicPhoto(a.title, a.category)} tone="clay" label={a.title[0]} className={`${large ? 'aspect-[16/9]' : 'aspect-[3/2]'} mb-4`} />
       <p className="eyebrow mb-2">
         {a.category}
         {a.publishedAt ? <span className="normal-case tracking-normal font-normal"> · {f.date(a.publishedAt)}</span> : null}

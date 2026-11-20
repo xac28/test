@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { withConflictRetry } from "@/lib/db-retry"
 import { sendEmail } from "@/lib/email"
 import { SITE_URL } from "@/lib/site"
 import { notifyRestock } from "@/lib/automation"
@@ -52,27 +53,6 @@ export interface CreateOrderData {
 }
 
 /** Reserves the stock and writes the order in one transaction; nothing is kept when any line is out of stock. */
-/**
- * MariaDB ≥ 11.6 (snapshot isolation on by default) aborts a transaction whose row another buyer just
- * changed (error 1020), and InnoDB can pick a deadlock victim (1213). Both are safe to run again.
- */
-function isWriteConflict(e: any): boolean {
-  if (e?.code === "P2034") return true
-  const msg = String(e?.message ?? "")
-  return /code: (1020|1213)\b|Record has changed since last read|deadlock/i.test(msg)
-}
-
-async function withConflictRetry<T>(run: () => Promise<T>): Promise<T> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await run()
-    } catch (e) {
-      if (!isWriteConflict(e) || attempt >= 6) throw e
-      await new Promise((r) => setTimeout(r, 15 + Math.random() * 40 * (attempt + 1)))
-    }
-  }
-}
-
 export async function createOrder(data: CreateOrderData, userId: string | null) {
   const order = await withConflictRetry(() => db.$transaction(async (tx) => {
     const ids = data.items.map((i) => i.productId)

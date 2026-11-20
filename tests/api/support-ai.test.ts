@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from "vitest"
 import crypto from "crypto"
-import { api, json, makeUser, makeTeacher, makeBooking, db } from "./helpers"
+import { api, json, makeUser, makeTeacher, makeBooking, db, TINY_JPEG } from "./helpers"
 
 afterAll(() => db.$disconnect())
 
@@ -251,7 +251,7 @@ describe("system event log", () => {
     const ok = await json("/api/mobile/auth/login", null, "POST", { email: u.email, password: u.password })
     expect(ok.status).toBe(200)
     await json("/api/mobile/auth/login", null, "POST", { email: u.email, password: "yanlis-sifre" })
-    const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 74, 70, 73, 70, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xd9])
+    const JPEG = TINY_JPEG
     const fd = new FormData()
     fd.append("file", new Blob([JPEG as unknown as BlobPart], { type: "image/jpeg" }), "a.jpg")
     fd.append("type", "post")

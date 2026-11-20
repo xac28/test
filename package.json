@@ -11,7 +11,8 @@
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "test:api": "vitest run --config vitest.api.config.ts",
-    "seed:demo": "node scripts/seed-demo.js"
+    "seed:demo": "node scripts/seed-demo.js",
+    "clean:test-data": "node scripts/clean-test-data.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
@@ -37,6 +38,7 @@
     "nodemailer": "^10.3.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "sharp": "^0.35.5",
     "stripe": "^22.1.0",
     "three": "^0.170.0"
   },

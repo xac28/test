@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ArticleCard, ArticleCardData, Cover, useDateFormat, useL } from '@/components/editorial';
+import { topicPhoto } from '@/lib/photos';
 import type { Block } from '@/lib/articles';
 
 export interface ArticleData {
@@ -59,7 +60,7 @@ export default function ArticleView({ article: a, related }: { article: ArticleD
           </header>
 
           <div className="max-w-5xl mx-auto px-6 mt-10">
-            <Cover src={a.coverUrl} tone="clay" label={a.title[0]} className="aspect-[16/8]" />
+            <Cover src={a.coverUrl} fallback={topicPhoto(a.title, a.category)} tone="clay" label={a.title[0]} className="aspect-[16/8]" />
           </div>
 
           <div className="max-w-2xl mx-auto px-6 mt-14" data-testid="article-body">

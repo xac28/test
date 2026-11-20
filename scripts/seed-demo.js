@@ -94,7 +94,7 @@ async function main() {
   const t2 = await teacher(u2, "Yin yoga ve yoga nidra eğitmeni.", ["Yin", "Yoga Nidra", "Restoratif"])
 
   for (const w of WORKSHOPS(t1, t2)) {
-    await db.workshop.upsert({ where: { slug: w.slug }, update: { startsAt: w.startsAt ?? null }, create: w })
+    await db.workshop.upsert({ where: { slug: w.slug }, update: { startsAt: w.startsAt ?? null, status: "PUBLISHED" }, create: { status: "PUBLISHED", ...w } })
   }
   for (const a of ARTICLES(admin.id)) {
     await db.article.upsert({

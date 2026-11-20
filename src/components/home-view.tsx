@@ -20,6 +20,7 @@ import { POSES } from '@/lib/yoga-poses';
 import { STYLES, TONE_CLASS } from '@/lib/yoga-styles';
 
 import { PHOTOS } from '@/lib/photos';
+import { topicPhoto } from '@/lib/photos';
 
 export interface HomeData {
   live: { id: string; title: string; viewers: number; teacher: string | null; trial?: boolean } | null;
@@ -97,7 +98,7 @@ export default function HomeView({ data }: { data: HomeData }) {
                     <h2 className="font-display text-2xl md:text-[1.7rem] leading-tight">{feature.title}</h2>
                     <p className="text-sm text-sage-600 mt-2 line-clamp-3">{feature.text}</p>
                     <Link href={feature.href} className="btn-line mt-4">{L('DEVAMINI OKU', 'READ MORE')} <ArrowRight size={16} /></Link>
-                    <Cover src={feature.image} tone="clay" label={feature.title[0]} className="aspect-[16/9] mt-5" />
+                    <Cover src={feature.image} fallback={topicPhoto(feature.title, feature.eyebrow)} tone="clay" label={feature.title[0]} className="aspect-[16/9] mt-5" />
                   </div>
                 </Reveal>
                 <div className="border-t border-rule pt-7">
@@ -229,7 +230,7 @@ export default function HomeView({ data }: { data: HomeData }) {
               ) : (
                 <div className="mt-6 grid md:grid-cols-2 gap-6">
                   <Link href={`/icerikler/${data.articles[0].slug}`} data-testid="article-card" className="group block">
-                    <ClipReveal className="mb-4"><Cover src={data.articles[0].coverUrl} tone="clay" label={data.articles[0].title[0]} className="aspect-[4/3] rounded-2xl" /></ClipReveal>
+                    <ClipReveal className="mb-4"><Cover src={data.articles[0].coverUrl} fallback={topicPhoto(data.articles[0].title, data.articles[0].category)} tone="clay" label={data.articles[0].title[0]} className="aspect-[4/3] rounded-2xl" /></ClipReveal>
                     <p className="eyebrow mb-1.5">{data.articles[0].category}</p>
                     <h3 className="font-display text-2xl leading-snug group-hover:underline underline-offset-4 decoration-1">{data.articles[0].title}</h3>
                     <p className="text-sm text-sage-600 mt-2 line-clamp-2">{data.articles[0].excerpt}</p>

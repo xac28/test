@@ -1,10 +1,10 @@
 import { describe, it, expect, afterAll } from "vitest"
-import { api, json, makeUser, makeTeacher, db } from "./helpers"
+import { api, json, makeUser, makeTeacher, db, TINY_JPEG } from "./helpers"
 
 afterAll(() => db.$disconnect())
 
 const ascii = (s: string) => Array.from(s).map((c) => c.charCodeAt(0))
-const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, ...ascii("JFIF"), 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xd9])
+const JPEG = TINY_JPEG
 
 async function photo(user: { token: string }) {
   const fd = new FormData()
@@ -13,7 +13,7 @@ async function photo(user: { token: string }) {
   const res = await api("/api/upload", user, { method: "POST", body: fd })
   expect(res.status).toBe(200)
   const { url } = await res.json()
-  expect(url).toMatch(/^\/uploads\/posts\/post-.*\.jpg$/)
+  expect(url).toMatch(/^\/uploads\/posts\/post-.*\.webp$/)
   return url as string
 }
 

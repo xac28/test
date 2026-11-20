@@ -7,6 +7,7 @@ import { ArrowLeft, CalendarClock, Clock, Gauge, Loader2, Radio, Ticket, Users }
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Cover, useDateFormat, useL } from '@/components/editorial';
+import { topicPhoto } from '@/lib/photos';
 import { formatPriceTR, WorkshopState } from '@/lib/workshops';
 import { ReportButton } from '@/components/report-dialog';
 
@@ -95,7 +96,7 @@ export default function WorkshopDetailView({
             <h1 data-testid="workshop-title" className="font-display font-light text-5xl md:text-6xl leading-[1.02]">{w.title}</h1>
             {w.subtitle && <p className="text-xl text-sage-600 mt-5 max-w-2xl leading-relaxed">{w.subtitle}</p>}
 
-            <Cover src={w.coverUrl} tone={w.mode === 'RECORDED' ? 'clay' : 'sage'} label={w.title[0]} className="aspect-[16/9] mt-10" />
+            <Cover src={w.coverUrl} fallback={topicPhoto(w.title, w.category)} tone={w.mode === 'RECORDED' ? 'clay' : 'sage'} label={w.title[0]} className="aspect-[16/9] mt-10" />
 
             {w.mode === 'RECORDED' && w.hasAccess && w.videoUrl && (
               <div className="mt-10">

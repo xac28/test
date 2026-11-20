@@ -5,7 +5,7 @@ import { getGuideTeachers } from "@/lib/ai-data"
 import { fold, matchTaught } from "@/lib/ai-knowledge"
 import { taughtToEntries } from "@/lib/ai-learning"
 import { filterVisibleBroadcasts, listActiveBroadcasts } from "@/lib/live-rooms"
-import { POSES } from "@/lib/yoga-poses"
+import { POSES, poseImage } from "@/lib/yoga-poses"
 import { seatsLeft, workshopState, formatPriceTR } from "@/lib/workshops"
 import { SHOP_SLUGS, formatKurus, parseImages, ORDER_STATUS_LABEL, OrderStatusId, PAY_METHOD_LABEL } from "@/lib/shop"
 import { NEWS_CATEGORIES, PODCAST_CATEGORY } from "@/lib/articles"
@@ -148,7 +148,7 @@ function findPose(i: Record<string, unknown>): ToolOutput {
     result: scored.length
       ? { poses: scored.map(({ p }) => ({ name: p.name, english: p.english, sanskrit: p.sanskrit, level: p.level, category: p.category, hold: p.hold, summary: p.summary, steps: p.steps.slice(0, 6), benefits: p.benefits.slice(0, 4), breath: p.breath, avoid: p.avoid, easier: p.easier, link: `/pozlar/${p.slug}` })) }
       : { poses: [], note: "Poz kütüphanesinde eşleşme bulunamadı." },
-    cards: scored.map(({ p }) => ({ kind: "pose" as const, title: p.name, subtitle: `${p.sanskrit} · ${p.level}`, meta: p.category, href: `/pozlar/${p.slug}`, image: `/poses/${p.slug}.webp` })),
+    cards: scored.map(({ p }) => ({ kind: "pose" as const, title: p.name, subtitle: `${p.sanskrit} · ${p.level}`, meta: p.category, href: `/pozlar/${p.slug}`, image: poseImage(p.slug) })),
   }
 }
 

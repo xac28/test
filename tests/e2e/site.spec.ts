@@ -379,7 +379,8 @@ test.describe("workshops", () => {
       await t.page.waitForLoadState("networkidle")
     }
     // the directory lists the 100 soonest workshops: leftovers of earlier runs must not push this one off the page
-    await db.workshop.updateMany({ where: { status: "PUBLISHED" }, data: { status: "DRAFT" } })
+    // (only test-made ones: the demo workshops of a local site must stay published)
+    await db.workshop.updateMany({ where: { status: "PUBLISHED", teacher: { user: { OR: [{ email: { startsWith: "t-" } }, { email: { startsWith: "e2e-" } }] } } }, data: { status: "DRAFT" } })
     const freeTitle = `Ücretsiz Atölye ${Date.now().toString(36)}`
     await fill(freeTitle, { price: "0", capacity: "1" })
     // the form reloads the page after saving: for a moment the old and the new document can both hold the row, so wait for one

@@ -14,6 +14,7 @@
  */
 
 import { db } from "@/lib/db"
+import { withConflictRetry } from "@/lib/db-retry"
 import { endLiveRoom } from "@/lib/live-rooms"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -191,7 +192,8 @@ export async function logUserIp(
   userAgent?: string | null
 ): Promise<void> {
   try {
-    await db.userIpLog.upsert({
+    // the same person's parallel requests update the same row: retry the write conflicts (lib/db-retry)
+    await withConflictRetry(() => db.userIpLog.upsert({
       where: {
         userId_ipAddress: { userId, ipAddress: ip }
       },
@@ -205,7 +207,7 @@ export async function logUserIp(
         ipAddress: ip,
         userAgent: userAgent || null,
       }
-    })
+    }))
   } catch (error) {
     // IP log hatası kritik değil — uygulamayı durdurma
     console.error("[BAN_ENGINE] IP log error:", error)

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Heart, MessageCircle } from "lucide-react"
 import { CommunityPost, SafePhoto, Avatar } from "./parts"
+import { squareVariant } from "@/lib/image-urls"
 
 function PhotoTile({ post }: { post: CommunityPost }) {
   return (
@@ -14,12 +15,14 @@ function PhotoTile({ post }: { post: CommunityPost }) {
       {post.image ? (
         <SafePhoto
           src={post.image}
+          sources={[squareVariant(post.image)]}
+          caption={post.title || post.content.slice(0, 90)}
           alt={post.title || post.content.slice(0, 60)}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-sage-200 text-sage-500 text-xs px-3 text-center">
-          {post.content.slice(0, 80)}
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sage-100 via-cream to-clay-100 px-4 text-center">
+          <span className="font-display text-base leading-snug text-ink/75 line-clamp-5">{post.content.slice(0, 140)}</span>
         </div>
       )}
 

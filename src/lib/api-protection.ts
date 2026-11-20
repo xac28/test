@@ -24,7 +24,13 @@ export function applyRateLimit(
   config: RateLimitConfig = RATE_LIMIT_API
 ): NextResponse | null {
   const ip = getClientIp(req)
-  const result = rateLimit(ip, config)
+  // one counter per address *and* endpoint (ids folded together): with a single counter per address, reading
+  // the feed and polling notifications used up the budget of likes, comments and reports, which then failed with 429
+  let route = "?"
+  try {
+    route = new URL(req.url).pathname.replace(/\/[a-z0-9_-]{16,}(?=\/|$)/gi, "/:id").replace(/\/\d+(?=\/|$)/g, "/:n")
+  } catch {}
+  const result = rateLimit(`${ip}|${req.method}|${route}|${config.maxRequests}/${config.windowMs}`, config)
 
   if (!result.allowed) {
     return NextResponse.json(

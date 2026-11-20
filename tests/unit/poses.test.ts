@@ -21,7 +21,7 @@ describe("yoga pose library", () => {
       expect(p.benefits.length, p.slug).toBeGreaterThanOrEqual(3)
       expect(p.steps.length, p.slug).toBeGreaterThanOrEqual(4)
       expect(RIGS[p.slug], `rig for ${p.slug}`).toBeTruthy()
-      expect(existsSync(path.join(process.cwd(), "public", poseImage(p.slug))), `image for ${p.slug}`).toBe(true)
+      expect(existsSync(path.join(process.cwd(), "public", poseImage(p.slug).split("?")[0])), `image for ${p.slug}`).toBe(true)
     }
   })
 

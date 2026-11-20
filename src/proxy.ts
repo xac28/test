@@ -61,6 +61,15 @@ export default auth((req) => {
   if (corsResponse) return corsResponse
 
   const { pathname } = req.nextUrl
+
+  // Private documents: answered only by the route that checks who is asking, never by the static /public handler
+  // (which would serve any copy left there to anyone holding the link)
+  if (pathname.startsWith('/uploads/certificates/')) {
+    const url = req.nextUrl.clone()
+    url.pathname = '/api/private-uploads' + pathname.slice('/uploads'.length)
+    return NextResponse.rewrite(url)
+  }
+
   const isLoggedIn = !!req.auth
   const isApi = pathname.startsWith('/api/')
 

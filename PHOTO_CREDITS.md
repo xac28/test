@@ -48,6 +48,10 @@ Pexels (bu dört poz Unsplash serisinde yoktu):
 
 ## Kapak yedekleri (`public/photos/covers/*.jpg`, 1200×800)
 
-Kendi görseli olmayan atölye, yazı ve podcast kartlarında konuya göre (nefes, meditasyon, yin…) gösterilir (`topicPhoto`, `src/lib/photos.ts`). Hepsi Margaret Young serisinin yatay kareleri: akis (aşağı bakan köpek), cocuk, dag, kayik, kopru, savasana, savasci — dosya kimlikleri yukarıdaki poz tablosundakilerle aynıdır.
+Kendi görseli olmayan atölye, yazı ve podcast kartlarında konuya göre (nefes, meditasyon, yin…) gösterilir (`topicPhoto`, `src/lib/photos.ts`); aynı kategori art arda gelmesin diye her havuzda birkaç fotoğraf var. Dosya kimlikleri yukarıdaki poz tablosundakilerle aynıdır, aynı fotoğrafın bu kez yatay (3:2) kesimi:
+
+Margaret Young / Unsplash serisi: akis (aşağı bakan köpek), cocuk, dag, kayik, kopru, savasana, savasci, agac, deve, malasana, one-egilme, ucgen.
+
+Pexels: sandalye, savasci-1, sfenks, ayakta-yukari-uzanis (kaynakları yukarıdaki poz tablosunda).
 
 Bir fotoğrafı değiştirmek için aynı adla (ve aynı en/boy oranıyla) dosyanın üzerine yazın ve `src/lib/photos.ts` içindeki `PHOTO_VERSION` değerini bir artırın: tarayıcılar eski kopyayı göstermek yerine yenisini indirir.

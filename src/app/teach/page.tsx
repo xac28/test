@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic"
 
 export default async function TeachDashboardPage() {
   const session = await auth()
-  if (!session?.user) redirect("/")
+  if (!session?.user?.id) redirect("/")
   if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") redirect("/dashboard")
 
   let teacher = await db.teacher.findUnique({

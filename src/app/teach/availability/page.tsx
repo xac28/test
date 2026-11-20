@@ -6,7 +6,7 @@ import { AvailabilityManager } from "@/components/availability-manager"
 
 export default async function AvailabilityPage() {
   const session = await auth()
-  if (!session?.user) redirect("/")
+  if (!session?.user?.id) redirect("/")
   if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") redirect("/dashboard")
 
   const teacher = await db.teacher.findUnique({

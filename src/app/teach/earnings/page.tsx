@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 
 export default async function TeacherEarningsPage() {
   const session = await auth()
-  if (!session?.user) redirect("/")
+  if (!session?.user?.id) redirect("/")
   if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") redirect("/dashboard")
 
   return (

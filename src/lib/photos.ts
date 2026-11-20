@@ -30,6 +30,15 @@ const COVER = {
   kopru: local("/photos/covers/kopru.jpg"),
   savasana: local("/photos/covers/savasana.jpg"),
   savasci: local("/photos/covers/savasci.jpg"),
+  agac: local("/photos/covers/agac.jpg"),
+  ayaktaYukari: local("/photos/covers/ayakta-yukari-uzanis.jpg"),
+  deve: local("/photos/covers/deve.jpg"),
+  malasana: local("/photos/covers/malasana.jpg"),
+  oneEgilme: local("/photos/covers/one-egilme.jpg"),
+  sandalye: local("/photos/covers/sandalye.jpg"),
+  savasci1: local("/photos/covers/savasci-1.jpg"),
+  sfenks: local("/photos/covers/sfenks.jpg"),
+  ucgen: local("/photos/covers/ucgen.jpg"),
   studio: PHOTOS.studio[0],
   join: PHOTOS.join[0],
   hero: PHOTOS.hero[0],
@@ -37,14 +46,15 @@ const COVER = {
   meditation: PHOTOS.meditation[0],
 }
 
-// topics never share a picture, so two cards of different topics side by side never look the same
+// topics never share a picture, so two cards of different topics side by side never look the same; each
+// pool is deliberately a handful of photos (not one or two) so the same category doesn't repeat either
 const POOLS: { match: RegExp; photos: string[] }[] = [
-  { match: /nefes|pranayama|breath/i, photos: [COVER.breath, COVER.dag] },
-  { match: /meditasyon|nidra|uyku|mindful|farkındalık|meditation|podcast/i, photos: [COVER.meditation, COVER.hero] },
-  { match: /yin|restoratif|restorative|gevşe|esneklik|bakım|hamile|prenatal/i, photos: [COVER.cocuk, COVER.kopru, COVER.savasana] },
-  { match: /sağlık|felsefe|kişisel gelişim|beslenme/i, photos: [COVER.join, COVER.kayik] },
+  { match: /nefes|pranayama|breath/i, photos: [COVER.breath, COVER.sfenks, COVER.dag] },
+  { match: /meditasyon|nidra|uyku|mindful|farkındalık|meditation|podcast/i, photos: [COVER.meditation, COVER.hero, COVER.sfenks] },
+  { match: /yin|restoratif|restorative|gevşe|esneklik|bakım|hamile|prenatal/i, photos: [COVER.cocuk, COVER.kopru, COVER.savasana, COVER.oneEgilme] },
+  { match: /sağlık|felsefe|kişisel gelişim|beslenme/i, photos: [COVER.join, COVER.kayik, COVER.malasana] },
 ]
-const GENERAL = [COVER.studio, COVER.akis, COVER.savasci]
+const GENERAL = [COVER.studio, COVER.akis, COVER.savasci, COVER.agac, COVER.ayaktaYukari, COVER.deve, COVER.sandalye, COVER.savasci1, COVER.ucgen]
 
 /**
  * A real photo for something that has no picture of its own, chosen by its topic (category) and spread by

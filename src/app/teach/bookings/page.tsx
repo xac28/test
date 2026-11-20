@@ -15,7 +15,7 @@ const STATUS_TR: Record<string, string> = {
 
 export default async function TeacherBookingsPage() {
   const session = await auth()
-  if (!session?.user) redirect("/")
+  if (!session?.user?.id) redirect("/")
   if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") redirect("/dashboard")
 
   const teacher = await db.teacher.findUnique({ where: { userId: session.user.id } })

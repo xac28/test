@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 
 export default async function StreamerPage() {
   const session = await auth()
-  if (!session?.user) redirect("/login?callbackUrl=/teach/uygulama")
+  if (!session?.user?.id) redirect("/login?callbackUrl=/teach/uygulama")
   if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") redirect("/dashboard")
   const [el, release] = await Promise.all([streamerEligibility(session.user.id), currentRelease()])
   return (

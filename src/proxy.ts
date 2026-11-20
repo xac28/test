@@ -70,7 +70,12 @@ export default auth((req) => {
     return NextResponse.rewrite(url)
   }
 
-  const isLoggedIn = !!req.auth
+  // `req.auth` can be a truthy session shell with no `user.id` — the JWT callback (auth.ts) empties the
+  // token for a banned/soft-deleted account or an expired "remember me", but that alone forces nothing;
+  // the next request's session callback just has nothing to put an id into. Treat that as signed out
+  // here (not merely truthy `req.auth`), so a stale session is redirected before it ever reaches a page,
+  // rather than each page having to re-check this itself (several didn't — see dashboard/profile etc.).
+  const isLoggedIn = !!req.auth?.user?.id
   const isApi = pathname.startsWith('/api/')
 
   if (!isApi) {

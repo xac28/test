@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 
 export default async function AdminDashboardPage() {
   const session = await auth()
-  if (!session?.user) redirect("/")
+  if (!session?.user?.id) redirect("/")
   if (session.user.role !== "ADMIN") redirect("/dashboard")
 
   // Only what the server-rendered tabs (applications, trials, finance) need; every other tab loads its own data.

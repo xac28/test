@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 
 export default async function StudioPage() {
   const session = await auth()
-  if (!session?.user) redirect("/login?callbackUrl=/live/studio")
+  if (!session?.user?.id) redirect("/login?callbackUrl=/live/studio")
   if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") redirect("/live")
   const teacher = await db.teacher.findUnique({ where: { userId: session.user.id }, select: { isTrialMode: true } })
   return (

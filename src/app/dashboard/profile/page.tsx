@@ -7,7 +7,7 @@ import { AccountDataCard } from "@/components/account-data-card"
 
 export default async function ProfilePage() {
   const session = await auth()
-  if (!session?.user) redirect("/")
+  if (!session?.user?.id) redirect("/")
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },

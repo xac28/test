@@ -11,6 +11,7 @@ import { useI18n } from '@/i18n';
 import { NotificationBell } from '@/components/notification-bell';
 import { Portrait } from '@/components/person-avatar';
 import { homePathFor } from '@/lib/home-path';
+import { CampaignBanner } from '@/components/campaign-banner';
 
 /** AYA wordmark: set in the display serif with wide tracking. */
 export function Wordmark({ className = '' }: { className?: string }) {
@@ -132,6 +133,7 @@ export default function Navbar() {
 
   return (
     <header ref={headerRef} data-scrolled={scrolled} className="site-header sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-rule">
+      <CampaignBanner />
       <div className="site-header-bar max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-8">
         <Link href="/" aria-label="AYA ana sayfa" className="tap-area text-ink text-[1.65rem] leading-none inline-flex items-start gap-0.5">
           <Wordmark /><span aria-hidden className="text-[0.55rem] mt-0.5 font-body text-teal-600">®</span>

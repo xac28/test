@@ -27,6 +27,7 @@ import { PodcastTab } from "./admin/podcast-tab"
 import { NewsletterTab } from "./admin/newsletter-tab"
 import { ProductsTab } from "./admin/products-tab"
 import { BrandsTab } from "./admin/brands-tab"
+import { DiscountsTab } from "./admin/discounts-tab"
 import { OrdersTab } from "./admin/orders-tab"
 import { Card, SectionTitle, Stat, fmtMoney } from "./admin/ui"
 
@@ -149,6 +150,7 @@ export function AdminTabs({ pendingApplications, recentActions, financials, tria
         {tab === "newsletter" && <NewsletterTab />}
         {tab === "products" && <ProductsTab onChanged={changed} />}
         {tab === "brands" && <BrandsTab onChanged={changed} />}
+        {tab === "discounts" && <DiscountsTab onChanged={changed} />}
         {tab === "orders" && <OrdersTab onChanged={changed} />}
       </div>
 

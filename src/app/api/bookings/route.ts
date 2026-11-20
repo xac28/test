@@ -9,6 +9,7 @@ import { resolveUser } from "@/lib/auth-utils"
 import { iyzicoMode } from "@/lib/iyzico"
 import { memberLessonPrice } from "@/lib/subscriptions"
 import { currentPlan } from "@/lib/subscription-server"
+import { applyDiscountPct, campaignDiscountPct, personalDiscountPct } from "@/lib/discounts"
 
 /** Confirming a paid lesson without a payment is only for development and test servers. */
 const allowUnpaidBookings = () => process.env.NODE_ENV !== "production" || process.env.ALLOW_UNPAID_BOOKINGS === "1"
@@ -74,6 +75,24 @@ export async function POST(req: Request) {
     }
     // Premium / Sınırsız members pay the discounted price
     serverPrice = memberLessonPrice(serverPrice, await currentPlan(user.id))
+
+    // Admin-granted breaks: the student's own personal discount, the teacher's own (a "free demo
+    // lessons" hook to attract new teachers), or a currently-running student-facing campaign — the
+    // best of these applies, on top of the membership discount above, never stacked between themselves.
+    // (A TEACHERS-scoped campaign has no lesson-price effect: there is no teacher-side purchase here to
+    // discount — that scope exists for a future extension, e.g. a commission break.)
+    const now = new Date()
+    const [studentDiscount, teacherDiscount, campaigns] = await Promise.all([
+      db.personalDiscount.findUnique({ where: { userId: user.id } }),
+      db.personalDiscount.findUnique({ where: { userId: teacher.userId } }),
+      db.campaign.findMany({ where: { startsAt: { lte: now }, endsAt: { gte: now } } }),
+    ])
+    const promoPct = Math.max(
+      personalDiscountPct(studentDiscount, now),
+      personalDiscountPct(teacherDiscount, now),
+      campaignDiscountPct(campaigns, "STUDENT", now),
+    )
+    serverPrice = applyDiscountPct(serverPrice, promoPct)
 
     // A paid lesson needs a way to pay. Without one, nothing is booked: confirming it anyway would give lessons away.
     const stripeKey = process.env.STRIPE_SECRET_KEY ?? ""

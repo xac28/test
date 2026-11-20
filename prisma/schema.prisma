@@ -84,6 +84,7 @@ model User {
   applications  TeacherApplication[] @relation("Applicant")
   reviewsGiven  TeacherApplication[] @relation("Reviewer")
   bookings      Booking[]            @relation("StudentBookings")
+  personalDiscount PersonalDiscount?
 
   reportsMade   Report[]             @relation("Reporter")
   reportsAgainst Report[]            @relation("Reported")
@@ -1184,3 +1185,48 @@ model AppSetting {
 }
 
 // Daily token ledger of the AI guide: the budget guard reads it, the admin sees it
+
+// ── Personal discounts & campaigns (admin-granted, lesson-price only) ──────
+// A personal discount is a single admin-managed row per user (upsert to grant/change, delete to cancel) —
+// there is no request/approval flow here, unlike teacher payouts: the admin hands it out directly from the panel.
+// For a STUDENT it lowers what they pay to book any teacher; for a TEACHER it lowers what students pay to
+// book THEM specifically (a "free demo lessons" hook used to attract new teachers onto the platform).
+// 100% = a fully free/comped account. No row is ever snapshotted onto a Booking: the already-stored,
+// server-computed price paid IS the record, exactly like the existing Premium/Sınırsız lesson discount.
+model PersonalDiscount {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discountPct Float     // 1-100; 100 = fully free
+  reason      String?   @db.VarChar(300)
+  endsAt      DateTime? // null = until an admin cancels it
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+enum CampaignScope {
+  STUDENTS
+  TEACHERS
+  ALL
+}
+
+// A scheduled, platform-wide lesson-price campaign (New Year's, etc.) — purely date-range activated, the
+// same "goes live automatically when its time comes" pattern already used for scheduled articles/products.
+// Only a STUDENTS or ALL scope discounts lesson price today; TEACHERS exists for a future extension
+// (e.g. a commission break) and currently only affects the campaign's own banner/labeling.
+model Campaign {
+  id            String        @id @default(cuid())
+  name          String        @db.VarChar(120)
+  discountPct   Float         // 1-100
+  scope         CampaignScope @default(ALL)
+  bannerMessage String?       @db.VarChar(300)
+  startsAt      DateTime
+  endsAt        DateTime
+  createdById   String
+  createdAt     DateTime      @default(now())
+
+  @@index([startsAt, endsAt])
+}

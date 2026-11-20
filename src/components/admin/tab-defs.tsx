@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import {
-  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images, LifeBuoy, Bot, Star, ShieldBan, Eye, Mic, Package, ShoppingBag, Mail,
+  Activity, Calendar, FileText, Film, Flag, History, LucideIcon, PlaySquare, ShieldAlert, Sparkles, Users, Video, Wallet, DollarSign, BookOpen, Images, LifeBuoy, Bot, Star, ShieldBan, Eye, Mic, Package, ShoppingBag, Mail, Handshake,
 } from "lucide-react"
 
 export type AdminBadges = { applications: number; trials: number; payouts: number; reports: number; urgentReports: number; liveNow: number; pendingPosts: number; openSupport: number; aiUnknown: number; reviewReports: number; policyToday: number; supervisedLive: number; shopOrders: number }
@@ -39,6 +39,7 @@ export const ADMIN_TABS: TabDef[] = [
   { id: "payouts", label: "Ödeme Talepleri", icon: Wallet, group: "Operasyon", badge: (b) => (b.payouts ? { value: b.payouts, tone: "amber" } : null) },
   { id: "orders", label: "Siparişler", icon: ShoppingBag, group: "Operasyon", badge: (b) => (b.shopOrders ? { value: b.shopOrders, tone: "amber" } : null) },
   { id: "products", label: "Ürünler", icon: Package, group: "Operasyon" },
+  { id: "brands", label: "Markalar", icon: Handshake, group: "Operasyon" },
   { id: "financials", label: "Finans", icon: DollarSign, group: "Operasyon" },
 ]
 export const ADMIN_TAB_IDS = ADMIN_TABS.map((t) => t.id)

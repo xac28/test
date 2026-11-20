@@ -57,9 +57,9 @@ export function parseImages(json: string | null | undefined): string[] {
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "")
 const okUrl = (u: string) => u.length <= 500 && (/^\/uploads\/[a-z]+\/[A-Za-z0-9._-]+$/.test(u) || /^https?:\/\/[^\s]+$/i.test(u))
 
-export interface ProductInput { name?: unknown; summary?: unknown; description?: unknown; category?: unknown; priceTL?: unknown; stock?: unknown; images?: unknown; status?: unknown; featured?: unknown; notify?: unknown }
+export interface ProductInput { name?: unknown; summary?: unknown; description?: unknown; category?: unknown; priceTL?: unknown; stock?: unknown; images?: unknown; status?: unknown; featured?: unknown; notify?: unknown; brandId?: unknown }
 export type ProductValidation =
-  | { ok: true; data: { name: string; summary: string; description: string; category: string; priceKurus: number; stock: number; images: string; status: "DRAFT" | "PUBLISHED"; featured: boolean }; notify: boolean }
+  | { ok: true; data: { name: string; summary: string; description: string; category: string; priceKurus: number; stock: number; images: string; status: "DRAFT" | "PUBLISHED"; featured: boolean; brandId: string | null }; notify: boolean }
   | { ok: false; error: string }
 
 export function validateProductInput(i: ProductInput): ProductValidation {
@@ -80,7 +80,7 @@ export function validateProductInput(i: ProductInput): ProductValidation {
   if (imgs.some((u) => !okUrl(u))) return { ok: false, error: "Görsel bağlantılarından biri geçersiz." }
   return {
     ok: true,
-    data: { name, summary, description, category, priceKurus: Math.round(tl * 100), stock, images: JSON.stringify(imgs), status: i.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT", featured: i.featured === true },
+    data: { name, summary, description, category, priceKurus: Math.round(tl * 100), stock, images: JSON.stringify(imgs), status: i.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT", featured: i.featured === true, brandId: typeof i.brandId === "string" && i.brandId ? i.brandId : null },
     notify: i.notify === true,
   }
 }

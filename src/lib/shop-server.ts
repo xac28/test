@@ -56,7 +56,7 @@ export interface CreateOrderData {
 export async function createOrder(data: CreateOrderData, userId: string | null) {
   const order = await withConflictRetry(() => db.$transaction(async (tx) => {
     const ids = data.items.map((i) => i.productId)
-    const products = await tx.product.findMany({ where: { id: { in: ids }, status: "PUBLISHED" } })
+    const products = await tx.product.findMany({ where: { id: { in: ids }, status: "PUBLISHED" }, include: { brand: { select: { commissionRate: true } } } })
     if (products.length !== ids.length) throw new ShopError("Sepetteki bir ürün artık satışta değil. Sepeti güncelleyin.")
     const byId = new Map(products.map((p) => [p.id, p]))
     const lines = data.items.map((i) => ({ p: byId.get(i.productId)!, quantity: i.quantity }))
@@ -71,7 +71,7 @@ export async function createOrder(data: CreateOrderData, userId: string | null) 
           data: {
             code: makeOrderCode(), userId, email: data.email, name: data.name, phone: data.phone, address: data.address, city: data.city, note: data.note,
             payMethod: data.payMethod, subtotalKurus: totals.subtotal, shippingKurus: totals.shipping, totalKurus: totals.total,
-            items: { create: lines.map((l) => ({ productId: l.p.id, name: l.p.name, unitKurus: l.p.priceKurus, quantity: l.quantity })) },
+            items: { create: lines.map((l) => ({ productId: l.p.id, name: l.p.name, unitKurus: l.p.priceKurus, quantity: l.quantity, brandId: l.p.brandId, brandCommissionRate: l.p.brand?.commissionRate ?? null })) },
           },
           include: { items: true },
         })

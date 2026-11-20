@@ -7,7 +7,7 @@ import { toProductData } from "@/lib/shop-data"
 
 export const dynamic = "force-dynamic"
 
-const load = (slug: string) => db.product.findFirst({ where: { slug, status: "PUBLISHED" } }).catch(() => null)
+const load = (slug: string) => db.product.findFirst({ where: { slug, status: "PUBLISHED" }, include: { brand: { select: { name: true } } } }).catch(() => null)
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;

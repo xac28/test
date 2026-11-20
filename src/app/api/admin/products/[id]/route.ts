@@ -25,6 +25,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   const body = await req.json().catch(() => ({}))
   const v = validateProductInput({ priceTL: existing.priceKurus / 100, ...existing, images: parseImages(existing.images), ...body })
   if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+  if (v.data.brandId && !(await db.brand.findUnique({ where: { id: v.data.brandId }, select: { id: true } }))) {
+    return NextResponse.json({ error: "Geçerli bir marka seçin." }, { status: 400 })
+  }
   const sch = scheduleData(body, v.data.status, existing, new Date(), v.data.status === "DRAFT" && existing.status === "PUBLISHED")
   if (!sch.ok) return NextResponse.json({ error: sch.error }, { status: 400 })
   const product = await db.product.update({ where: { id: params.id }, data: { ...v.data, ...sch.data } })

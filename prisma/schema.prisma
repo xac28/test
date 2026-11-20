@@ -1038,9 +1038,51 @@ model Product {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   items       OrderItem[]
+  // null = AYA's own product; set = a brand partner's product sold through the shop (see Brand)
+  brandId     String?
+  brand       Brand?        @relation(fields: [brandId], references: [id], onDelete: SetNull)
 
   @@index([status, category])
   @@index([status, scheduledAt])
+  @@index([brandId])
+}
+
+// A brand partner whose products are sold through the shop (mats, aromatherapy oils, ...): AYA takes
+// commissionRate of each sale, the rest is the brand's. No brand login — the admin manages their products
+// and, once money is actually wired, records it with a BrandPayout; see lib/brands.ts.
+model Brand {
+  id             String        @id @default(cuid())
+  name           String        @db.VarChar(120)
+  slug           String        @unique
+  contactName    String?       @db.VarChar(120)
+  contactEmail   String?       @db.VarChar(190)
+  contactPhone   String?       @db.VarChar(30)
+  commissionRate Float         @default(0.2)
+  iban           String?       @db.VarChar(34)
+  accountName    String?       @db.VarChar(120)
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  products       Product[]
+  orderItems     OrderItem[]
+  payouts        BrandPayout[]
+
+  @@index([active])
+}
+
+// A record that a brand's share of past sales was actually paid out (bank transfer), logged once the admin
+// sends it — not a request/review workflow like PayoutRequest, because a brand has no account to request from.
+model BrandPayout {
+  id          String   @id @default(cuid())
+  brandId     String
+  brand       Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  amountKurus Int
+  note        String?  @db.VarChar(300)
+  paidById    String?
+  paidAt      DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([brandId])
 }
 
 model Order {
@@ -1085,8 +1127,14 @@ model OrderItem {
   name       String  @db.VarChar(160)
   unitKurus  Int
   quantity   Int
+  // brand attribution + its commission rate, snapshotted the same way: a later product reassignment, brand
+  // rate change or brand deletion must never rewrite how much of a past sale the brand was owed (lib/brands.ts)
+  brandId             String?
+  brand               Brand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brandCommissionRate Float?
 
   @@index([orderId])
+  @@index([brandId])
 }
 
 // Paid membership (Premium / Sınırsız) billed by iyzico's subscription API. User.subscriptionPlan and

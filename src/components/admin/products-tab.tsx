@@ -8,8 +8,8 @@ import { formatSchedule, fromLocalInput, toLocalInput } from "@/lib/schedule"
 import { summarize } from "@/lib/writing"
 import { LOW_STOCK, SHOP_CATEGORIES, formatKurus, parseImages } from "@/lib/shop"
 
-interface Draft { id?: string; name: string; summary: string; description: string; category: string; priceTL: string; stock: string; images: string[]; featured: boolean; status: "DRAFT" | "PUBLISHED"; notify: boolean; scheduledAt: string }
-const EMPTY: Draft = { name: "", summary: "", description: "", category: SHOP_CATEGORIES[0].slug, priceTL: "", stock: "0", images: [], featured: false, status: "DRAFT", notify: false, scheduledAt: "" }
+interface Draft { id?: string; name: string; summary: string; description: string; category: string; priceTL: string; stock: string; images: string[]; featured: boolean; status: "DRAFT" | "PUBLISHED"; notify: boolean; scheduledAt: string; brandId: string }
+const EMPTY: Draft = { name: "", summary: "", description: "", category: SHOP_CATEGORIES[0].slug, priceTL: "", stock: "0", images: [], featured: false, status: "DRAFT", notify: false, scheduledAt: "", brandId: "" }
 
 /** Shop products: add, price, stock, pictures, publish; low-stock warning. */
 export function ProductsTab({ onChanged }: { onChanged: () => void }) {
@@ -17,6 +17,8 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
   const [q, setQ] = useState("")
   const dq = useDebounced(q)
   const { data, error, loading, reload } = useLoader<any>(() => api(`/api/admin/products?${new URLSearchParams({ ...(category !== "all" && { category }), ...(dq && { q: dq }) })}`), [category, dq])
+  const { data: brandData } = useLoader<{ brands: { id: string; name: string; active: boolean }[] }>(() => api("/api/admin/brands"), [])
+  const brands = (brandData?.brands ?? []).filter((b) => b.active)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -25,7 +27,7 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
 
   const open = (p?: any) => {
     setFormError(null)
-    setDraft(p ? { id: p.id, name: p.name, summary: p.summary, description: p.description, category: p.category, priceTL: String(p.priceKurus / 100), stock: String(p.stock), images: parseImages(p.images), featured: p.featured, status: p.status, notify: !!p.scheduledNotify, scheduledAt: toLocalInput(p.scheduledAt) } : { ...EMPTY })
+    setDraft(p ? { id: p.id, name: p.name, summary: p.summary, description: p.description, category: p.category, priceTL: String(p.priceKurus / 100), stock: String(p.stock), images: parseImages(p.images), featured: p.featured, status: p.status, notify: !!p.scheduledNotify, scheduledAt: toLocalInput(p.scheduledAt), brandId: p.brandId ?? "" } : { ...EMPTY })
   }
 
   const save = async (status: "DRAFT" | "PUBLISHED") => {
@@ -65,7 +67,7 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
         <Table head={["Ürün", "Kategori", "Fiyat", "Stok", "Durum", ""]}>
           {data.products.map((p: any) => (
             <tr key={p.id} data-testid="product-row" className="align-top">
-              <td className="px-4 py-3 max-w-sm"><p className="font-medium break-words">{p.name}{p.featured && <Star size={13} className="inline ml-1 text-yellow-600" fill="currentColor" />}</p><p className="text-xs text-sage-500 line-clamp-1">{p.summary}</p></td>
+              <td className="px-4 py-3 max-w-sm"><p className="font-medium break-words">{p.name}{p.featured && <Star size={13} className="inline ml-1 text-yellow-600" fill="currentColor" />}</p><p className="text-xs text-sage-500 line-clamp-1">{p.brand && <span className="font-semibold text-ink/60">{p.brand.name} · </span>}{p.summary}</p></td>
               <td className="px-4 py-3">{SHOP_CATEGORIES.find((c) => c.slug === p.category)?.name.tr ?? p.category}</td>
               <td className="px-4 py-3 whitespace-nowrap">{formatKurus(p.priceKurus)}</td>
               <td className="px-4 py-3 whitespace-nowrap">{p.stock <= LOW_STOCK && p.status === "PUBLISHED" ? <Pill tone={p.stock === 0 ? "red" : "amber"}><AlertTriangle size={11} className="inline mr-1" />{p.stock}</Pill> : p.stock}</td>
@@ -95,6 +97,12 @@ export function ProductsTab({ onChanged }: { onChanged: () => void }) {
             <Field label="Fiyat (₺)"><input className={inputCls} inputMode="decimal" value={draft.priceTL} onChange={(e) => setDraft({ ...draft, priceTL: e.target.value })} data-testid="product-price" /></Field>
             <Field label="Stok"><input className={inputCls} inputMode="numeric" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} data-testid="product-stock" /></Field>
           </div>
+          <Field label="Marka" hint="Boş bırakılırsa AYA'nın kendi ürünü sayılır.">
+            <select className={inputCls} value={draft.brandId} onChange={(e) => setDraft({ ...draft, brandId: e.target.value })} data-testid="product-brand">
+              <option value="">AYA (kendi ürünümüz)</option>
+              {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </Field>
           <div className="space-y-3">
             <span className="eyebrow block">Görseller (ilki kapak olur)</span>
             {draft.images.map((src, i) => (

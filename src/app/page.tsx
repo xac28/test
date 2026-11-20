@@ -44,7 +44,7 @@ async function loadHome(): Promise<HomeData> {
         take: 4,
       }),
       db.podcastEpisode.findFirst({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" } }),
-      db.product.findMany({ where: { status: "PUBLISHED", stock: { gt: 0 } }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }], take: 3 }),
+      db.product.findMany({ where: { status: "PUBLISHED", stock: { gt: 0 } }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }], take: 3, include: { brand: { select: { name: true } } } }),
     ])
 
     const now = new Date()

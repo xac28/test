@@ -14,7 +14,7 @@ import { squareVariant } from '@/lib/image-urls';
 import { CartEntry, addToCart, readCart, writeCart, CART_EVENT } from '@/lib/cart';
 import { SHOP_CATEGORIES, ShopCategory, FREE_SHIPPING_KURUS, LOW_STOCK, MAX_LINE_QTY, ORDER_STATUS_LABEL, OrderStatusId, PAY_METHOD_LABEL, SHOP_BY_SLUG, calcTotals, formatKurus } from '@/lib/shop';
 
-export interface ProductData { id: string; slug: string; name: string; summary: string; description: string; category: string; priceKurus: number; stock: number; images: string[]; featured: boolean }
+export interface ProductData { id: string; slug: string; name: string; summary: string; description: string; category: string; priceKurus: number; stock: number; images: string[]; featured: boolean; brandName: string | null }
 
 export function ProductCard({ p }: { p: ProductData }) {
   const L = useL();
@@ -26,7 +26,7 @@ export function ProductCard({ p }: { p: ProductData }) {
         {p.stock > 0 && p.stock <= LOW_STOCK && <span className="absolute top-3 left-3 text-[11px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full">{L(`Son ${p.stock} adet`, `Only ${p.stock} left`)}</span>}
       </div>
       <div className="p-5">
-        <p className="eyebrow mb-1">{SHOP_BY_SLUG[p.category]?.name.tr ?? p.category}</p>
+        <p className="eyebrow mb-1 flex items-center gap-2">{SHOP_BY_SLUG[p.category]?.name.tr ?? p.category}{p.brandName && <span className="normal-case tracking-normal font-normal text-sage-500">· {p.brandName}</span>}</p>
         <h3 className="font-display text-2xl leading-snug group-hover:underline underline-offset-4 decoration-1">{p.name}</h3>
         <p className="text-sm text-sage-600 mt-1 line-clamp-2">{p.summary}</p>
         <p className="mt-3 font-semibold text-teal-700">{formatKurus(p.priceKurus)}</p>
@@ -119,6 +119,7 @@ export function ProductDetailView({ p }: { p: ProductData }) {
           <div className="lg:col-span-6">
             <p className="eyebrow mb-2">{cat?.name.tr ?? p.category}</p>
             <h1 className="font-display font-light text-4xl md:text-5xl leading-tight" data-testid="product-name">{p.name}</h1>
+            {p.brandName && <p className="mt-1.5 text-sm text-sage-500" data-testid="product-brand">{L('Marka', 'Brand')}: <span className="font-semibold text-ink">{p.brandName}</span></p>}
             <p className="text-3xl font-semibold text-teal-700 mt-4" data-testid="product-price">{formatKurus(p.priceKurus)}</p>
             <p className="text-lg text-sage-600 mt-4">{p.summary}</p>
             <div className="mt-6">

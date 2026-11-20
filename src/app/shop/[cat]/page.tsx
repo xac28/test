@@ -16,6 +16,6 @@ export default async function ShopCategoryPage(props: { params: Promise<{ cat: s
   const params = await props.params;
   const c = SHOP_BY_SLUG[params.cat]
   if (!c) notFound()
-  const products = await db.product.findMany({ where: { status: "PUBLISHED", category: c.slug }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] }).catch(() => [])
+  const products = await db.product.findMany({ where: { status: "PUBLISHED", category: c.slug }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }], include: { brand: { select: { name: true } } } }).catch(() => [])
   return <ShopCategoryView c={c} products={products.map(toProductData)} />
 }

@@ -18,6 +18,7 @@ export async function GET(req: Request) {
     where: { ...(category ? { category } : {}), ...(q ? { name: { contains: q } } : {}) },
     orderBy: { createdAt: "desc" },
     take: 300,
+    include: { brand: { select: { name: true } } },
   })
   const low = await db.product.count({ where: { status: "PUBLISHED", stock: { lte: LOW_STOCK } } })
   return NextResponse.json({ products, lowStock: low })
@@ -29,6 +30,9 @@ export async function POST(req: Request) {
   const input = await req.json().catch(() => ({}))
   const v = validateProductInput(input)
   if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+  if (v.data.brandId && !(await db.brand.findUnique({ where: { id: v.data.brandId }, select: { id: true } }))) {
+    return NextResponse.json({ error: "Geçerli bir marka seçin." }, { status: 400 })
+  }
   const sch = scheduleData(input, v.data.status)
   if (!sch.ok) return NextResponse.json({ error: sch.error }, { status: 400 })
   const product = await db.product.create({ data: { ...v.data, ...sch.data, slug: uniqueSlug(v.data.name) } })

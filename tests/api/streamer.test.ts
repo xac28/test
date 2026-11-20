@@ -121,7 +121,9 @@ describe("pairing a computer", () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].codeHash).toBe(hashSecret(first.code))
     expect(JSON.stringify(rows)).not.toContain(first.code)
-    expect(rows[0].expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(600_000)
+    // a tiny upper-bound slack absorbs clock-resolution jitter between the server's expiresAt
+    // computation and this process's Date.now() call, not a real window (see recordings.test.ts)
+    expect(rows[0].expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(600_010)
     for (let i = 0; i < 4; i++) await json("/api/streamer/pairing", user, "POST", {})
     expect(await db.streamerPairing.count({ where: { userId: user.id, usedAt: null } })).toBeLessThanOrEqual(3)
   })

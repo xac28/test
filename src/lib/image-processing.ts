@@ -5,7 +5,7 @@
  *  - scaled down to a sensible size for its use, never up, never stretched — the aspect ratio is kept
  *  - saved as WebP (much smaller than JPEG/PNG at the same quality)
  *  - where a square tile is shown (community grid, shop cards, avatars) a square version is cut around
- *    the most interesting part of the picture (faces / detail, sharp's "attention" strategy), not blindly from the centre
+ *    the part of the picture with the most detail ("entropy" strategy: it kept whole bodies in portrait poses where "attention" locked onto a busy wall), not blindly from the centre
  * A file that is not a decodable image is refused: the magic-byte check alone lets polyglot files through.
  */
 import sharp, { type Metadata } from "sharp"
@@ -46,7 +46,7 @@ export async function processImage(input: Buffer | ArrayBuffer, kind: ImageKind)
 
   if (spec.squareOnly) {
     const { data, info } = await base()
-      .resize(spec.square, spec.square, { fit: "cover", position: sharp.strategy.attention, withoutEnlargement: false })
+      .resize(spec.square, spec.square, { fit: "cover", position: sharp.strategy.entropy, withoutEnlargement: false })
       .webp({ quality: spec.quality })
       .toBuffer({ resolveWithObject: true })
     return { main: data, width: info.width, height: info.height }
@@ -61,7 +61,7 @@ export async function processImage(input: Buffer | ArrayBuffer, kind: ImageKind)
   if (spec.square) {
     const side = Math.min(spec.square, info.width, info.height) // a small photo is not blown up
     square = await base()
-      .resize(side, side, { fit: "cover", position: sharp.strategy.attention })
+      .resize(side, side, { fit: "cover", position: sharp.strategy.entropy })
       .webp({ quality: spec.quality })
       .toBuffer()
   }

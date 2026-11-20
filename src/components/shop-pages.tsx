@@ -394,7 +394,10 @@ function CardPayPanel({ code }: { code: string }) {
         <form onSubmit={(e) => { e.preventDefault(); start(email.trim()); }} className="space-y-3">
           <p>{L('Ödemeyi başlatmak için siparişte kullandığınız e-posta adresini yazın.', 'Enter the e-mail address you used for the order to start the payment.')}</p>
           <input className={fieldCls} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={L('E-posta', 'Email')} data-testid="pay-email" />
-          <button type="submit" disabled={busy} className="btn-cta disabled:opacity-60" data-testid="pay-start">{busy ? '…' : L('Ödemeye geç', 'Go to payment')}</button>
+          <button type="submit" disabled={busy} className="btn-cta disabled:opacity-60 inline-flex items-center justify-center gap-2" data-testid="pay-start">
+            {busy && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />}
+            {busy ? L('Hazırlanıyor…', 'Preparing…') : L('Ödemeye geç', 'Go to payment')}
+          </button>
         </form>
       )}
       {error && <p role="alert" data-testid="pay-error" className="mt-3 text-red-700">{error}</p>}

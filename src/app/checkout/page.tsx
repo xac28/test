@@ -28,6 +28,7 @@ function CheckoutInner() {
   const [paying, setPaying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'iyzico'>('stripe');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [payError, setPayError] = useState('');
 
   if (!teacher && loading) {
     return <div className="max-w-3xl mx-auto px-6 py-24 text-center text-sage-500">…</div>;
@@ -45,8 +46,9 @@ function CheckoutInner() {
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPayError('');
     if (!agreedToTerms) {
-      alert("Devam etmek için sözleşmeyi kabul etmelisin.");
+      setPayError(locale === 'tr' ? 'Devam etmek için sözleşmeyi kabul etmelisin.' : 'You need to accept the agreement to continue.');
       return;
     }
     setPaying(true);
@@ -64,7 +66,7 @@ function CheckoutInner() {
       });
       if (res.ok) {
         const data = await res.json();
-        
+
         if (data.requiresIyzico) {
           const iyzRes = await fetch("/api/iyzico/checkout", {
             method: "POST",
@@ -76,7 +78,7 @@ function CheckoutInner() {
             setIyzicoHtml(iyzData.htmlContent);
             return;
           } else {
-            alert(iyzData.error || "Ödeme başlatılamadı");
+            setPayError(iyzData.error || (locale === 'tr' ? 'Ödeme başlatılamadı.' : 'Could not start the payment.'));
           }
         } else if (data.stripeUrl) {
           window.location.href = data.stripeUrl;
@@ -85,11 +87,10 @@ function CheckoutInner() {
         }
       } else {
         const data = await res.json();
-        alert(data.error || "Ödeme başarısız oldu");
+        setPayError(data.error || (locale === 'tr' ? 'Ödeme başarısız oldu.' : 'Payment failed.'));
       }
     } catch {
-      alert("Bağlantı hatası, lütfen tekrar dene");
-      setPaying(false);
+      setPayError(locale === 'tr' ? 'Bağlantı hatası, lütfen tekrar dene.' : 'Connection error, please try again.');
     } finally {
       setPaying(false);
     }
@@ -146,11 +147,11 @@ function CheckoutInner() {
           <div className="bg-white rounded-3xl p-8 border border-sage-200 shadow-xl animate-fade-in">
             <h2 className="text-xl font-display mb-6"><>{locale === 'tr' ? 'Güvenli ödeme' : 'Secure payment'}</></h2>
             <PayForm html={iyzicoHtml} />
-            <button 
+            <button
               onClick={() => setIyzicoHtml(null)}
               className="mt-8 text-sm text-sage-500 hover:text-sage-800 underline"
             >
-              Cancel and change payment method
+              {locale === 'tr' ? 'Vazgeç ve ödeme yöntemini değiştir' : 'Cancel and change payment method'}
             </button>
           </div>
         ) : (
@@ -193,51 +194,16 @@ function CheckoutInner() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">E-posta</label>
-                <input
-                  required
-                  type="email"
-                  placeholder="ornek@eposta.com"
-                  className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-white focus:outline-none focus:border-sage-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">{locale === 'tr' ? 'Kart sahibinin adı' : 'Cardholder name'}</label>
-                <input
-                  required
-                  placeholder={locale === 'tr' ? 'Karttaki ad' : 'Name on card'}
-                  className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-white focus:outline-none focus:border-sage-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">{locale === 'tr' ? 'Kart numarası' : 'Card number'}</label>
-                <input
-                  required
-                  placeholder="1234 5678 9012 3456"
-                  className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-cream focus:outline-none focus:border-sage-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">{locale === 'tr' ? 'Son kullanma' : 'Expiry'}</label>
-                  <input
-                    required
-                    placeholder="MM / YY"
-                    className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-cream focus:outline-none focus:border-sage-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-ink/50 mb-1.5 block">CVC</label>
-                  <input
-                    required
-                    placeholder="123"
-                    className="w-full px-4 py-3 rounded-xl border border-sage-200 bg-cream focus:outline-none focus:border-sage-500"
-                  />
-                </div>
+              <div className="rounded-xl border border-sage-200 bg-white p-4 flex items-start gap-3">
+                <svg className="w-5 h-5 mt-0.5 shrink-0 text-sage-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                <p className="text-sm text-ink/70">
+                  {paymentMethod === 'iyzico'
+                    ? (locale === 'tr' ? 'Kart bilgilerini az sonra iyzico’nun güvenli ödeme sayfasında, 3D Secure doğrulamasıyla gireceksin. Kart numaran AYA sunucularına hiç ulaşmaz.' : 'You’ll enter your card on iyzico’s secure page next, with 3D Secure verification. Your card number never reaches AYA’s servers.')
+                    : (locale === 'tr' ? 'Kart bilgilerini az sonra Stripe’ın güvenli ödeme sayfasında gireceksin. Kart numaran AYA sunucularına hiç ulaşmaz.' : 'You’ll enter your card on Stripe’s secure page next. Your card number never reaches AYA’s servers.')}
+                </p>
               </div>
 
               <div className="pt-2">
@@ -255,11 +221,14 @@ function CheckoutInner() {
                 </label>
               </div>
 
+              {payError && <p role="alert" className="text-sm text-red-700 text-center">{payError}</p>}
+
               <button
                 type="submit"
                 disabled={paying || !agreedToTerms}
-                className="w-full bg-sage-700 hover:bg-sage-800 text-cream py-4 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-sage-700 hover:bg-sage-800 text-cream py-4 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
               >
+                {paying && <span className="h-4 w-4 animate-spin rounded-full border-2 border-cream/40 border-t-cream" />}
                 {paying ? (locale === 'tr' ? 'İşleniyor…' : 'Processing…') : `${t.checkout.pay} · ${formatLocalPrice(priceUSD)}`}
               </button>
 

@@ -205,7 +205,8 @@ function CheckoutSheet({ plan, interval, priceKurus, onClose }: { plan: PaidPlan
               <textarea name="address" required rows={2} autoComplete="street-address" value={address} onChange={(e) => setAddress(e.target.value)} className={`${field} mt-1 resize-none`} />
             </label>
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-            <button type="submit" disabled={busy} data-testid="subscription-continue" className="w-full rounded-full bg-ink py-3.5 text-sm font-semibold text-cream transition hover:bg-sage-800 active:scale-[.98] disabled:opacity-60">
+            <button type="submit" disabled={busy} data-testid="subscription-continue" className="w-full rounded-full bg-ink py-3.5 text-sm font-semibold text-cream transition hover:bg-sage-800 active:scale-[.98] disabled:opacity-60 inline-flex items-center justify-center gap-2">
+              {busy && <span className="h-4 w-4 animate-spin rounded-full border-2 border-cream/30 border-t-cream" />}
               {busy ? "Hazırlanıyor…" : "Kart ile ödemeye geç"}
             </button>
             <p className="text-center text-xs text-sage-500 inline-flex w-full items-center justify-center gap-1.5"><Lock size={12} /> Ödeme iyzico'nun güvenli sayfasında yapılır.</p>
